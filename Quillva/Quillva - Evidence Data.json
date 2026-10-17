@@ -1,0 +1,1470 @@
+{
+  "schema_version": "1.0",
+  "audit_date": "2026-10-15",
+  "audit_method": "Static repository analysis (3 git repositories + 1 non-versioned legacy tree) plus read-only production PostgreSQL inspection using SET default_transaction_read_only = on. Only SELECT/COUNT/SUM/AVG/MIN/MAX/GROUP BY/FILTER/unnest were executed. No credentials or PII are recorded in this file.",
+  "project_name": "Quillva",
+  "project_type": "Two-sided online marketplace (SaaS) with virtual currency, subscription billing and affiliate programme",
+  "project_description": "A book-review marketplace where self-published authors list books and pay in a virtual currency called Quills, and readers apply to review those books and earn Quills back. Quills are purchased with real money via Stripe subscriptions and one-off top-up packs. The platform includes an affiliate/referral programme with commissions and payouts, a support and dispute desk, an admin back office with analytics and editable pricing rules, and a full per-action audit trail. It is a ground-up rebuild of an earlier Quillva system retained in the repository as old-build/.",
+  "engagement_context": {
+    "nature": "Freelance / direct client engagement",
+    "evidence_level": "STRONGLY_SUPPORTED",
+    "evidence": "Project sits under a freelance/ directory; AGENTS.md states 'Treat direct client instructions in this thread as the source of truth for product changes.'",
+    "qualification": "No contract, invoice or client correspondence was available to confirm."
+  },
+  "dates": {
+    "backend_first_commit": "2025-10-31",
+    "frontend_first_commit": "2025-12-12",
+    "latest_commit": "2026-10-04",
+    "production_first_record": "2026-06-11",
+    "production_latest_activity": "2026-10-15",
+    "production_lifespan_days": 127,
+    "still_live_at_audit": true,
+    "domain_migration": {
+      "from": "app.quillva.net",
+      "to": "app.quillva.com",
+      "date": "2026-06-10"
+    }
+  },
+  "repositories": [
+    {
+      "name": "quillva-backend",
+      "role": "API + background worker",
+      "commits_total": 351,
+      "commits_by_subject": 351,
+      "subject_share_pct": 100,
+      "insertions_by_subject": 52642,
+      "deletions_by_subject": 9516,
+      "ts_files": 210,
+      "lines": 23169,
+      "feature_modules": 19,
+      "prisma_models": 24,
+      "prisma_enums": 20,
+      "migrations": 117,
+      "date_range": "2025-10-31 to 2026-10-04"
+    },
+    {
+      "name": "quillva-frontend",
+      "role": "User + admin SPA",
+      "commits_total": 394,
+      "commits_by_subject": 252,
+      "subject_share_pct": 64,
+      "insertions_by_subject": 17773,
+      "deletions_by_subject": 7072,
+      "ai_scaffold_commits": 141,
+      "ai_scaffold_insertions": 32437,
+      "ai_scaffold_author": "gpt-engineer-app[bot] (Lovable)",
+      "ai_scaffold_date_range": "2025-12-12 to 2026-03-01",
+      "files": 285,
+      "lines": 40306,
+      "feature_hooks": 23,
+      "date_range_subject": "2025-12-12 to 2026-10-04"
+    },
+    {
+      "name": "quillva-landing",
+      "role": "Marketing site",
+      "commits_total": 1,
+      "note": "Next.js 16 scaffold only; no feature work"
+    },
+    {
+      "name": "old-build",
+      "role": "Legacy system being replaced",
+      "versioned": false,
+      "prisma_models": 22,
+      "note": "CRA frontend mixing MUI/Bootstrap/Flowbite, Firebase DataConnect, Flutterwave + Stripe, Telegram bot module"
+    }
+  ],
+  "technologies": {
+    "backend": [
+      "TypeScript",
+      "NestJS 11",
+      "Prisma 6",
+      "PostgreSQL 18",
+      "BullMQ 5",
+      "ioredis / Redis",
+      "RabbitMQ (amqplib, amqp-connection-manager)",
+      "Stripe",
+      "Cloudinary",
+      "Firebase Admin (Storage)",
+      "Nodemailer",
+      "Handlebars",
+      "@nestjs/schedule",
+      "@nestjs/swagger",
+      "class-validator",
+      "class-transformer",
+      "bcrypt",
+      "JWT",
+      "Luxon",
+      "pdf-parse",
+      "Docker"
+    ],
+    "frontend": [
+      "React 19",
+      "Vite",
+      "TypeScript",
+      "Tailwind CSS",
+      "shadcn/ui (Radix)",
+      "TanStack React Query",
+      "Zustand",
+      "React Hook Form",
+      "Zod",
+      "Axios",
+      "TipTap",
+      "Recharts",
+      "date-fns",
+      "date-fns-tz",
+      "Bun"
+    ],
+    "landing": [
+      "Next.js 16",
+      "React 19",
+      "Tailwind CSS 4"
+    ],
+    "infrastructure": [
+      "Render (web service, worker, RabbitMQ, Key Value, PostgreSQL)",
+      "Netlify",
+      "Docker multi-stage builds"
+    ]
+  },
+  "architecture": {
+    "pattern": "Modular monolith API with a separately deployed background worker sharing the same container image",
+    "services": [
+      {
+        "name": "quillva-api",
+        "type": "Render web service (Docker)",
+        "notes": "Health check /, preDeployCommand runs prisma migrate deploy && prisma db seed && db:bootstrap-billing"
+      },
+      {
+        "name": "quillva-worker",
+        "type": "Render worker (Docker)",
+        "notes": "node dist/src/worker.js; runs all crons, RabbitMQ consumers and the BullMQ listing scheduler"
+      },
+      {
+        "name": "quillva-rabbitmq",
+        "type": "Render private service",
+        "notes": "rabbitmq:4-management with 5GB persistent disk"
+      },
+      {
+        "name": "quillva-redis",
+        "type": "Render Key Value",
+        "notes": "ipAllowList: [] blocks all external access"
+      },
+      {
+        "name": "quillva-db",
+        "type": "Render PostgreSQL",
+        "notes": "basic-256mb plan, 15GB disk"
+      }
+    ],
+    "background_processing": {
+      "cron_jobs": [
+        {
+          "name": "review reminders",
+          "schedule": "every 30 minutes"
+        },
+        {
+          "name": "yearly quill tranches",
+          "schedule": "hourly"
+        },
+        {
+          "name": "trial expiry reminders",
+          "schedule": "hourly"
+        },
+        {
+          "name": "expire applications",
+          "schedule": "every 5 minutes"
+        }
+      ],
+      "rabbitmq_pipelines": [
+        "review-reminder",
+        "trial-expiry",
+        "yearly-quills",
+        "expire-applications"
+      ],
+      "rabbitmq_features_per_pipeline": [
+        "dedicated fanout dead-letter exchange",
+        "dead-letter queue",
+        "message TTL",
+        "prefetch limit",
+        "sliding-window per-minute rate limiter",
+        "boot catch-up scan behind *_CATCHUP_ON_BOOT flag"
+      ],
+      "bullmq": "Delayed listing publication with deterministic jobId 'listing-<id>' and Luxon America/New_York to UTC conversion"
+    }
+  },
+  "integrations": [
+    "Stripe (subscriptions, top-ups, customer portal, webhooks, refunds, disputes)",
+    "Cloudinary (signed image uploads)",
+    "Firebase Storage (PDF upload/download)",
+    "SMTP via Nodemailer with Handlebars templates",
+    "REST Countries v5 API (country and flag seeding)",
+    "Google Tag Manager (frontend)",
+    "RabbitMQ",
+    "Redis"
+  ],
+  "workflows": [
+    "Author listing lifecycle: book submit -> admin approval -> listing with rules-engine pricing -> Quill debit -> optional delayed publish -> reviewer applications -> reviews -> author confirmation -> reviewer credit -> refund on cancel/delete",
+    "Reviewer application lifecycle: browse with country/mutual-review/cap filters -> apply -> 7-day due date -> TTL-bounded reminder -> review or auto-expiry -> Quill grant or revocation",
+    "Billing lifecycle: checkout -> trial -> trial credit -> invoice.paid allocation -> payment failure 7-day grace -> refund/dispute reversal and restore",
+    "Affiliate lifecycle: referral code -> tokenised link -> hashed click tracking -> attribution -> commission accrual -> payout request and review",
+    "Support lifecycle: ticket -> threaded messages with admin read receipts -> linked Stripe dispute -> resolution"
+  ],
+  "my_contributions": {
+    "verified": [
+      "Sole author of the entire backend: all 351 commits, ~52,642 insertions, 19 modules, 24 Prisma models, 117 migrations",
+      "Prisma schema design including soft deletes, composite unique [email, deletedAt], and indexing strategy",
+      "Stripe integration: 1,557-line webhook service handling 13+ event types with layered idempotency",
+      "Four RabbitMQ pipelines with DLX, DLQ, TTL, prefetch and rate limiting",
+      "BullMQ timezone-aware delayed listing scheduler",
+      "Database-driven Quill pricing engine (QuillRule) and Stripe price mapping (BillingPriceMapping)",
+      "ActivityLog audit interceptor with full action/entity/IP capture",
+      "Cloudinary signed upload pipeline with TempMedia temp-to-attached lifecycle",
+      "Firebase Storage PDF upload with size validation",
+      "Dockerfile, docker-compose and render.yaml infrastructure definition",
+      "Production data remediation scripts (duplicate audit, cleanup, merge) with dry-run defaults",
+      "Frontend: 252 of 394 commits, ~17,773 insertions; sole author after 2026-03-01; 23 feature hooks, admin back office, billing, affiliates, support console, payouts, public-content editor, analytics dashboards"
+    ],
+    "not_attributable": [
+      "~32,437 frontend insertions generated by gpt-engineer-app[bot] (Lovable AI scaffold, 2025-12-12 to 2026-03-01) including the shadcn/ui component library",
+      "Leadership, requirements gathering, team coordination and stakeholder management: no issue tracker, PR history or correspondence available",
+      "Legacy old-build system authorship: no git history exists for it"
+    ]
+  },
+  "production_metrics": [
+    {
+      "name": "production_lifespan",
+      "value": 127,
+      "unit": "days",
+      "start_date": "2026-06-11",
+      "end_date": "2026-10-15",
+      "evidence_source": "MIN(createdAt) across User/Book/BookListing/QuillsTransaction/StripeWebhookEvent; MAX(createdAt) on ActivityLog",
+      "calculation_method": "Date difference",
+      "evidence_level": "DERIVED",
+      "qualification": "System was still receiving traffic on the audit date; this is a floor."
+    },
+    {
+      "name": "registered_users",
+      "value": 192,
+      "unit": "users",
+      "end_date": "2026-10-15",
+      "evidence_source": "COUNT(*) on User",
+      "calculation_method": "Direct count",
+      "evidence_level": "VERIFIED",
+      "qualification": "181 READER, 9 AUTHOR, 2 ADMIN; 3 soft-deleted. 174 of 192 signed up in June 2026 (launch cohort)."
+    },
+    {
+      "name": "distinct_user_countries",
+      "value": 8,
+      "unit": "countries",
+      "evidence_source": "COUNT(DISTINCT country) on User",
+      "evidence_level": "VERIFIED",
+      "qualification": null
+    },
+    {
+      "name": "audited_user_actions",
+      "value": 21825,
+      "unit": "records",
+      "start_date": "2026-06-11",
+      "end_date": "2026-10-15",
+      "evidence_source": "COUNT(*) on ActivityLog",
+      "calculation_method": "Direct count",
+      "evidence_level": "VERIFIED",
+      "qualification": "Records audited application actions, not all HTTP requests; true request volume is higher. Rose from 21,819 to 21,825 during the audit."
+    },
+    {
+      "name": "distinct_users_with_activity",
+      "value": 173,
+      "unit": "users",
+      "evidence_source": "COUNT(DISTINCT userId) on ActivityLog",
+      "evidence_level": "VERIFIED",
+      "qualification": null
+    },
+    {
+      "name": "active_days",
+      "value": 93,
+      "unit": "days",
+      "evidence_source": "COUNT(DISTINCT createdAt::date) on ActivityLog",
+      "evidence_level": "VERIFIED",
+      "qualification": null
+    },
+    {
+      "name": "peak_daily_actions",
+      "value": 1591,
+      "unit": "actions/day",
+      "start_date": "2026-06-12",
+      "end_date": "2026-06-12",
+      "evidence_source": "GROUP BY createdAt::date on ActivityLog ORDER BY count DESC",
+      "evidence_level": "VERIFIED",
+      "qualification": null
+    },
+    {
+      "name": "mean_actions_per_active_day",
+      "value": 235,
+      "unit": "actions/day",
+      "evidence_source": "21825 / 93",
+      "calculation_method": "Arithmetic mean over active days only",
+      "evidence_level": "DERIVED",
+      "qualification": "Excludes days with zero activity; mean over calendar days is lower."
+    },
+    {
+      "name": "audit_coverage",
+      "value": 100,
+      "unit": "percent",
+      "evidence_source": "COUNT(*) FILTER (WHERE actionDescription IS NOT NULL) and FILTER (WHERE ipAddress IS NOT NULL) on ActivityLog",
+      "evidence_level": "VERIFIED",
+      "qualification": "All 21,825 rows carry both fields, across 15 distinct entity types."
+    },
+    {
+      "name": "stripe_webhook_events_processed",
+      "value": 462,
+      "unit": "events",
+      "start_date": "2026-06-11",
+      "end_date": "2026-10-12",
+      "evidence_source": "COUNT(*) on StripeWebhookEvent",
+      "evidence_level": "VERIFIED",
+      "qualification": "8 event types: customer.subscription.updated 148, invoice.payment_failed 101, invoice.paid 83, checkout.session.completed 44, customer.subscription.created 44, customer.subscription.deleted 36, charge.dispute.created 3, charge.dispute.closed 3."
+    },
+    {
+      "name": "duplicate_webhook_processing",
+      "value": 0,
+      "unit": "events",
+      "evidence_source": "COUNT(*) = COUNT(DISTINCT id) = 462 on StripeWebhookEvent",
+      "calculation_method": "Compared total rows to distinct Stripe event IDs",
+      "evidence_level": "VERIFIED",
+      "qualification": "Proves no event ID was recorded twice; it does not prove Stripe never retried - it proves retries were absorbed."
+    },
+    {
+      "name": "paid_invoices",
+      "value": 83,
+      "unit": "invoices",
+      "evidence_source": "COUNT(DISTINCT invoiceId) WHERE type='invoice.paid'",
+      "evidence_level": "VERIFIED",
+      "qualification": "83 distinct invoice IDs. 44 subscriptions were created, so 39 of these are recurring renewals beyond the trial-start invoice. These represent REAL payments - see commercial_status."
+    },
+    {
+      "name": "subscription_records",
+      "value": 44,
+      "unit": "subscriptions",
+      "evidence_source": "COUNT(*) on SubscriptionHistory",
+      "evidence_level": "VERIFIED",
+      "qualification": "35 canceled (79.5%), 8 active, 1 past_due; all BASIC. The 8 active are all past trial end and are paying. Mean cancelled-subscription lifespan 46.1 days, max 106 days."
+    },
+    {
+      "name": "stripe_customers",
+      "value": 51,
+      "unit": "users",
+      "evidence_source": "COUNT(*) FILTER (WHERE stripeCustomerId IS NOT NULL) on User",
+      "evidence_level": "VERIFIED",
+      "qualification": null
+    },
+    {
+      "name": "free_trials_started",
+      "value": 43,
+      "unit": "trials",
+      "evidence_source": "COUNT(*) FILTER (WHERE trialStartedAt IS NOT NULL) on User",
+      "evidence_level": "VERIFIED",
+      "qualification": null
+    },
+    {
+      "name": "disputes_handled",
+      "value": 5,
+      "unit": "disputes",
+      "evidence_source": "GROUP BY status on Dispute",
+      "evidence_level": "VERIFIED",
+      "qualification": "3 Stripe chargebacks at $14.99 each with genuine charge, payment-intent and dispute IDs, all refunded ($44.97 total); plus 2 disputes raised via support carrying charge IDs. Small sum, but proof of live money."
+    },
+    {
+      "name": "books_submitted",
+      "value": 89,
+      "unit": "books",
+      "evidence_source": "COUNT(*) on Book",
+      "evidence_level": "VERIFIED",
+      "qualification": "54 APPROVED, 19 IN_REVIEW, 15 REJECTED, 1 REVISION_REQUIRED."
+    },
+    {
+      "name": "pdf_storage_handled",
+      "value": 302,
+      "unit": "MB",
+      "evidence_source": "SUM(pdfSizeBytes) on Book WHERE NOT NULL",
+      "calculation_method": "pg_size_pretty of sum across 70 files",
+      "evidence_level": "VERIFIED",
+      "qualification": "70 files, mean 4.4 MB."
+    },
+    {
+      "name": "listings_published",
+      "value": 52,
+      "unit": "listings",
+      "evidence_source": "COUNT(*) on BookListing",
+      "evidence_level": "VERIFIED",
+      "qualification": "51 ACTIVE/APPROVED, 1 CANCELLED; 7 soft-deleted; 4 used future-dated scheduling."
+    },
+    {
+      "name": "distinct_target_countries",
+      "value": 250,
+      "unit": "countries",
+      "evidence_source": "COUNT(DISTINCT c) FROM (SELECT unnest(targetCountries) c FROM BookListing)",
+      "evidence_level": "VERIFIED",
+      "qualification": "3,776 total country-targeting entries across 52 listings."
+    },
+    {
+      "name": "reviewer_applications",
+      "value": 79,
+      "unit": "applications",
+      "evidence_source": "COUNT(*) on ReviewerListingApplication",
+      "evidence_level": "VERIFIED",
+      "qualification": "53 EXPIRED, 22 APPROVED, 4 WITHDRAWN."
+    },
+    {
+      "name": "applications_auto_expired",
+      "value": 53,
+      "unit": "applications",
+      "evidence_source": "COUNT(*) WHERE approvalStatus='EXPIRED'",
+      "evidence_level": "VERIFIED",
+      "qualification": "Expired by the 5-minute cron without manual intervention."
+    },
+    {
+      "name": "completed_reviews",
+      "value": 22,
+      "unit": "reviews",
+      "evidence_source": "COUNT(*) on Review",
+      "evidence_level": "VERIFIED",
+      "qualification": "21 APPROVED and rewarded, 1 PENDING. Mean rating 4.86."
+    },
+    {
+      "name": "application_to_review_conversion",
+      "value": 27.8,
+      "unit": "percent",
+      "evidence_source": "22 / 79 on ReviewerListingApplication and Review",
+      "calculation_method": "reviewed applications / total applications",
+      "evidence_level": "DERIVED",
+      "qualification": "A marketplace property, not an engineering outcome."
+    },
+    {
+      "name": "mean_review_turnaround",
+      "value": 3.38,
+      "unit": "days",
+      "evidence_source": "AVG(Review.createdAt - Application.createdAt) joined on applicationId",
+      "calculation_method": "Mean of epoch differences / 86400, n=22",
+      "evidence_level": "DERIVED",
+      "qualification": "Min 1.36, max 4.00 days. Small sample; bounded by the 7-day due date."
+    },
+    {
+      "name": "quills_credited",
+      "value": 333470,
+      "unit": "quills",
+      "start_date": "2026-06-11",
+      "end_date": "2026-08-15",
+      "evidence_source": "SUM(quills) WHERE type='CREDIT' on QuillsTransaction",
+      "evidence_level": "VERIFIED",
+      "qualification": "40 credit transactions. Quills are an internal unit, not currency."
+    },
+    {
+      "name": "quills_debited",
+      "value": 337686,
+      "unit": "quills",
+      "start_date": "2026-06-11",
+      "end_date": "2026-07-27",
+      "evidence_source": "SUM(quills) WHERE type='DEBIT' on QuillsTransaction",
+      "evidence_level": "VERIFIED",
+      "qualification": "53 debit transactions, 336,686 of which are listing creation costs."
+    },
+    {
+      "name": "automated_quill_refunds",
+      "value": 8,
+      "unit": "transactions",
+      "evidence_source": "GROUP BY description on QuillsTransaction",
+      "evidence_level": "VERIFIED",
+      "qualification": "7 deleted-listing refunds and 1 cancelled-listing refund, returning 10,702 Quills."
+    },
+    {
+      "name": "pricing_rules_live",
+      "value": 91,
+      "unit": "rules",
+      "evidence_source": "COUNT(*) on QuillRule",
+      "evidence_level": "VERIFIED",
+      "qualification": "Across 15 categories: AUDIOBOOK 30, PAPERBACK 16, WEEKLY_CAPS 9, KDP_PURCHASE 9, TARGET_COUNTRY 6, TOPUP_PACK 5, WORDCOUNT 4, SUBSCRIPTION 3, REVIEWER_CAPS 2, MEDIA 2, and 5 singletons."
+    },
+    {
+      "name": "stripe_price_mappings",
+      "value": 17,
+      "unit": "mappings",
+      "evidence_source": "GROUP BY kind on BillingPriceMapping",
+      "evidence_level": "VERIFIED",
+      "qualification": "11 active (6 subscription + 5 top-up); 6 inactive superseded prices retained via validity windows."
+    },
+    {
+      "name": "countries_seeded",
+      "value": 250,
+      "unit": "countries",
+      "evidence_source": "COUNT(*) on Country",
+      "evidence_level": "VERIFIED",
+      "qualification": "100% have flag assets; 6 distinct regions. Seeded from REST Countries v5 API."
+    },
+    {
+      "name": "prisma_migrations",
+      "value": 117,
+      "unit": "migrations",
+      "evidence_source": "COUNT(*) on _prisma_migrations and directory listing",
+      "evidence_level": "VERIFIED",
+      "qualification": null
+    },
+    {
+      "name": "support_tickets",
+      "value": 30,
+      "unit": "tickets",
+      "start_date": "2026-06-12",
+      "end_date": "2026-09-24",
+      "evidence_source": "COUNT(*) on SupportTicket",
+      "evidence_level": "VERIFIED",
+      "qualification": "20 general, 4 technical, 3 billing, 3 dispute. 35 messages across 23 threads."
+    },
+    {
+      "name": "duplicate_emails_remaining",
+      "value": 0,
+      "unit": "duplicates",
+      "end_date": "2026-10-15",
+      "evidence_source": "COUNT over GROUP BY lower(email) HAVING count>1 WHERE deletedAt IS NULL",
+      "evidence_level": "VERIFIED",
+      "qualification": "Pre-remediation count is not recoverable from the current database."
+    },
+    {
+      "name": "production_database_size",
+      "value": 24,
+      "unit": "MB",
+      "evidence_source": "pg_size_pretty(pg_database_size(current_database()))",
+      "evidence_level": "VERIFIED",
+      "qualification": null
+    },
+    {
+      "name": "paying_subscribers_current",
+      "value": 8,
+      "unit": "subscribers",
+      "end_date": "2026-10-15",
+      "evidence_source": "SubscriptionHistory WHERE status='active' joined to User",
+      "calculation_method": "Direct count; all have hasUsedTrial=true and trialEndsAt in the past",
+      "evidence_level": "VERIFIED",
+      "qualification": "All BASIC monthly. Longest continuously active 125 days."
+    },
+    {
+      "name": "renewal_invoices_paid",
+      "value": 39,
+      "unit": "invoices",
+      "start_date": "2026-06-11",
+      "end_date": "2026-10-12",
+      "evidence_source": "83 invoice.paid events minus 44 customer.subscription.created events",
+      "calculation_method": "Invoices paid beyond one trial-start invoice per subscription",
+      "evidence_level": "DERIVED",
+      "qualification": "Assumes one zero-value trial invoice per subscription created; 43 trials were started against 44 subscriptions, which supports the assumption."
+    },
+    {
+      "name": "invoice_success_rate",
+      "value": 45.1,
+      "unit": "percent",
+      "evidence_source": "83 invoice.paid / (83 paid + 101 failed)",
+      "calculation_method": "Paid invoice outcomes as a share of all invoice outcomes",
+      "evidence_level": "DERIVED",
+      "qualification": "A high failure rate. Reflects card failures and dunning retries on a small subscriber base; each retry generates its own event."
+    },
+    {
+      "name": "subscription_cancellation_rate",
+      "value": 79.5,
+      "unit": "percent",
+      "evidence_source": "35 canceled of 44 SubscriptionHistory rows",
+      "evidence_level": "DERIVED",
+      "qualification": "Report alongside the revenue figure; omitting it would be misleading."
+    },
+    {
+      "name": "estimated_gross_revenue",
+      "value": 584.61,
+      "unit": "USD",
+      "start_date": "2026-06-11",
+      "end_date": "2026-10-12",
+      "evidence_source": "39 renewal invoices x $14.99 (price from chargeback amounts)",
+      "calculation_method": "Derived; invoice amounts are not stored in the database",
+      "evidence_level": "DERIVED",
+      "qualification": "Gross, pre-fees, pre-refunds. Upper bound $1,244. Read the authoritative figure from the Stripe Dashboard before citing."
+    }
+  ],
+  "features_built_but_unused_in_production": [
+    {
+      "feature": "Affiliate commission accrual",
+      "table": "Commission",
+      "rows": 0
+    },
+    {
+      "feature": "Payout request workflow",
+      "table": "PayoutRequest",
+      "rows": 0
+    },
+    {
+      "feature": "Promo code distribution",
+      "table": "PromoCode",
+      "rows": 0
+    },
+    {
+      "feature": "Per-user notification read receipts",
+      "table": "NotificationRead",
+      "rows": 0,
+      "note": "Shipped 2026-10-04, shortly before the audit"
+    }
+  ],
+  "verified_claims": [
+    {
+      "id": "0A",
+      "claim": "Diagnosed and resolved, within hours, a Stripe webhook signature-verification failure that the incumbent development team had been unable to fix - including with AI assistance - on a codebase I had not written.",
+      "evidence_level": "CLIENT_ATTESTED (strongly corroborated)",
+      "evidence": "Subject's direct account, plus independent audit locating both a root cause (req.rawBody || req.body || req passing parsed JSON into constructEvent) and a second bug in the team's own debug code whose signature comparison could never evaluate true. New backend first commit 2025-10-31 matches the stated timeline.",
+      "time_period": "approximately October 2025",
+      "qualification": "No ticket, correspondence or time record available; the specific defect is inferred from matching symptoms."
+    },
+    {
+      "id": "0B",
+      "claim": "Conducted a production-readiness review of a third-party-built payment platform, identified defects including absent webhook idempotency, unrestricted CORS, secrets logged in plaintext and effectively no test coverage, and advised the owner against launching.",
+      "evidence_level": "CLIENT_ATTESTED for the engagement; VERIFIED for every defect listed",
+      "evidence": "legacy_system_assessment.findings, audited directly from old-build/",
+      "time_period": "approximately October 2025",
+      "qualification": "The original 2025 review document was not available; the assessment is a reconstruction performed in October 2026."
+    },
+    {
+      "id": "0C",
+      "claim": "Converted a single bug-fix engagement into a full rebuild mandate, then delivered that rebuild end-to-end - backend, frontend, data model, queueing, caching, payments and cloud infrastructure - as the sole engineer.",
+      "evidence_level": "CLIENT_ATTESTED for the mandate; VERIFIED for the delivery",
+      "evidence": "351 backend commits (100% authored), 252 frontend commits, render.yaml five-service topology, 117 migrations, live production system",
+      "time_period": "2025-10-31 to 2026-10-04",
+      "qualification": "No contract or proposal document was available."
+    },
+    {
+      "id": "0D",
+      "claim": "Maintained a client relationship from 2019 through a three-year engagement gap, being re-engaged in 2025 specifically because the work had become too difficult for the incumbent team.",
+      "evidence_level": "CLIENT_ATTESTED",
+      "evidence": "Subject's direct account",
+      "time_period": "2019 to 2026",
+      "qualification": "Unverifiable from the repository. A written client reference would convert this to documented evidence."
+    },
+    {
+      "id": "0E",
+      "claim": "Built and operated a Stripe subscription billing system that processed live recurring revenue in production - 44 subscriptions, 83 paid invoices (39 of them renewals beyond the trial-start invoice), 101 dunning failures and 3 chargebacks - with 8 subscribers still active after up to 125 continuous days.",
+      "evidence_level": "VERIFIED",
+      "evidence": "StripeWebhookEvent, SubscriptionHistory and Dispute aggregates; chargebacks carry genuine Stripe charge, payment-intent and dispute identifiers",
+      "time_period": "2026-06-11 to 2026-10-12",
+      "qualification": "Revenue is small - estimated ~$585 gross - and 79.5% of subscriptions were cancelled. Cite the system's correctness under live money, never the amount."
+    },
+    {
+      "id": 1,
+      "claim": "Sole author of a production NestJS/PostgreSQL backend for a two-sided book-review marketplace - all 351 commits and ~52,600 insertions across 19 feature modules, 24 data models and 117 database migrations, October 2025 to October 2026.",
+      "evidence_level": "VERIFIED",
+      "evidence": "git shortlog -sne --all and git log --numstat in quillva-backend; Prisma schema; migration directory",
+      "time_period": "2025-10-31 to 2026-10-04",
+      "qualification": "Backend only - the frontend shell was AI-scaffolded."
+    },
+    {
+      "id": 2,
+      "claim": "Designed and operated a Stripe billing integration that processed 462 webhook events across 8 event types in production with zero duplicate processing.",
+      "evidence_level": "VERIFIED",
+      "evidence": "StripeWebhookEvent: 462 rows, 462 distinct IDs",
+      "time_period": "2026-06-11 to 2026-10-12",
+      "qualification": "Proves no event ID was recorded twice; it does not prove Stripe never retried."
+    },
+    {
+      "id": 3,
+      "claim": "Built a two-layer idempotency design for a virtual-currency ledger - event-ID deduplication plus unique per-effect idempotency keys covering top-ups, invoice credits, trial credits, refunds, chargebacks and chargeback reversals - backing 93 production transactions moving 333,470 Quills in and 337,686 out.",
+      "evidence_level": "VERIFIED",
+      "evidence": "webhook.service.ts key construction; QuillsTransaction.idempotencyKey @unique; production ledger aggregates",
+      "time_period": "2026-06-11 to 2026-08-15",
+      "qualification": "Quills are an internal unit; amountPaid is NULL on all rows so no revenue figure is derivable."
+    },
+    {
+      "id": 4,
+      "claim": "Built four independent RabbitMQ pipelines - review reminders, trial expiry, annual credit tranches and application expiry - each with a dedicated dead-letter exchange, message TTL, prefetch limit and sliding-window rate limiter, plus database-level compare-and-set idempotency so at-least-once delivery cannot produce duplicate emails.",
+      "evidence_level": "VERIFIED",
+      "evidence": "src/cron/queues/ and src/cron/consumers/; updateMany({where:{reminderSent:false}}) guard",
+      "time_period": "2026-01 to 2026-03",
+      "qualification": "Production volume is modest: 34 reminders enqueued, 5 sent, 53 applications expired."
+    },
+    {
+      "id": 5,
+      "claim": "Operated a live production system for 127 days serving 192 registered users across 8 countries, with 21,825 audited user actions across 173 distinct users and 93 active days.",
+      "evidence_level": "VERIFIED",
+      "evidence": "User and ActivityLog aggregates",
+      "time_period": "2026-06-11 to 2026-10-15",
+      "qualification": "Small-scale; 174 of 192 signups are a single June launch cohort."
+    },
+    {
+      "id": 6,
+      "claim": "Implemented a full-coverage application audit trail capturing request signature, business action, entity, entity ID, JSON metadata and IP for every mutating call - 21,825 rows across 15 entity types with 100% action and IP coverage.",
+      "evidence_level": "VERIFIED",
+      "evidence": "ActivityLog schema and COUNT(*) FILTER coverage query",
+      "time_period": "2026-06-11 to 2026-10-15",
+      "qualification": "Audits application actions, not all HTTP requests."
+    },
+    {
+      "id": 7,
+      "claim": "Replaced hard-coded marketplace pricing with a database-driven rules engine - 91 live rules across 15 categories including word-count bands, distribution channels, per-country pricing, caps and exchange rate - enabling pricing changes without a deployment.",
+      "evidence_level": "VERIFIED",
+      "evidence": "QuillRule table counts; listings.utils.ts",
+      "time_period": "2025-11 onward",
+      "qualification": "Mechanism and population verified; the deployment time saved is not measurable."
+    },
+    {
+      "id": 8,
+      "claim": "Migrated Stripe price configuration from environment variables to a validity-windowed database table with an idempotent bootstrap wired into the deployment pipeline - 17 mappings, 11 active, with superseded prices retained for historical accuracy.",
+      "evidence_level": "VERIFIED",
+      "evidence": "BillingPriceMapping schema and counts; bootstrap-billing-mappings.ts; render.yaml preDeployCommand",
+      "time_period": "2026-10-04",
+      "qualification": null
+    },
+    {
+      "id": 9,
+      "claim": "Diagnosed and eliminated duplicate user accounts caused by case-sensitive email matching, shipping a reference-counting audit script, a dry-run-by-default cleanup script and a reviewed per-pair merge script alongside a source-level fix - reducing duplicate case-insensitive emails among active users to zero.",
+      "evidence_level": "VERIFIED",
+      "evidence": "commit 2026-08-02; prisma/scripts/; production duplicate query returning 0",
+      "time_period": "2026-08-02",
+      "qualification": "Pre-remediation duplicate count is not recoverable."
+    },
+    {
+      "id": 10,
+      "claim": "Designed a timezone-aware delayed publication scheduler using BullMQ delayed jobs with deterministic job IDs and Luxon conversion from Amazon's publishing timezone to UTC, including a production fix correcting a three-hour offset.",
+      "evidence_level": "VERIFIED",
+      "evidence": "listing.scheduler.service.ts; commit 2026-02-02",
+      "time_period": "2026-01 to 2026-02",
+      "qualification": "4 listings used scheduling in production."
+    },
+    {
+      "id": 11,
+      "claim": "Took ownership of an AI-scaffolded React frontend and extended it into a production application - 252 of 394 commits and ~17,773 insertions, and sole authorship after March 2026 - delivering 23 feature hooks, the admin back office, billing, affiliate reporting, the support console and analytics dashboards.",
+      "evidence_level": "VERIFIED",
+      "evidence": "git shortlog showing gpt-engineer-app[bot] with 141 commits ending 2026-03-01 and the subject continuing to 2026-10-04",
+      "time_period": "2025-12-12 to 2026-10-04",
+      "qualification": "Explicitly do not claim the ~32,437 bot-generated insertions."
+    },
+    {
+      "id": 12,
+      "claim": "Designed and deployed the production infrastructure as code - a five-service Render topology (Dockerised API, separate background worker, RabbitMQ with persistent disk, network-isolated Redis, PostgreSQL) with migrations and configuration bootstrap in the pre-deploy step.",
+      "evidence_level": "VERIFIED",
+      "evidence": "render.yaml, Dockerfile, docker-compose.yml",
+      "time_period": "2026-01 onward",
+      "qualification": null
+    },
+    {
+      "id": 13,
+      "claim": "Replaced a payment-failure policy of immediate access revocation with a 7-day Stripe-managed grace period plus customer notification - the path taken by 101 production invoice.payment_failed events.",
+      "evidence_level": "VERIFIED",
+      "evidence": "webhook.service.ts cancel_at logic; commit 2026-08-02; production event counts",
+      "time_period": "2026-08-02 onward",
+      "qualification": "The retention effect of the change is UNKNOWN."
+    },
+    {
+      "id": 14,
+      "claim": "Closed a production security defect in which one-time passcodes were returned in authentication API responses, shipping a coordinated backend and frontend fix.",
+      "evidence_level": "VERIFIED",
+      "evidence": "Paired commits dated 2026-10-04 in both repositories",
+      "time_period": "2026-10-04",
+      "qualification": "Exploitation evidence is not available; the defect is verified from the diff."
+    },
+    {
+      "id": 15,
+      "claim": "Delivered a complete rebuild replacing a legacy stack - consolidating two payment providers to one, four competing UI libraries to a single design system, and a Firebase DataConnect / Prisma hybrid to a single PostgreSQL schema.",
+      "evidence_level": "STRONGLY_SUPPORTED",
+      "evidence": "old-build/ dependency manifests versus the rebuild's",
+      "time_period": "2025-10 to 2026-06",
+      "qualification": "Legacy production metrics are unavailable, so no before/after comparison is possible."
+    }
+  ],
+  "derived_claims": [
+    {
+      "claim": "Mean of approximately 235 audited actions per active production day",
+      "basis": "21,825 actions / 93 active days",
+      "evidence_level": "DERIVED"
+    },
+    {
+      "claim": "27.8% of reviewer applications converted to completed reviews",
+      "basis": "22 / 79",
+      "evidence_level": "DERIVED",
+      "qualification": "Marketplace property, not an engineering outcome"
+    },
+    {
+      "claim": "Mean review turnaround of 3.38 days",
+      "basis": "AVG of Review.createdAt - Application.createdAt, n=22",
+      "evidence_level": "DERIVED",
+      "qualification": "Small sample; bounded above by the 7-day due date"
+    },
+    {
+      "claim": "127-day continuous production lifespan",
+      "basis": "2026-06-11 to 2026-10-15",
+      "evidence_level": "DERIVED",
+      "qualification": "Still live; a floor not a total"
+    }
+  ],
+  "inferred_claims": [
+    {
+      "claim": "The rebuild was motivated by consolidating a fragmented legacy stack",
+      "evidence_level": "INFERRED",
+      "basis": "Legacy manifests show two payment providers, four UI libraries and a Firebase/Prisma hybrid; no requirements document was found"
+    },
+    {
+      "claim": "Two brokers (RabbitMQ and BullMQ) were chosen for their differing strengths - BullMQ jobId+delay for reschedule-by-replace, RabbitMQ DLX/TTL for expiring stale fan-out work",
+      "evidence_level": "INFERRED",
+      "basis": "Code shape only; no written ADR exists"
+    },
+    {
+      "claim": "The project is a freelance client engagement",
+      "evidence_level": "STRONGLY_SUPPORTED",
+      "basis": "freelance/ directory path and AGENTS.md wording"
+    }
+  ],
+  "business_impact": [
+    {
+      "category": "automation",
+      "statement": "Complete automation of the paid lifecycle - trial, subscribe, bill, fail, grace, cancel, refund, dispute - without engineer intervention",
+      "evidence": "462 webhook events, 44 subscription records, 6 trial credits, 8 automated refunds",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "category": "automation",
+      "statement": "Automation of time-based marketplace operations",
+      "evidence": "53 applications auto-expired, 34 reminders enqueued",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "category": "operational_visibility",
+      "statement": "Forensic per-user audit trail plus KPI/trend/breakdown analytics where previously there was none",
+      "evidence": "21,825 audited actions at 100% coverage; 5,185 admin analytics calls",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "category": "reduced_engineering_dependency",
+      "statement": "Pricing and billing configuration moved from code deploys to admin editing",
+      "evidence": "91 pricing rules, 17 price mappings held as data",
+      "evidence_level": "VERIFIED",
+      "qualification": "Time saved is UNKNOWN"
+    },
+    {
+      "category": "data_quality",
+      "statement": "Duplicate accounts eliminated and prevented at source",
+      "evidence": "0 duplicate case-insensitive emails among active users",
+      "evidence_level": "VERIFIED",
+      "qualification": "Pre-remediation baseline unavailable"
+    },
+    {
+      "category": "legacy_replacement",
+      "statement": "Stack consolidation: one payment provider, one design system, one ORM and database",
+      "evidence": "old-build manifests versus rebuild manifests",
+      "evidence_level": "STRONGLY_SUPPORTED",
+      "qualification": "Maintenance saving is INFERRED"
+    }
+  ],
+  "engineering_challenges": [
+    {
+      "challenge": "Reversible money in a two-currency system",
+      "why_hard": "Stripe can deliver the same event twice, out of order, and months apart; a dispute produces two opposite ledger effects. A replayed event and a re-derived effect are different failures requiring different defences.",
+      "solution": "Event-ID dedup table plus deterministic unique per-effect idempotency keys, with a distinct restore key for dispute-won."
+    },
+    {
+      "challenge": "Duplicate execution across replicas",
+      "why_hard": "Cron inside the API means every replica runs every job; scaling the API silently multiplies side effects.",
+      "solution": "Extracted a separate worker service AND made every job row-level idempotent via compare-and-set, so correctness never depended on single-instance execution."
+    },
+    {
+      "challenge": "Cross-site cookie auth behind a proxy chain",
+      "why_hard": "SameSite, Secure, cookie domain and Express trust proxy interact across Netlify -> Cloudflare -> NGINX -> Render; the failure mode is a silent 401 with no server-side error and no local reproduction.",
+      "solution": "Empirical bisection across 14 deployable increments, converging on trust proxy enabled, no forced domain, minimal JWT payload."
+    },
+    {
+      "challenge": "At-least-once delivery meeting a must-happen-once side effect",
+      "why_hard": "Sending an email twice is user-visible. Queue configuration limits blast radius but provides no exactly-once guarantee.",
+      "solution": "Atomic conditional UPDATE acting as a distributed lock; TTL and DLX as backstops."
+    },
+    {
+      "challenge": "Timezone correctness for a third party's clock",
+      "why_hard": "Listings publish on Amazon's schedule, not the server's or the user's; the failure only surfaces as 'it went live late'.",
+      "solution": "Luxon zone conversion rather than Date arithmetic; production fix correcting America/Los_Angeles to America/New_York."
+    }
+  ],
+  "decisions": [
+    {
+      "problem": "Cron inside the API couples job execution to HTTP deployment and duplicates jobs per replica",
+      "decision": "Extract worker.ts/worker.module.ts, deploy as a separate Render worker from the same image, gated by LISTING_SCHEDULER_WORKER",
+      "reasoning": "Written out in TODOS.md with an explicit trigger condition",
+      "tradeoffs": "A second service to deploy, monitor and pay for; shared image means a backend deploy redeploys both",
+      "result": "API restarts no longer pause background work; scaling no longer risks duplicate jobs",
+      "date": "2026-01-24",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "problem": "Two different temporal needs: fan-out reminders versus single future-dated publications",
+      "decision": "RabbitMQ with DLX/TTL for reminders; BullMQ delayed jobs with deterministic job IDs for publication",
+      "reasoning": "INFERRED from code shape - BullMQ jobId+delay makes reschedule-by-replace trivial; RabbitMQ DLX/TTL makes expiring stale work trivial",
+      "tradeoffs": "Two brokers to run and reason about, unusual for a system of this size",
+      "result": "Both work, at the cost of operational surface area",
+      "evidence_level": "INFERRED"
+    },
+    {
+      "problem": "15 categories of pricing input, changed frequently",
+      "decision": "QuillRule table with category/key/min/max/value read at estimate time",
+      "reasoning": "Avoid a deploy per pricing experiment",
+      "tradeoffs": "Pricing logic is no longer type-checked or PR-reviewed; a bad admin edit is a production incident with no rollback",
+      "result": "91 live rules; economics change without deploys",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "problem": "Env-var Stripe price IDs require a redeploy to change and lose the record of what past customers paid",
+      "decision": "BillingPriceMapping with validFrom/validTo, isActive and quillsSnapshot, bootstrapped idempotently on each deploy",
+      "tradeoffs": "One more source of truth to keep in sync with the Stripe dashboard",
+      "result": "17 mappings, 11 active; superseded prices retained rather than overwritten",
+      "date": "2026-10-04",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "problem": "A failed invoice originally cut access immediately, punishing users with an expired card",
+      "decision": "Set Stripe cancel_at to now + 7 days and email the customer, letting dunning retries run",
+      "tradeoffs": "Up to 7 days of unpaid access",
+      "result": "101 production payment-failure events handled as a grace window rather than instant lockout",
+      "date": "2026-08-02",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "problem": "Account deletion would destroy financial and review history",
+      "decision": "Soft deletes across six models",
+      "tradeoffs": "Every query must filter deletedAt; the unique email constraint had to become composite [email, deletedAt]",
+      "result": "History preserved; re-registration after deletion still works",
+      "evidence_level": "VERIFIED"
+    }
+  ],
+  "lessons": [
+    "Absence of a derived record is not absence of the source event. I wrongly concluded this platform had no paying customers because no Quill-credit ledger entries existed for paid invoices - but the BASIC plan allocates zero Quills, so the ledger was correctly silent. The chargebacks were the disconfirming evidence available all along: a chargeback cannot exist without a charge.",
+    "Go to the failing call, not the error message - the legacy webhook bug was invisible from its symptoms and obvious at the constructEvent call site.",
+    "Never trust debug output you did not write; fabricated certainty is worse than no information.",
+    "A fallback that hides a failure is worse than the failure - req.rawBody || req.body || req was written as a safety net and worked as a blindfold.",
+    "Idempotency belongs in the database, not the queue - every guarantee that held in production is a unique constraint or a conditional update.",
+    "Two independent dedup layers are not redundancy: event-level and effect-level keys catch genuinely different failures, as the dispute-restore case proves.",
+    "Empirical debugging is the right tool for opaque infrastructure; a messy git log can be the correct trade-off.",
+    "Configuration the business changes often should live in the database - but it also needs validity windows and value snapshots, or you lose the history of what customers paid.",
+    "Invest test coverage where money moves; but leaving 33 scaffold specs in place misrepresents coverage, and deleting them would have been more honest.",
+    "Separating the worker was right; doing it earlier would have been better. The risk was written down before it was fixed, which means it was understood and deferred rather than missed.",
+    "What I would change: CI on every push; error tracking before launch; one broker instead of two; explicit migration step rather than prisma db seed in pre-deploy."
+  ],
+  "cv_bullets": {
+    "high_confidence_quantified": [
+      "Re-engaged by a long-standing client to rescue a stalled payment platform; diagnosed and fixed within hours a Stripe webhook signature-verification defect the incumbent team could not resolve with AI assistance, then audited the system, advised against launch, and delivered the replacement solo - 351 backend commits, 117 migrations, live for 127 days.",
+      "Shipped a Stripe billing system that has processed live recurring revenue in production - 44 subscriptions, 83 paid invoices including 39 renewals, 101 dunning failures and 3 chargebacks - with every balance change reconciled through an idempotent ledger and zero duplicate event processing across 462 webhook events.",
+      "Sole engineer on a production book-review marketplace backend - 351 commits, ~52,600 lines, 19 NestJS modules, 24 Prisma models and 117 migrations - live for 127 days serving 192 users and 21,825 audited actions.",
+      "Designed a two-layer idempotency architecture (webhook event deduplication plus unique per-effect ledger keys) that processed 462 Stripe events across 8 event types - including refunds, chargebacks and chargeback reversals - with zero duplicate processing.",
+      "Built four RabbitMQ pipelines with dead-letter exchanges, TTLs, prefetch limits and sliding-window rate limiting, backed by database compare-and-set guards, automating 53 production application expirations and the full review-reminder lifecycle.",
+      "Replaced hard-coded pricing with a database-driven rules engine of 91 rules across 15 categories, moving marketplace economics from engineering deploys to admin configuration.",
+      "Implemented a 100%-coverage application audit trail across 15 entity types, producing 21,825 forensic records with full action and IP attribution.",
+      "Delivered a two-sided marketplace workflow handling 89 book submissions, 302 MB of PDFs, 52 listings targeting 250 countries and 79 reviewer applications with a 3.38-day mean review turnaround.",
+      "Architected and deployed a five-service containerised Render topology with a separated background worker, eliminating duplicate cron execution risk under API scaling."
+    ],
+    "high_confidence_non_quantified": [
+      "Performed a production-readiness review of a third-party-built payment platform, identifying absent webhook idempotency, unrestricted CORS, secrets written to logs and effectively no test coverage, and advised the owner against launching.",
+      "Converted a single bug-fix engagement into a full rebuild mandate and delivered it end-to-end across backend, frontend, data modelling, queueing, caching, payments and cloud infrastructure.",
+      "Diagnosed and fixed cross-origin httpOnly cookie authentication behind a Cloudflare/NGINX/Render proxy chain, converging on a minimal-payload JWT with trust proxy enabled.",
+      "Eliminated duplicate user accounts caused by case-sensitive email matching via a reference-counting audit script, a dry-run cleanup tool and a reviewed merge plan, alongside a source-level fix.",
+      "Replaced immediate access revocation on failed payment with a Stripe-managed 7-day grace period and customer notification.",
+      "Closed a security defect that exposed one-time passcodes in API responses, shipping a coordinated backend and frontend fix.",
+      "Migrated Stripe price configuration into a validity-windowed database table with snapshots, preserving historical pricing for past subscribers.",
+      "Took ownership of an AI-scaffolded React 19 frontend and extended it into a production admin and user application, becoming its sole author.",
+      "Built a per-user notification read-receipt model replacing a shared boolean that marked broadcasts read for all recipients."
+    ],
+    "requires_confirmation": [
+      "Revenue figures. Gross revenue is estimated at ~$585 and is DERIVED, not read from Stripe. Read the authoritative number from the Stripe Dashboard before citing any figure, and prefer verified subscriber and invoice counts over money.",
+      "Any revenue, MRR or transaction-value figure - amountPaid is NULL throughout the ledger.",
+      "Any claim of reduced manual hours, faster processing versus the legacy system, or improved conversion - no before/after baseline exists.",
+      "Any claim about team size, leadership or stakeholder management - not evidenced in the repository.",
+      "Any uptime or availability percentage - no monitoring data is available.",
+      "Any claim of comprehensive test coverage - only 9 real tests exist, all on the Stripe paths."
+    ]
+  },
+  "interview_stories": [
+    {
+      "theme": "Diagnostic ability on unfamiliar code",
+      "title": "The fallback that became a blindfold",
+      "situation": "A long-standing client's platform, built by another team, had a Stripe webhook that would not verify signatures. The team had been stuck and AI tooling had not resolved it.",
+      "task": "Diagnose a payment defect in a codebase I had never seen, for a client who had lost confidence in the delivery.",
+      "action": "Went to the signature-verification call rather than the symptom. Found a fallback chain passing parsed JSON into constructEvent whenever the raw body was missing - guaranteeing failure and suppressing the signal. Then found a second bug in their own debug logging whose signature comparison could never return true, which is almost certainly why they and their AI tools kept chasing the secret instead of the input.",
+      "result": "Fixed within a few hours of first touching the code.",
+      "evidence": "Both defects remain in old-build/backend/src/webhook/webhook.controller.ts; the rebuild replaces the class of problem with one line of raw-body middleware.",
+      "why_it_lands": "It is a story about reading the failing call rather than the error message, and about not trusting debug output you did not write."
+    },
+    {
+      "theme": "Technical judgement against commercial pressure",
+      "title": "Saying no to a launch",
+      "situation": "After the fix, the client asked whether the platform was ready to go live. The easy, profitable answer was yes.",
+      "task": "Give an honest production-readiness assessment.",
+      "action": "Reviewed authentication, the payment path and the frontend. Found no webhook idempotency, origin:'*' CORS with a comment admitting it was insecure, the webhook secret logged on every failure, six overlapping UI libraries, two state libraries, two payment providers, and no type safety or meaningful tests. Advised against launch and proposed a rebuild, framing the financial risk for a non-technical owner rather than listing code smells.",
+      "result": "The client accepted; the rebuild shipped and went live in June 2026.",
+      "evidence": "Every defect verifiable in old-build/",
+      "why_it_lands": "The rebuild was the proportionate call, not the ambitious one."
+    },
+    {
+      "theme": "Debugging under opacity",
+      "title": "The cookie that wouldn't stick",
+      "situation": "SPA on Netlify, API on Render behind Cloudflare/NGINX; auth succeeded but every subsequent request returned 401, with no local reproduction.",
+      "task": "Make httpOnly cookie auth work cross-origin.",
+      "action": "Added token-generation logging, then bisected the SameSite/Secure/domain/trust-proxy matrix across 14 small deployable increments in one day.",
+      "result": "Auth worked; 3,488 GET /auth/me calls follow in production logs.",
+      "evidence": "git log 2026-01-24; ActivityLog endpoint counts"
+    },
+    {
+      "theme": "Correctness under replay",
+      "title": "The chargeback that had to reverse twice",
+      "situation": "Stripe can deliver the same event twice, out of order, months apart; a duplicate credit is real money lost.",
+      "task": "Make the Quill ledger provably correct under replay.",
+      "action": "Built two independent layers - an event-ID dedup table and deterministic unique idempotency keys per ledger effect, with separate keys for a dispute's debit and its restore-on-win.",
+      "result": "462 production events, 462 distinct IDs, no double-credit.",
+      "evidence": "webhook.service.ts; schema unique constraint; production query"
+    },
+    {
+      "theme": "Ownership and documented trade-offs",
+      "title": "The worker that should have been separate sooner",
+      "situation": "Cron and BullMQ ran inside the API, so every replica would duplicate every job.",
+      "task": "Decide whether to fix it now or ship features.",
+      "action": "Wrote the trade-off into TODOS.md with an explicit trigger condition, shipped features, extracted worker.ts as its own Render service when the risk became real, and made every job row-level idempotent.",
+      "result": "API restarts no longer pause background work.",
+      "evidence": "TODOS.md; commit 2026-01-24; render.yaml"
+    },
+    {
+      "theme": "Production data incident",
+      "title": "The duplicate accounts",
+      "situation": "Case-sensitive email matching split Quill balances and Stripe customers across duplicate accounts.",
+      "task": "Fix the cause and repair live data without destroying anything.",
+      "action": "Reference-count scoring to decide what was safe to delete, dry-run by default with explicit --apply, a merge script with a reviewed plan per pair, and a source-level fix.",
+      "result": "Zero duplicates among active users.",
+      "evidence": "prisma/scripts/; commit 2026-08-02; production query"
+    },
+    {
+      "theme": "Judgement about scope",
+      "title": "Where I spent my test budget",
+      "situation": "Solo engineer, broad feature surface, limited time.",
+      "action": "Wrote real tests only for the Stripe service and webhook service - refund reversal, dispute debit, dispute restore.",
+      "result": "The money paths are covered; the rest is not.",
+      "evidence": "Spec file audit: 35 files, 9 real tests, 33 NestJS scaffolds",
+      "self_critique": "I'd defend the allocation and criticise the execution - leaving scaffold specs in place misrepresents coverage."
+    },
+    {
+      "theme": "Improving an existing system",
+      "title": "Pricing out of code",
+      "situation": "Quill pricing depended on word count, channel, country, media and caps, and changed often.",
+      "action": "Moved it into a rules table read at estimate time; later did the same for Stripe price IDs, but with validity windows and snapshots after learning that overwriting a price loses the record of what past customers paid.",
+      "result": "91 rules and 17 mappings live, changeable without a deploy.",
+      "tradeoff_to_raise": "Pricing logic is no longer type-checked or PR-reviewed, and a bad admin edit is an incident with no rollback."
+    }
+  ],
+  "portfolio_material": {
+    "positioning": "A two-sided marketplace where real money, a virtual currency and deadline-driven workflows all have to stay reconciled - built and operated solo.",
+    "challenge": "Money that can flow backwards; economics that change weekly; a workflow driven by deadlines rather than clicks; a legacy stack to replace on a small-team budget.",
+    "role": "Sole backend engineer and architect; owner of the frontend after the initial AI scaffold; owner of infrastructure, data modelling, deployment and production operations.",
+    "solution": "NestJS modular monolith with a separated worker process; PostgreSQL via Prisma as single source of truth; idempotency enforced by database constraints rather than queue semantics; pricing and billing configuration held as data; a full audit log as the observability layer of last resort.",
+    "showcase_problems": [
+      "The chargeback-reversal key",
+      "The at-least-once email solved by a conditional UPDATE",
+      "The three-hour listing timezone bug"
+    ],
+    "headline_results": [
+      "127 days live",
+      "192 users",
+      "21,825 audited actions",
+      "462 Stripe events, zero duplicates",
+      "302 MB documents handled",
+      "117 migrations shipped",
+      "0 duplicate accounts remaining"
+    ],
+    "what_id_improve": [
+      "CI on every push",
+      "Error tracking before launch rather than after",
+      "One broker instead of two",
+      "Real tests beyond the financial paths",
+      "Leader election documented or designed out"
+    ]
+  },
+  "content_ideas": [
+    {
+      "title": "The Fallback That Became a Blindfold: Debugging a Stripe Webhook Someone Else Wrote",
+      "format": "article",
+      "evidence": "old-build webhook controller: the || fallback plus the never-true signature comparison",
+      "must_not_publish": [
+        "The client's identity",
+        "The legacy team's identity or nationality",
+        "Real secrets",
+        "Anything that reads as naming and shaming"
+      ]
+    },
+    {
+      "title": "Two Layers of Idempotency: What a Stripe Chargeback Taught Me About Unique Keys",
+      "format": "article",
+      "evidence": "webhook.service.ts key construction; 462/462 production events",
+      "must_not_publish": [
+        "Real Stripe IDs",
+        "Price IDs",
+        "Plan economics",
+        "Customer counts tied to revenue"
+      ]
+    },
+    {
+      "title": "At-Least-Once Delivery and the Email That Must Send Once",
+      "format": "article",
+      "evidence": "review-reminder.consumer.ts compare-and-set guard",
+      "must_not_publish": [
+        "Queue and env-var names"
+      ]
+    },
+    {
+      "title": "Your Scheduler Is Probably in the Wrong Timezone",
+      "format": "article",
+      "evidence": "listing.scheduler.service.ts; commit 2026-02-02",
+      "must_not_publish": []
+    },
+    {
+      "title": "Moving Pricing Out of Code - and the Half of the Lesson I Learned Late",
+      "format": "article",
+      "evidence": "QuillRule and BillingPriceMapping",
+      "must_not_publish": [
+        "Actual price points",
+        "Plan names",
+        "Rule values"
+      ]
+    },
+    {
+      "title": "Running a Marketplace Solo: Where I Spent My Test Budget",
+      "format": "article",
+      "evidence": "Spec file audit",
+      "must_not_publish": [
+        "Repository identifiers",
+        "Client name without permission"
+      ]
+    },
+    {
+      "title": "462 webhook events. 462 distinct IDs. Zero double-credits.",
+      "format": "social",
+      "evidence": "Production StripeWebhookEvent counts"
+    },
+    {
+      "title": "14 commits in one day to make a cookie stick.",
+      "format": "social",
+      "evidence": "git log 2026-01-24"
+    },
+    {
+      "title": "I wrote the trade-off down before I fixed it.",
+      "format": "social",
+      "evidence": "TODOS.md plus the 2026-01-24 worker extraction"
+    },
+    {
+      "title": "We had duplicate users. Here's the script I wrote before I deleted anything.",
+      "format": "social",
+      "evidence": "prisma/scripts/ dry-run defaults"
+    },
+    {
+      "title": "Failing a payment shouldn't mean losing access the same minute.",
+      "format": "social",
+      "evidence": "cancel_at logic plus 101 production events"
+    }
+  ],
+  "public_safe_claims": [
+    "The rescue narrative told anonymously and without disparagement - 'I was asked to fix a payment defect on a codebase I had not written' is safe; naming the client, the team or their country is not, and framing it as incompetence reads badly regardless of accuracy",
+    "Architectural patterns: two-layer idempotency, compare-and-set job guards, DLX/TTL pipeline design, timezone-aware delayed scheduling, database-driven pricing with validity windows",
+    "The full technology stack",
+    "Problem narratives with names and identifiers removed",
+    "Aggregate scale figures where the client is not named: 462 events, 21,825 audited actions, 192 users, 117 migrations",
+    "Lessons learned and the honest gaps - these strengthen credibility"
+  ],
+  "private_only_information": [
+    "Client identity and the 2019-onwards relationship history",
+    "The fact that a prior team was replaced, and anything identifying that team, its individuals or its location",
+    "Specific contents of the production-readiness review",
+    "Commercial terms, rates, and why the engagement lapsed in 2023",
+    "Client identity and the commercial relationship",
+    "Production database host, credentials and connection details",
+    "Stripe price IDs, portal configuration IDs, webhook secrets and all environment values",
+    "Specific Quill pricing rule values and plan economics",
+    "Individual user, book, listing, review, ticket and dispute records",
+    "User IDs hard-coded in the merge script",
+    "Exact dispute amounts and subscriber counts tied to revenue",
+    "The app.quillva.* domains if the engagement is confidential",
+    "Production launch checklist contents"
+  ],
+  "known_gaps_in_delivery": [
+    {
+      "gap": "Test coverage",
+      "detail": "35 spec files exist but only webhook.service.spec.ts (6 tests) and stripe.service.spec.ts (3 tests) contain real assertions; the other 33 are unmodified NestJS 'should be defined' scaffolds.",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "gap": "CI/CD",
+      "detail": "No .github/workflows, CircleCI, GitLab CI or equivalent in any repository. Deployment is Render build-on-push with a preDeployCommand.",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "gap": "Observability",
+      "detail": "No Sentry, Datadog, New Relic or OpenTelemetry integration; observability is NestJS Logger output plus the ActivityLog table.",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "gap": "Deployment safety",
+      "detail": "prisma db seed runs in the production preDeployCommand, which depends on the seed being strictly idempotent.",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "gap": "Concurrency guarantee",
+      "detail": "No leader election; correctness under multiple workers rests entirely on row-level compare-and-set, which is sound but undocumented as a guarantee.",
+      "evidence_level": "VERIFIED"
+    }
+  ],
+  "evidence_gaps": [
+    {
+      "item": "Written client reference or testimonial",
+      "why_useful": "Would convert the entire engagement narrative from client-attested to documented - the single highest-value item on this list",
+      "where_it_might_exist": "The client",
+      "question_to_ask": "Would you be willing to write a short reference covering the bug fix, the review and the rebuild?"
+    },
+    {
+      "item": "The original 2025 production-readiness review",
+      "why_useful": "Would evidence the audit as contemporaneous work rather than a 2026 reconstruction",
+      "where_it_might_exist": "Email, WhatsApp or a document sent to the client at the time",
+      "question_to_ask": "Do you still have the review I sent you in 2025?"
+    },
+    {
+      "item": "Correspondence showing the rebuild proposal and its acceptance",
+      "why_useful": "Would evidence consultative influence and scoping ability",
+      "where_it_might_exist": "Client correspondence",
+      "question_to_ask": "Can I keep a copy of the thread where we agreed the rebuild?"
+    },
+    {
+      "item": "Time record for the webhook fix",
+      "why_useful": "'Within a few hours' is currently unverifiable",
+      "where_it_might_exist": "Messages around the fix date; the client's recollection",
+      "question_to_ask": "Roughly how long was it between sending you the code and it working?"
+    },
+    {
+      "item": "Exact gross and net revenue",
+      "why_useful": "The estimate of ~$585 is derived; the database does not store invoice amounts. The one money figure worth getting right before it appears on a CV",
+      "where_it_might_exist": "Stripe Dashboard, Billing > Revenue, filtered from 2026-06-11",
+      "question_to_ask": "Can you pull gross volume, net volume and refund total since launch?"
+    },
+    {
+      "item": "Revenue, MRR, ARPU",
+      "why_useful": "Would convert '44 subscriptions' into business impact",
+      "where_it_might_exist": "Stripe Dashboard (live mode)",
+      "question_to_ask": "Can I reference aggregate revenue figures from the Stripe account?"
+    },
+    {
+      "item": "Legacy system metrics",
+      "why_useful": "Would enable a genuine before/after rebuild comparison",
+      "where_it_might_exist": "Legacy Firebase project, old hosting dashboards",
+      "question_to_ask": "Do we still have usage data from the old platform?"
+    },
+    {
+      "item": "Pre-remediation duplicate account count",
+      "why_useful": "Would quantify the data-quality fix",
+      "where_it_might_exist": "Audit script output logs, if retained",
+      "question_to_ask": "Do you have the output from the duplicate-email audit run?"
+    },
+    {
+      "item": "Staff hours saved by automation",
+      "why_useful": "The clearest available business impact claim",
+      "where_it_might_exist": "Client operations process",
+      "question_to_ask": "Before the automation, how long did expiring applications and sending reminders take?"
+    },
+    {
+      "item": "Uptime and error rate",
+      "why_useful": "Would support a reliability claim",
+      "where_it_might_exist": "Render service metrics (90-day retention)",
+      "question_to_ask": "Can I get uptime figures for the API and worker services?"
+    },
+    {
+      "item": "API latency",
+      "why_useful": "Would support a performance claim",
+      "where_it_might_exist": "Render metrics; no APM installed",
+      "question_to_ask": "Consider adding Sentry or OpenTelemetry now, prospectively"
+    },
+    {
+      "item": "Email delivery volume and bounce rate",
+      "why_useful": "Would quantify the notification pipeline",
+      "where_it_might_exist": "SMTP provider dashboard",
+      "question_to_ask": "What is the total send volume and delivery rate since June?"
+    },
+    {
+      "item": "Official public launch date",
+      "why_useful": "Would anchor the timeline precisely",
+      "where_it_might_exist": "Client records; first production record is 2026-06-11",
+      "question_to_ask": "What was the official public launch date?"
+    },
+    {
+      "item": "Internal admin user count",
+      "why_useful": "Would support an 'internal teams served' claim",
+      "where_it_might_exist": "2 admin accounts exist in the database",
+      "question_to_ask": "How many staff actually use the admin back office?"
+    },
+    {
+      "item": "Infrastructure cost",
+      "why_useful": "Would support a cost-efficiency claim",
+      "where_it_might_exist": "Render billing",
+      "question_to_ask": "What is the monthly infrastructure spend?"
+    },
+    {
+      "item": "Stakeholder feedback",
+      "why_useful": "Would support ownership and delivery claims",
+      "where_it_might_exist": "Client correspondence",
+      "question_to_ask": "Request a written reference or testimonial"
+    },
+    {
+      "item": "Welcome-bonus auditability",
+      "why_useful": "Every user holds 10,000 Quills granted outside the ledger, so QuillsTransaction cannot reconstruct a full balance history",
+      "where_it_might_exist": "The code: WELCOME_BONUS rule and the user-creation path",
+      "question_to_ask": "Internal - consider ledgering the welcome bonus in a future change"
+    }
+  ],
+  "audit_limitations": [
+    "No git history exists for old-build/, so the legacy system's timeline and authorship are unknown.",
+    "No issue tracker, PR history or written requirements were available; product motivation is inferred from code and commit messages.",
+    "pg_stat_user_tables statistics were stale (reporting zero for most tables); all figures use exact COUNT(*).",
+    "ActivityLog grew from 21,819 to 21,825 rows during the audit; figures are as at 2026-10-15 and are a floor.",
+    "The frontend line count (~40,306) includes AI-generated shadcn/ui component files and must not be presented as hand-written.",
+    "The engagement history rests on the subject's account; no contract, invoice, correspondence or review document was available to verify it.",
+    "old-build/ has no git history, so legacy authorship, timeline and whether its defects reached production cannot be established.",
+    "The legacy assessment was performed in October 2026 and is a reconstruction of the conclusions the subject reached in 2025, not a copy of the original review.",
+    "An earlier revision wrongly concluded there were no paying customers, by inferring absence of payment from absence of Quill-credit ledger entries. The BASIC plan allocates zero monthly Quills, making that inference invalid. The error and its lesson are recorded rather than silently removed."
+  ],
+  "evidence_levels_used": {
+    "VERIFIED": "Directly supported by code, production data, git history or documentation",
+    "DERIVED": "Calculated from verified evidence",
+    "STRONGLY_SUPPORTED": "Multiple pieces of evidence support it but it is not provable",
+    "INFERRED": "Likely from architecture or context; no direct evidence",
+    "CLIENT_ATTESTED": "The subject's own account, given directly to this audit. Corroborated by code where stated. Never to be presented as documented fact.",
+    "UNKNOWN": "Cannot responsibly be established from available evidence"
+  },
+  "engagement": {
+    "type": "Freelance rescue-and-rebuild",
+    "evidence_level": "CLIENT_ATTESTED",
+    "client_relationship_since": 2019,
+    "gap_period": "2023 onwards - subject relocated to the UK; rate increase meant the client stopped commissioning work",
+    "legacy_built_by": "A cheaper, less experienced team engaged by the client (one or more developers; exact number unknown)",
+    "re_engagement_date": "approximately 2025-10",
+    "re_engagement_trigger": "The incumbent team could not resolve a defect, including with AI assistance",
+    "sequence": [
+      "Called in to fix a single defect on a codebase the subject had not written",
+      "Diagnosed and fixed it within a few hours",
+      "Asked to perform a full production-readiness code review",
+      "Found the authentication layer, an adapted third-party frontend and broad unmaintainability; advised against launch",
+      "Proposed a complete rebuild with better architecture, tooling and no known vulnerabilities",
+      "Proposal accepted; rebuild delivered solo"
+    ],
+    "corroboration": "New backend first commit 2025-10-31, consistent with the stated October 2025 timeline. Legacy webhook defects independently verified during this audit.",
+    "qualification": "No contract, invoice, correspondence or review document was available. The engagement narrative is the subject's account."
+  },
+  "legacy_system_assessment": {
+    "assessed_during": "This audit, October 2026 - a reconstruction, not the original 2025 review",
+    "source": "old-build/ (no git history; authorship, timeline and production exposure unknown)",
+    "backend_loc": 11774,
+    "backend_files": 109,
+    "frontend_js_files": 24,
+    "frontend_ts_files": 2,
+    "frontend_loc": 3738,
+    "probable_rescue_defect": {
+      "location": "old-build/backend/src/webhook/webhook.controller.ts",
+      "root_cause": "const rawBody = req.rawBody || req.body || req; - the fallback silently passes parsed JSON or the entire request object into stripe.webhooks.constructEvent whenever the raw body is absent, guaranteeing signature failure AND suppressing the diagnostic signal",
+      "compounding_defect": "Hand-rolled HMAC debug logging whose comparison prefixes 'v1=' onto one side while splitting it off the other, so it can never evaluate true - producing a false negative that would misdirect any developer or AI tool toward the secret or payload",
+      "rebuild_fix": "app.use('/stripe/webhook', raw({ type: 'application/json' })) - one line, no fallback, nothing to mask failure",
+      "evidence_level": "VERIFIED that both defects exist and that the rebuild handles it correctly; INFERRED that this is the specific defect fixed in 2025"
+    },
+    "findings": [
+      {
+        "finding": "Unrestricted CORS",
+        "detail": "origin: '*' with the comment 'Allows all origins; change this for security' left in place",
+        "severity": "real, moderate",
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "finding": "No webhook idempotency",
+        "detail": "No event-ID deduplication anywhere; a replayed Stripe event would re-run its handler and re-credit a subscription",
+        "severity": "high - direct financial risk",
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "finding": "Secrets written to logs",
+        "detail": "Webhook secret length and 20-character preview logged on every failure",
+        "severity": "moderate",
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "finding": "Unpinned Stripe API version",
+        "detail": "new Stripe(key, {})",
+        "severity": "moderate",
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "finding": "Secrets and build output in handover",
+        "detail": "Populated .env (database URL, JWT secret, Stripe keys, SMTP password) and a compiled dist/ of 80 JS files in the delivered folder",
+        "severity": "process failure",
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "finding": "Business logic in controllers",
+        "detail": "1,866-line admin.controller.ts and 1,468-line books.controller.ts - roughly 28% of the backend in two controller files",
+        "severity": "maintainability",
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "finding": "Debug logging as logging strategy",
+        "detail": "128 console.log/console.error across 109 files; no structured logger",
+        "severity": "maintainability",
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "finding": "Effectively no tests",
+        "detail": "Only app.controller.spec.ts contains a real assertion",
+        "severity": "quality",
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "finding": "Six overlapping UI systems",
+        "detail": "MUI, Bootstrap, Flowbite, Flowbite-React, Headless UI, Tailwind, plus Emotion and Framer Motion",
+        "severity": "maintainability",
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "finding": "Two state libraries",
+        "detail": "MobX and Zustand in the same application",
+        "severity": "maintainability",
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "finding": "Two payment providers",
+        "detail": "Stripe and Flutterwave",
+        "severity": "complexity / compliance surface",
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "finding": "No type safety in frontend",
+        "detail": "24 .js files versus 2 TypeScript files",
+        "severity": "quality",
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "finding": "Template provenance",
+        "detail": "UsageSample.js at the source root and stray id.html / shjs.html at project root, consistent with an adapted third-party codebase",
+        "severity": "corroborating",
+        "evidence_level": "VERIFIED"
+      }
+    ],
+    "explicitly_not_a_vulnerability": "Hardcoded Firebase web API keys appear in two frontend files. Google documents these as public identifiers, not secrets. Do not present this as a vulnerability. Whether Firestore/Storage security rules were restrictive is UNKNOWN - no rules files exist in the repository."
+  },
+  "commercial_status": {
+    "has_paying_customers": true,
+    "evidence_level": "VERIFIED",
+    "correction_notice": "An earlier revision of this dossier concluded there were NO paying customers. That was wrong. The flawed inference was: no 'stripe:invoice-credit:*' ledger entries exist, therefore no paid invoice was processed. The BASIC plan is configured with SUBSCRIPTION quill value = 0, so a paid BASIC invoice correctly produces no credit ledger entry. Absence of a derived record is not absence of the source event.",
+    "proof": [
+      "3 chargebacks of exactly 1499 USD minor units ($14.99) each, carrying genuine Stripe chargeId, paymentIntentId and stripeDisputeId - a chargeback cannot exist without a charge",
+      "83 invoices paid versus 44 subscriptions created: 39 invoices paid beyond the one-trial-invoice-per-subscription baseline, i.e. recurring renewals",
+      "101 invoice.payment_failed events, which only occur when a real card is charged",
+      "8 subscribers currently active, all past trial end, all BASIC monthly; longest continuously active 125 days",
+      "A customer's own words recorded in a dispute: 'I did not sign up for a plan but you charged me 14,99'"
+    ],
+    "basic_plan_price_usd": 14.99,
+    "basic_plan_price_evidence_level": "STRONGLY_SUPPORTED",
+    "basic_plan_price_basis": "All 3 chargebacks are exactly 1499 USD minor units; all 44 SubscriptionHistory rows are BASIC; all active subscribers are on MONTH interval; a customer independently quotes the same figure",
+    "estimated_gross_revenue_usd": 584.61,
+    "estimated_gross_revenue_evidence_level": "DERIVED",
+    "estimated_gross_revenue_calculation": "39 invoices paid beyond trial baseline (83 paid - 44 subscriptions created) x $14.99",
+    "estimated_gross_revenue_qualification": "The database does not store invoice amounts. Gross, before Stripe fees and before deducting $44.97 refunded in chargebacks. Upper bound if any subscription skipped its trial: 83 x $14.99 = $1,244. AUTHORITATIVE FIGURE IS IN THE STRIPE DASHBOARD - read it from there before citing. Treat as order of magnitude: hundreds of dollars, not thousands.",
+    "stripe_mode": "Almost certainly LIVE - STRONGLY_SUPPORTED by genuine charge/payment-intent/dispute identifiers, sustained dunning, and a customer-reported charge. Production Stripe keys in the Render dashboard were not inspected.",
+    "career_framing": "Cite the billing system's correctness under live money - 462 events deduplicated, 39 renewals, 101 dunning failures, 3 chargebacks correctly reversed - never the revenue amount. The system is commercially PROVEN but not commercially SIGNIFICANT."
+  }
+}

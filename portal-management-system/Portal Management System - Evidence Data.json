@@ -1,0 +1,1744 @@
+{
+  "schema_version": "1.0",
+  "generated": "2026-10-15",
+  "generated_by": "read-only audit of repository, git history, Azure Resource Manager, Azure Monitor, and BOTH the EKSU and BOUESTI production MySQL databases",
+  "subject": "Abraham Akintola",
+  "project_name": "Portal Management System",
+  "project_aliases": [
+    "portal-management-system",
+    "bportal",
+    "bouesti/bportal",
+    "EKSU Portal",
+    "BOUESTI Portal"
+  ],
+  "project_type": "Legacy PHP/MySQL multi-institution academic portal; cloud migration and storage platform engineering engagement",
+  "project_description": "A large legacy procedural PHP/MySQL student and staff portal running end-to-end academic administration (admissions, registration, result processing, transcripts and certificates, fee collection, hostel allocation, CBT exams, e-learning, student-union e-voting) for two Nigerian universities from one codebase deployed as two independent Azure Web Apps.",
+  "institutions": [
+    {
+      "name": "EKSU (Ekiti State University)",
+      "hostnames": [
+        "eksuportal.eksu.edu.ng"
+      ],
+      "azure_web_app": "eksu-app-prod",
+      "database": "eksu-db",
+      "audited_in_depth": true
+    },
+    {
+      "name": "BOUESTI",
+      "hostnames": [
+        "portal.bouesti.edu.ng",
+        "ptpportal.bouesti.edu.ng"
+      ],
+      "azure_web_app": "bouesti-app-prod",
+      "database": "bouesti-db (+ coeikere-db via host routing)",
+      "audited_in_depth": true
+    },
+    {
+      "name": "College of Education, Ikere-Ekiti (became BOUESTI)",
+      "azure_web_app": "served via bouesti-app-prod host routing (portalcoe / ptpportal)",
+      "database": "coeikere-db",
+      "audited_in_depth": true,
+      "note": "Third production deployment. Ran in parallel with the BOUESTI university instance through the institution's change of status."
+    }
+  ],
+  "dates": {
+    "repository_first_commit": "2023-02-15",
+    "repository_latest_commit": "2026-10-10",
+    "my_first_commit": "2026-08-06",
+    "my_latest_commit": "2026-10-10",
+    "azure_mysql_server_created": "2026-08-06",
+    "azure_migration_commits_begin": "2026-08-08",
+    "blob_bulk_migration_executed": "2026-08-15",
+    "student_union_election": "2026-09-26 to 2026-09-29",
+    "audit_date": "EKSU 2026-10-13; BOUESTI 2026-10-14",
+    "production_go_live_date_on_azure": "UNKNOWN (DNS cutover undated) - but Azure migration commits begin 2026-08-08",
+    "system_production_start_eksu": "September 2019 (USER-REPORTED). Earliest independently verifiable production timestamp is 2020-07-09; payments integrated 2020. The 2019-mid-2020 phase used session-tagged tables with no row timestamps and predates payment integration, so it leaves no datable trace.",
+    "system_production_start_bouesti": "~2021-05 (activity_log continuous from 2021-05-07)",
+    "production_lifespan_years": "~7 at EKSU (Sept 2019), ~5 at BOUESTI (May 2021), continuous and current as of 2026-10",
+    "repository_caveat": "This repository's history begins 2023-02-15 with a 10,000-file bulk import and covers only the last ~3 of ~6 production years. It cannot establish original authorship.",
+    "system_production_start_eksu_verified_floor": "2020-07-09 (earliest timestamped record anywhere in eksu-db)",
+    "payments_integrated_eksu": "2020 - before this, students paid through the gateway's own portal and the system did not see transactions. This is why fees_remita_transaction begins in 2020, NOT because the system began then.",
+    "coe_ikere_production_start": "2020-12-11 (first logged activity in coeikere-db)",
+    "coe_ikere_wind_down": "Peak 2022; activity decays 2023-2026 (118,333 -> 52,973 -> 22,340 -> 1,457 events) as the cohort completes"
+  },
+  "technologies": {
+    "language_runtime": [
+      "PHP 8.3 (Azure App Service Linux built-in image)",
+      "Composer (constraint ^8.0)"
+    ],
+    "web_server": [
+      "nginx",
+      "PHP-FPM"
+    ],
+    "database": [
+      "Azure Database for MySQL Flexible Server 8.0.21",
+      "Standard_E2ds_v5",
+      "MemoryOptimized",
+      "25 GB",
+      "7-day backup retention",
+      "HA disabled"
+    ],
+    "object_storage": [
+      "Azure Blob Storage",
+      "portalfilestorage01",
+      "StorageV2",
+      "Standard_LRS",
+      "Hot tier",
+      "6 containers (3 visibility tiers x 2 schools)"
+    ],
+    "compute": [
+      "Azure App Service Premium P0v3",
+      "1 worker per app",
+      "South Africa North"
+    ],
+    "frontend": [
+      "jQuery/AJAX SPA shells with PHP partials",
+      "DataTables",
+      "Dropify",
+      "Bootstrap"
+    ],
+    "libraries": [
+      "PHPMailer 6.9.3",
+      "TCPDF 6.9.1",
+      "PhpWord 1.3.0",
+      "vlucas/phpdotenv ^5.6",
+      "PhpSpreadsheet"
+    ],
+    "payments": [
+      "Remita",
+      "Credo"
+    ],
+    "ci_cd": [
+      "GitHub Actions",
+      "azure/webapps-deploy@v3",
+      "matrix over two deployment targets",
+      "rsync --delete with exclude list"
+    ],
+    "observability": [
+      "Application Insights",
+      "App Service health probe (/health.php)",
+      "file logs to /home/LogFiles"
+    ],
+    "secrets": [
+      "Azure App Settings (52 on EKSU, 32 on BOUESTI)",
+      ".env gitignored locally",
+      ".env.example value-free"
+    ]
+  },
+  "architecture": {
+    "tenancy_model": "Deployment-level. One codebase, two Azure Web Apps, two databases, two sets of blob containers. Plus a per-hostname DB route inside server.php for a COE sub-tenant.",
+    "request_path": "HTTPS -> App Service nginx (custom site config installed by startup.sh) -> PHP-FPM:9000 -> server.php (session, rate limit, CSRF scope, per-host DB routing) -> module/bootstrap.php (Composer autoload, Dotenv safeLoad, Database, csrf, password, Storage)",
+    "routing_compat": "azure-nginx-default.conf reproduces the Apache .htaccess extensionless rewrite as try_files $uri $uri/ @legacy_php_route; startup.sh probes four candidate nginx config paths, copies, runs nginx -t, reloads, logs to /home/LogFiles",
+    "storage_model": "blob://visibility/path references stored in the database; three visibility tiers (private/protected/public); SAS-signed URLs for browser-direct reads; authenticated streaming proxy (storage.php) for sensitive reads; permanent fallback to legacy local filesystem when a value is not a blob reference",
+    "session_state": "PHP default local file handler. Cannot use the Azure Files /home mount (PHP files handler uid check fails on that CIFS mount). This is why both apps run a single worker.",
+    "security_controls": [
+      "HTTPS only",
+      "TLS >= 1.2",
+      "FTPS-only publishing",
+      "TLS-enforced DB connections",
+      "CSRF enforcement scoped to /students/, /admissions/, /cert_transs/, /staffs/, /votes/ and toggleable",
+      "bcrypt passwords with configurable cost",
+      "email-based 2FA with throttling",
+      "e-voting identity verification with lockout",
+      "per-session per-path rate limiting (20 req/10s) with allow-list"
+    ]
+  },
+  "integrations": [
+    {
+      "name": "Remita",
+      "type": "payment gateway",
+      "evidence": "425 source references; fees_remita_transaction table with 1,856,617 rows"
+    },
+    {
+      "name": "Credo",
+      "type": "payment gateway",
+      "evidence": "23 source references; CREDO_* app settings live on both apps"
+    },
+    {
+      "name": "SMTP via PHPMailer",
+      "type": "email",
+      "evidence": "MAIL_* app settings live; used for 2FA and email verification"
+    },
+    {
+      "name": "Azure Blob Storage REST API",
+      "type": "object storage",
+      "evidence": "module/Storage.php implements SharedKey and service SAS signing directly, no SDK"
+    },
+    {
+      "name": "Application Insights",
+      "type": "observability",
+      "evidence": "APPLICATIONINSIGHTS_CONNECTION_STRING set on both apps"
+    }
+  ],
+  "workflows": [
+    {
+      "name": "Upload to storage to render",
+      "owner": "me",
+      "steps": [
+        "storage_store_upload sanitises filename and detects MIME",
+        "SharedKey-signed PUT to {school}-portal-private/...",
+        "database stores blob:// reference",
+        "render via SAS URL or authenticated storage.php proxy",
+        "server-side PDF/ZIP via storage_local_path / storage_materialize_many",
+        "fallback to legacy local file if value is not a blob reference"
+      ]
+    },
+    {
+      "name": "Bulk legacy file migration",
+      "owner": "me",
+      "steps": [
+        "mapping-driven walk over 14 mappings / 24 columns / 11 tables",
+        "find rows with non-blob values",
+        "locate file in declared legacy directory",
+        "upload to blob",
+        "update column to blob reference"
+      ],
+      "safety": "dry-run by default; --execute required; --only= for batching; reports missing files"
+    },
+    {
+      "name": "Deployment",
+      "owner": "me",
+      "steps": [
+        "push to main",
+        "GitHub Actions matrix (EKSU || BOUESTI, fail-fast false)",
+        "rsync --delete --exclude-from=.webapp-deploy-ignore",
+        "azure/webapps-deploy@v3 with per-school publish profile",
+        "App Service runs startup.sh",
+        "nginx config installed and validated"
+      ]
+    },
+    {
+      "name": "Admission, registration, fees, transcripts, e-voting",
+      "owner": "colleague",
+      "note": "Documented for completeness; not claimed as my contribution"
+    }
+  ],
+  "my_contributions": {
+    "role": "Co-founder and one of two engineers who built, own and operate the system. Within that, the 2026 Azure migration and storage platform engineering is verified at file level.",
+    "attribution_method": "Git authorship filtering plus per-file git log. Files where every commit is mine are treated as sole-authored. Files where my commits add a specific capability to a colleague's file are described that way explicitly.",
+    "commit_share": {
+      "mine": 33,
+      "colleague": 121,
+      "total_in_repo": 155,
+      "my_period": "2026-08-06 to 2026-10-10"
+    },
+    "sole_authored_files": [
+      "module/Storage.php (1007 lines)",
+      "storage.php",
+      "scripts/migrate_legacy_files_to_blob.php (619 lines)",
+      "azure-nginx-default.conf",
+      "startup.sh",
+      "health.php",
+      ".github/workflows/azure-app-service.yml",
+      ".webapp-deploy-ignore"
+    ],
+    "capabilities_added_to_shared_files": [
+      "module/Database.php - DB_PORT, DB_CONNECT_TIMEOUT, DB_SSL_MODE, DB_SSL_CA, Azure host auto-detection, SSL cert verification",
+      "server.php - Azure DB connection wiring",
+      "module/r_value.php - payment keys externalised to env"
+    ],
+    "items": [
+      "Azure App Service runtime compatibility for legacy Apache extensionless routing (nginx config + runtime-discovering startup hook with nginx -t validation)",
+      "Database connection hardening for Azure MySQL Flexible Server (enforced TLS, configurable port, connect timeout, CA path, Azure host auto-detection)",
+      "Secrets externalisation from source control to Azure App Settings",
+      "module/Storage.php: dependency-free Azure Blob client with hand-rolled SharedKey HMAC-SHA256 request signing and service SAS generation, three-tier visibility, blob:// reference scheme, dual local/blob mode, authenticated streaming proxy, concurrent curl_multi bulk materialisation",
+      "Codebase-wide adoption of the storage layer via 10 procedural wrapper functions across 263 call sites in 91 files",
+      "scripts/migrate_legacy_files_to_blob.php: mapping-driven bulk migrator, dry-run by default, 14 mappings over 24 columns and 11 tables",
+      "GitHub Actions matrix CI/CD deploying one commit to two Azure Web Apps in parallel",
+      "health.php health endpoint, wired as the App Service health probe",
+      "Repository hygiene: removed 85 committed upload files and gitignored uploads/"
+    ],
+    "explicitly_not_mine": [
+      "Original application 2023-2025",
+      "module/csrf.php and the CSRF rollout",
+      "XSS sink audit and fixes",
+      "module/two_factor.php",
+      "module/password.php (bcrypt + rotation)",
+      "e-voting module and module/vote_identity.php",
+      "MySQL dialect compatibility sweeps (CAST AS SIGNED, only_full_group_by, EntryYear quoting)",
+      "Dropify patch",
+      "Lazy $conn2/$pconn loading",
+      "The Database class itself"
+    ],
+    "method_qualification": "A meaningful portion of work on both sides of this project was AI-assisted (the recovered modernization log contains session entries signed 'Claude'). Commit authorship is used as the attribution boundary: it reflects who owned, directed, reviewed and shipped each change.",
+    "founding_context": {
+      "evidence_level": "USER-REPORTED, materially corroborated",
+      "account": "Began as an undergraduate side project by two students; offered to the university on graduation; live at EKSU from September 2019, initially loading legacy results, curricula and student data; payment processing integrated directly in 2020 once the institution approved it. Taken into production initially unpaid, then on a nominal stipend during national service, scaling to a commercial arrangement. A second institution adopted the same codebase in 2021. No third engineer at any point.",
+      "corroboration": [
+        "VERIFIED: only two author email addresses appear in the entire Git history",
+        "VERIFIED: 1,822,938 EKSU records tagged to academic sessions before 2019 (1,543,811 rawscore, 220,164 studentslevel, 58,963 students), with session configuration back to 1990 - decades of institutional history migrated INTO the system",
+        "VERIFIED: earliest EKSU production timestamp 2020-07-09; admission records from 2020-09-08",
+        "VERIFIED: BOUESTI activity_log continuous from 2021-05-07 (8,471,215 rows)",
+        "VERIFIED: first commit (2023-02-15, 'new_respitory') bulk-imports 10,000 files - the repository post-dates the system"
+      ],
+      "cannot_be_verified": "The September 2019 start date (no datable artefact survives from that phase) and original authorship of the pre-2023 codebase. 'In production by July 2020' IS verified. Present as co-founder/co-owner, NOT as sole author."
+    },
+    "attribution_correction": "The first draft concluded from a 33-of-155 commit split that Abraham 'was not the application's author'. That was WRONG: it treated a window beginning 3 years after production go-live as the whole record. Corrected throughout. The within-window split is now presented as a split between two co-founders of the same product, not a boundary between an owner and a contributor.",
+    "levels_of_claim": [
+      {
+        "level": "Co-authorship and co-ownership of the whole system",
+        "covers": "Design, build, institutional adaptation, six years of operation",
+        "evidence": "USER-REPORTED, corroborated"
+      },
+      {
+        "level": "The 2026 Azure migration and storage platform",
+        "covers": "Storage.php, migration tool, nginx/startup, CI/CD, DB TLS layer, health endpoint",
+        "evidence": "VERIFIED - sole author of every one of those files"
+      },
+      {
+        "level": "Specific features committed by co-founder",
+        "covers": "CSRF, 2FA, e-voting, password rotation",
+        "evidence": "VERIFIED as theirs within the Feb 2023 - Sep 2026 window"
+      }
+    ]
+  },
+  "production_metrics": [
+    {
+      "key": "http_requests_eksu_31d",
+      "value": 14092342,
+      "unit": "requests",
+      "start_date": "2026-09-12",
+      "end_date": "2026-10-13",
+      "evidence_source": "Azure Monitor, Requests metric, P1D grain, Total aggregation",
+      "calculation_method": "sum of 31 daily totals",
+      "evidence_level": "VERIFIED",
+      "qualification": "Includes static assets; not page views or users. Window is set by Azure Monitor retention at 1-day grain, not system lifespan."
+    },
+    {
+      "key": "http_requests_bouesti_31d",
+      "value": 8469006,
+      "unit": "requests",
+      "start_date": "2026-09-12",
+      "end_date": "2026-10-13",
+      "evidence_source": "Azure Monitor",
+      "calculation_method": "sum of 31 daily totals",
+      "evidence_level": "VERIFIED",
+      "qualification": "Same as above."
+    },
+    {
+      "key": "http_requests_combined_31d",
+      "value": 22561348,
+      "unit": "requests",
+      "start_date": "2026-09-12",
+      "end_date": "2026-10-13",
+      "evidence_source": "Azure Monitor",
+      "calculation_method": "EKSU + BOUESTI",
+      "evidence_level": "DERIVED",
+      "qualification": "Same as above."
+    },
+    {
+      "key": "http_5xx_eksu_31d",
+      "value": 1064,
+      "unit": "responses",
+      "start_date": "2026-09-12",
+      "end_date": "2026-10-13",
+      "evidence_source": "Azure Monitor Http5xx",
+      "calculation_method": "sum of daily totals",
+      "evidence_level": "VERIFIED",
+      "qualification": null
+    },
+    {
+      "key": "http_5xx_rate_eksu_31d",
+      "value": 0.0076,
+      "unit": "percent",
+      "start_date": "2026-09-12",
+      "end_date": "2026-10-13",
+      "evidence_source": "Azure Monitor",
+      "calculation_method": "1064 / 14092342 * 100",
+      "evidence_level": "DERIVED",
+      "qualification": null
+    },
+    {
+      "key": "http_5xx_rate_combined_31d",
+      "value": 0.013,
+      "unit": "percent",
+      "start_date": "2026-09-12",
+      "end_date": "2026-10-13",
+      "evidence_source": "Azure Monitor",
+      "calculation_method": "2840 / 22561348 * 100",
+      "evidence_level": "DERIVED",
+      "qualification": null
+    },
+    {
+      "key": "peak_single_day_requests_eksu",
+      "value": 1239422,
+      "unit": "requests",
+      "start_date": "2026-10-12",
+      "end_date": "2026-10-12",
+      "evidence_source": "Azure Monitor",
+      "calculation_method": "max daily total",
+      "evidence_level": "VERIFIED",
+      "qualification": null
+    },
+    {
+      "key": "health_check_availability_eksu",
+      "value": 100.0,
+      "unit": "percent",
+      "start_date": "2026-10-06",
+      "end_date": "2026-10-13",
+      "evidence_source": "Azure Monitor HealthCheckStatus, probe /health.php",
+      "calculation_method": "mean of 7 daily averages",
+      "evidence_level": "VERIFIED",
+      "qualification": "7-day window only. No HA configured, so this reflects a good week rather than designed resilience."
+    },
+    {
+      "key": "median_daily_avg_response_time_eksu",
+      "value": 0.19,
+      "unit": "seconds",
+      "start_date": "2026-09-29",
+      "end_date": "2026-10-12",
+      "evidence_source": "Azure Monitor AverageResponseTime, P1D",
+      "calculation_method": "median of 14 daily averages",
+      "evidence_level": "DERIVED",
+      "qualification": "Daily averages, not percentiles. Two outliers: 2.05s on election day 2026-09-29, 3.52s on the 1.24M-request peak 2026-10-12."
+    },
+    {
+      "key": "blob_references_migrated_eksu",
+      "value": 571040,
+      "unit": "database column values",
+      "start_date": null,
+      "end_date": "2026-10-13",
+      "evidence_source": "EKSU production MySQL aggregate queries across 24 columns in 11 tables",
+      "calculation_method": "SUM(col LIKE 'blob://%') summed across all migrated columns",
+      "evidence_level": "VERIFIED",
+      "qualification": "EKSU instance only. Counts column values, not unique physical files. See blob_references_migrated_combined and migration_completeness_pct for the full picture."
+    },
+    {
+      "key": "legacy_paths_remaining_in_migrated_columns",
+      "value": 0,
+      "unit": "rows",
+      "start_date": null,
+      "end_date": "2026-10-13",
+      "evidence_source": "EKSU production MySQL",
+      "calculation_method": "SUM(col IS NOT NULL AND col <> '' AND col NOT LIKE 'blob://%')",
+      "evidence_level": "VERIFIED",
+      "qualification": "CORRECTED 2026-10-14. Applies ONLY to the nine high-volume document mappings (student/staff identity media, admission documents, screening uploads, transcript and certificate attachments), which are fully migrated on both instances. The original draft generalised this to 'the migrated columns', which overstated completeness: leave_of_absence.attachedFile had not been queried on the legacy side and holds 5,906 legacy values on EKSU and 352 on BOUESTI. See legacy_values_remaining_combined."
+    },
+    {
+      "key": "blob_count_storage_account",
+      "value": 1197452,
+      "unit": "blobs",
+      "start_date": null,
+      "end_date": "2026-10-12",
+      "evidence_source": "Azure Monitor BlobCount, portalfilestorage01",
+      "calculation_method": "latest daily average",
+      "evidence_level": "VERIFIED",
+      "qualification": "Shared account across both schools."
+    },
+    {
+      "key": "blob_capacity_storage_account",
+      "value": 85.77,
+      "unit": "GB",
+      "start_date": null,
+      "end_date": "2026-10-12",
+      "evidence_source": "Azure Monitor BlobCapacity",
+      "calculation_method": "85772620231 bytes / 1e9",
+      "evidence_level": "VERIFIED",
+      "qualification": "Shared account across both schools."
+    },
+    {
+      "key": "storage_transactions_30d",
+      "value": 1966226,
+      "unit": "transactions",
+      "start_date": "2026-09-13",
+      "end_date": "2026-10-13",
+      "evidence_source": "Azure Monitor Transactions, portalfilestorage01",
+      "calculation_method": "sum of 30 daily totals",
+      "evidence_level": "VERIFIED",
+      "qualification": "Both schools combined."
+    },
+    {
+      "key": "records_migrated_single_execution",
+      "value": 87440,
+      "unit": "records",
+      "start_date": "2026-08-15",
+      "end_date": "2026-08-15",
+      "evidence_source": "EKSU 37,346 transcript + 48,770 transc_certificate rows and BOUESTI 1,324 transc_certificate rows, all timestamped 2026-08-15",
+      "calculation_method": "COUNT(*) GROUP BY DATE(appliedDate)",
+      "evidence_level": "VERIFIED",
+      "qualification": "The timestamp is itself an artefact of the migration (ON UPDATE CURRENT_TIMESTAMP). Correlation with blob references is 100% on both instances (EKSU transcript 37,346/37,346; BOUESTI transc_certificate 1,324/1,324), which is what makes it reliable evidence of the migration rather than of application activity."
+    },
+    {
+      "key": "storage_layer_call_sites",
+      "value": 263,
+      "unit": "call sites",
+      "start_date": null,
+      "end_date": "2026-10-13",
+      "evidence_source": "repository grep for storage_* wrapper functions",
+      "calculation_method": "count of occurrences across non-vendor PHP files",
+      "evidence_level": "VERIFIED",
+      "qualification": null
+    },
+    {
+      "key": "storage_layer_files_touched",
+      "value": 91,
+      "unit": "files",
+      "start_date": null,
+      "end_date": "2026-10-13",
+      "evidence_source": "repository grep",
+      "calculation_method": "count of distinct non-vendor PHP files referencing storage_* wrappers",
+      "evidence_level": "VERIFIED",
+      "qualification": null
+    },
+    {
+      "key": "distinct_users_session_2026",
+      "value": 42613,
+      "unit": "users",
+      "start_date": null,
+      "end_date": "2026-10-13",
+      "evidence_source": "EKSU activity_log",
+      "calculation_method": "COUNT(DISTINCT activityUser) WHERE session='2026'",
+      "evidence_level": "VERIFIED",
+      "qualification": "42410 students + 203 staff. Counts identifiers with at least one logged event; not every page view is logged, so this understates reach."
+    },
+    {
+      "key": "distinct_users_session_2025",
+      "value": 48329,
+      "unit": "users",
+      "start_date": null,
+      "end_date": "2026-10-13",
+      "evidence_source": "EKSU activity_log",
+      "calculation_method": "COUNT(DISTINCT activityUser) WHERE session='2025'",
+      "evidence_level": "VERIFIED",
+      "qualification": "A user active in both sessions is counted in both."
+    },
+    {
+      "key": "peak_daily_active_users",
+      "value": 19769,
+      "unit": "users",
+      "start_date": "2026-10-12",
+      "end_date": "2026-10-12",
+      "evidence_source": "EKSU activity_log",
+      "calculation_method": "COUNT(DISTINCT activityUser) GROUP BY DATE(activityTime)",
+      "evidence_level": "VERIFIED",
+      "qualification": null
+    },
+    {
+      "key": "successful_payment_transactions",
+      "value": 1551157,
+      "unit": "transactions",
+      "start_date": "~2020",
+      "end_date": "2026-10-13",
+      "evidence_source": "EKSU fees_remita_transaction",
+      "calculation_method": "COUNT(*) WHERE paymentStatus='Successful'",
+      "evidence_level": "VERIFIED",
+      "qualification": "Full historical table, most of it predating the Azure migration and my involvement. Evidences the system's throughput, not my work."
+    },
+    {
+      "key": "payment_success_rate",
+      "value": 83.55,
+      "unit": "percent",
+      "start_date": "~2020",
+      "end_date": "2026-10-13",
+      "evidence_source": "EKSU fees_remita_transaction",
+      "calculation_method": "1551157 / 1856617 * 100",
+      "evidence_level": "VERIFIED",
+      "qualification": "Remaining: 11.39% Pending, 4.94% Error, 0.11% Deleted."
+    },
+    {
+      "key": "distinct_paying_students",
+      "value": 223663,
+      "unit": "students",
+      "start_date": "~2020",
+      "end_date": "2026-10-13",
+      "evidence_source": "EKSU fees_remita_transaction",
+      "calculation_method": "COUNT(DISTINCT matricNo) WHERE paymentStatus='Successful'",
+      "evidence_level": "VERIFIED",
+      "qualification": "Exceeds the 135,067 current student records because it includes graduated and historical cohorts."
+    },
+    {
+      "key": "aggregate_successful_payment_value",
+      "value": 48.78,
+      "unit": "billion NGN",
+      "start_date": "~2020",
+      "end_date": "2026-10-13",
+      "evidence_source": "EKSU fees_remita_transaction",
+      "calculation_method": "SUM(CAST(paymentAmount AS DECIMAL(15,2))) WHERE paymentStatus='Successful'",
+      "evidence_level": "VERIFIED",
+      "qualification": "CRITICAL: paymentAmount is varchar and non-Successful rows contain non-amount values (e.g. a 2021 Pending 'total' of ~2e13). Only Successful rows may be summed. Predates my involvement."
+    },
+    {
+      "key": "election_ballots_2026",
+      "value": 7188,
+      "unit": "ballots",
+      "start_date": "2026-09-26",
+      "end_date": "2026-09-29",
+      "evidence_source": "EKSU tbvotedetails",
+      "calculation_method": "COUNT(*)",
+      "evidence_level": "VERIFIED",
+      "qualification": "The e-voting feature was built by a colleague. My claim is platform capacity and reliability."
+    },
+    {
+      "key": "election_distinct_voters_2026",
+      "value": 5730,
+      "unit": "voters",
+      "start_date": "2026-09-26",
+      "end_date": "2026-09-29",
+      "evidence_source": "EKSU tbvotedetails",
+      "calculation_method": "COUNT(DISTINCT voterID)",
+      "evidence_level": "VERIFIED",
+      "qualification": null
+    },
+    {
+      "key": "election_peak_hour_ballots",
+      "value": 1809,
+      "unit": "ballots per hour",
+      "start_date": "2026-09-29",
+      "end_date": "2026-09-29",
+      "evidence_source": "EKSU tbvotedetails",
+      "calculation_method": "max of COUNT(*) GROUP BY hour",
+      "evidence_level": "VERIFIED",
+      "qualification": "09:00-10:00 on 2026-09-29."
+    },
+    {
+      "key": "database_size_eksu",
+      "value": 6.3,
+      "unit": "GB",
+      "start_date": null,
+      "end_date": "2026-10-13",
+      "evidence_source": "information_schema.tables",
+      "calculation_method": "SUM(data_length + index_length) / 1024 / 1024 / 1024",
+      "evidence_level": "VERIFIED",
+      "qualification": "153 tables."
+    },
+    {
+      "key": "student_records",
+      "value": 135067,
+      "unit": "rows",
+      "start_date": null,
+      "end_date": "2026-10-13",
+      "evidence_source": "EKSU students table",
+      "calculation_method": "COUNT(*)",
+      "evidence_level": "VERIFIED",
+      "qualification": "All cohorts, not currently enrolled students."
+    },
+    {
+      "key": "raw_score_rows",
+      "value": 5517117,
+      "unit": "rows",
+      "start_date": null,
+      "end_date": "2026-10-13",
+      "evidence_source": "EKSU rawscore table",
+      "calculation_method": "COUNT(*)",
+      "evidence_level": "VERIFIED",
+      "qualification": null
+    },
+    {
+      "key": "codebase_php_files",
+      "value": 5427,
+      "unit": "files",
+      "start_date": null,
+      "end_date": "2026-10-13",
+      "evidence_source": "repository find, excluding vendor and .git",
+      "calculation_method": "file count",
+      "evidence_level": "VERIFIED",
+      "qualification": null
+    },
+    {
+      "key": "codebase_php_lines",
+      "value": 1170873,
+      "unit": "lines",
+      "start_date": null,
+      "end_date": "2026-10-13",
+      "evidence_source": "repository, excluding vendor and .git",
+      "calculation_method": "wc -l across all PHP files",
+      "evidence_level": "VERIFIED",
+      "qualification": "Includes generated/third-party code outside vendor/, e.g. assets_ajax plugins."
+    },
+    {
+      "key": "raw_mysqli_query_call_sites",
+      "value": 5039,
+      "unit": "call sites",
+      "start_date": null,
+      "end_date": "2026-10-13",
+      "evidence_source": "repository grep",
+      "calculation_method": "sum of per-file counts across 341 non-vendor files",
+      "evidence_level": "VERIFIED",
+      "qualification": "Indicator of legacy debt, not of my work."
+    },
+    {
+      "key": "blob_references_migrated_bouesti",
+      "value": 104550,
+      "unit": "database column values",
+      "start_date": null,
+      "end_date": "2026-10-14",
+      "evidence_source": "BOUESTI production MySQL aggregate queries",
+      "calculation_method": "SUM(col LIKE 'blob://%') summed across all mapped columns",
+      "evidence_level": "VERIFIED",
+      "qualification": "Counts column values, not unique physical files."
+    },
+    {
+      "key": "blob_references_migrated_combined",
+      "value": 675590,
+      "unit": "database column values",
+      "start_date": null,
+      "end_date": "2026-10-14",
+      "evidence_source": "both production databases",
+      "calculation_method": "EKSU 571,040 + BOUESTI 104,550",
+      "evidence_level": "DERIVED",
+      "qualification": "Across 24 columns in 11 tables on each of two independent databases."
+    },
+    {
+      "key": "legacy_values_remaining_combined",
+      "value": 8886,
+      "unit": "database column values",
+      "start_date": null,
+      "end_date": "2026-10-14",
+      "evidence_source": "both production databases",
+      "calculation_method": "EKSU 8,386 (leave_of_absence 5,906 + ebooks 2,478 + message 2) + BOUESTI 500 (leave_of_absence 352 + ebooks_comment 107 + ebooks 41)",
+      "evidence_level": "VERIFIED",
+      "qualification": "Four low-volume mappings the migration tool supports but which were never executed. They keep working through the legacy-filesystem fallback, which is why they stalled."
+    },
+    {
+      "key": "migration_completeness_pct",
+      "value": 98.7,
+      "unit": "percent",
+      "start_date": null,
+      "end_date": "2026-10-14",
+      "evidence_source": "both production databases",
+      "calculation_method": "675590 / (675590 + 8886) * 100",
+      "evidence_level": "DERIVED",
+      "qualification": "This is the headline figure to quote, NOT 'zero legacy remaining'."
+    },
+    {
+      "key": "database_size_bouesti",
+      "value": 5.2,
+      "unit": "GB",
+      "start_date": null,
+      "end_date": "2026-10-14",
+      "evidence_source": "information_schema.tables",
+      "calculation_method": "SUM(data_length + index_length) / 1024^3",
+      "evidence_level": "VERIFIED",
+      "qualification": "151 tables. Combined with EKSU: 11.50 GB across 304 tables."
+    },
+    {
+      "key": "student_records_bouesti",
+      "value": 33099,
+      "unit": "rows",
+      "start_date": null,
+      "end_date": "2026-10-14",
+      "evidence_source": "BOUESTI students table",
+      "calculation_method": "COUNT(*)",
+      "evidence_level": "VERIFIED",
+      "qualification": "All cohorts. Combined with EKSU: 168,166."
+    },
+    {
+      "key": "distinct_users_30d_eksu",
+      "value": 53143,
+      "unit": "users",
+      "start_date": "2026-09-14",
+      "end_date": "2026-10-14",
+      "evidence_source": "EKSU activity_log",
+      "calculation_method": "COUNT(DISTINCT activityUser) WHERE activityTime >= 2026-09-14",
+      "evidence_level": "VERIFIED",
+      "qualification": "Date-based, so comparable with BOUESTI. Differs from the session-tagged figure of 42,613."
+    },
+    {
+      "key": "distinct_users_30d_bouesti",
+      "value": 29033,
+      "unit": "users",
+      "start_date": "2026-09-14",
+      "end_date": "2026-10-14",
+      "evidence_source": "BOUESTI activity_log",
+      "calculation_method": "COUNT(DISTINCT activityUser) WHERE activityTime >= 2026-09-14",
+      "evidence_level": "VERIFIED",
+      "qualification": "Must be computed date-based: BOUESTI's activity_log.session column still reads 2025 for current events."
+    },
+    {
+      "key": "distinct_users_30d_combined",
+      "value": 82176,
+      "unit": "users",
+      "start_date": "2026-09-14",
+      "end_date": "2026-10-14",
+      "evidence_source": "both activity_log tables",
+      "calculation_method": "53,143 + 29,033",
+      "evidence_level": "DERIVED",
+      "qualification": "Sum of two distinct-counts, exact only if the populations are disjoint. Identifier formats make overlap very unlikely but this was not cross-matched. Treat as an upper bound."
+    },
+    {
+      "key": "peak_daily_active_users_bouesti",
+      "value": 16075,
+      "unit": "users",
+      "start_date": "2026-08-24",
+      "end_date": "2026-08-24",
+      "evidence_source": "BOUESTI activity_log",
+      "calculation_method": "max of COUNT(DISTINCT activityUser) GROUP BY DATE(activityTime), 90-day window",
+      "evidence_level": "VERIFIED",
+      "qualification": null
+    },
+    {
+      "key": "successful_payment_transactions_bouesti",
+      "value": 238827,
+      "unit": "transactions",
+      "start_date": "~2020",
+      "end_date": "2026-10-14",
+      "evidence_source": "BOUESTI fees_remita_transaction",
+      "calculation_method": "COUNT(*) WHERE paymentStatus='Successful'",
+      "evidence_level": "VERIFIED",
+      "qualification": "87.98% success rate. Full historical table, predating the Azure migration and my involvement."
+    },
+    {
+      "key": "successful_payment_transactions_combined",
+      "value": 1789984,
+      "unit": "transactions",
+      "start_date": "~2020",
+      "end_date": "2026-10-14",
+      "evidence_source": "both fees_remita_transaction tables",
+      "calculation_method": "1,551,157 + 238,827",
+      "evidence_level": "DERIVED",
+      "qualification": "Evidences the system's throughput, not my work."
+    },
+    {
+      "key": "aggregate_successful_payment_value_combined",
+      "value": 65.51,
+      "unit": "billion NGN",
+      "start_date": "~2020",
+      "end_date": "2026-10-14",
+      "evidence_source": "both fees_remita_transaction tables",
+      "calculation_method": "EKSU 48.78bn + BOUESTI 16.73bn, each SUM(CAST(paymentAmount AS DECIMAL)) WHERE paymentStatus='Successful'",
+      "evidence_level": "VERIFIED",
+      "qualification": "CRITICAL: only Successful rows may be summed; non-Successful rows hold non-amount values. Predates my involvement."
+    },
+    {
+      "key": "distinct_paying_students_combined",
+      "value": 285421,
+      "unit": "students",
+      "start_date": "~2020",
+      "end_date": "2026-10-14",
+      "evidence_source": "both fees_remita_transaction tables",
+      "calculation_method": "EKSU 223,663 + BOUESTI 61,758",
+      "evidence_level": "DERIVED",
+      "qualification": "Sum of two distinct-counts; same disjointness caveat as distinct_users_30d_combined. Includes graduated and historical cohorts. Treat as an upper bound."
+    },
+    {
+      "key": "production_lifespan_eksu",
+      "value": 7,
+      "unit": "years (approx)",
+      "start_date": "2019-09",
+      "end_date": "2026-10",
+      "evidence_source": "User-reported start Sept 2019; verified floor from earliest EKSU production timestamp 2020-07-09 and 1.82M pre-2019 session-tagged records",
+      "calculation_method": "earliest production record to audit date",
+      "evidence_level": "STRONGLY SUPPORTED",
+      "qualification": "'In production by July 2020' is VERIFIED. The Sept 2019 start is user-reported: that phase predates payment integration and used session-tagged tables with no row timestamps."
+    },
+    {
+      "key": "production_lifespan_bouesti",
+      "value": 5,
+      "unit": "years (approx)",
+      "start_date": "2021-05",
+      "end_date": "2026-10",
+      "evidence_source": "BOUESTI activity_log MIN(activityTime) = 2021-05-07",
+      "calculation_method": "earliest production record to audit date",
+      "evidence_level": "VERIFIED",
+      "qualification": "Lower bound."
+    },
+    {
+      "key": "engineering_team_size",
+      "value": 2,
+      "unit": "engineers",
+      "start_date": "~2019",
+      "end_date": "2026-10",
+      "evidence_source": "git log distinct author emails across all 155 commits",
+      "calculation_method": "COUNT(DISTINCT author_email)",
+      "evidence_level": "VERIFIED",
+      "qualification": "Verified for the Feb 2023 - Oct 2026 window; user-reported for the full period. No third engineer has ever committed."
+    },
+    {
+      "key": "legacy_records_migrated_into_system_eksu",
+      "value": 1822938,
+      "unit": "records",
+      "start_date": null,
+      "end_date": "2026-10-15",
+      "evidence_source": "EKSU production MySQL: rawscore 1,543,811 + studentslevel 220,164 + students 58,963 tagged to academic sessions before 2019",
+      "calculation_method": "SUM(session REGEXP pre-2019 pattern) per table",
+      "evidence_level": "VERIFIED",
+      "qualification": "Counts records whose ACADEMIC SESSION predates 2019; establishes that decades of institutional history were imported, not the date of import. BOUESTI has effectively no legacy import (1,283 of 1.34M rawscore rows predate 2020), so this is EKSU-specific - do not state it for both schools."
+    }
+  ],
+  "verified_claims": [
+    {
+      "id": "C1",
+      "claim": "Migrated two live Nigerian university portals from cPanel/Apache shared hosting to Azure App Service (Linux, PHP 8.3) with Azure Database for MySQL Flexible Server, keeping both serving production traffic throughout.",
+      "evidence_level": "VERIFIED",
+      "evidence": "commits 6b723272, dd9eb9ce, 3fb285a1, b5560b0c; live Azure RM state (both apps Running)",
+      "period": "2026-08 to 2026-10",
+      "qualification": "I was the migration engineer, not the author of the application being migrated."
+    },
+    {
+      "id": "C2",
+      "claim": "The platform served 22.56 million HTTP requests across both instances in 31 days at a 0.013% HTTP 5xx rate.",
+      "evidence_level": "VERIFIED",
+      "evidence": "Azure Monitor, 2026-09-12 to 2026-10-13",
+      "period": "31 days",
+      "qualification": "Request counts include static assets; window is Azure retention limit, not system lifespan."
+    },
+    {
+      "id": "C3",
+      "claim": "Designed and implemented a 1,007-line Azure Blob Storage abstraction with no SDK dependency, including hand-rolled SharedKey HMAC-SHA256 request signing and service-SAS generation, three-tier container visibility, and permanent legacy-filesystem fallback.",
+      "evidence_level": "VERIFIED",
+      "evidence": "module/Storage.php, sole author across 7 commits",
+      "period": "2026-08 to 2026-08",
+      "qualification": null
+    },
+    {
+      "id": "C4",
+      "claim": "Migrated 675,590 production file references across 24 database columns and 11 tables, on two independent production databases, from local filesystem paths to Azure Blob references - 98.70% of all mapped values, with zero legacy values remaining in every high-volume document mapping.",
+      "evidence_level": "VERIFIED",
+      "evidence": "EKSU (2026-10-13) and BOUESTI (2026-10-14) production MySQL aggregate queries",
+      "period": "2026-08 to 2026-10",
+      "qualification": "8,886 values remain legacy across four low-volume mappings (leave_of_absence, ebooks, ebooks_comment, message) that the migration tool supports but which were never executed. Quote 98.70%, NOT 'zero legacy remaining'."
+    },
+    {
+      "id": "C5",
+      "claim": "The resulting object store holds ~1.2 million blobs / ~85.8 GB and handled 1.97 million storage transactions in 30 days.",
+      "evidence_level": "VERIFIED",
+      "evidence": "Azure Monitor, portalfilestorage01",
+      "period": "2026-09-13 to 2026-10-13",
+      "qualification": "Shared across both schools."
+    },
+    {
+      "id": "C6",
+      "claim": "Migrated 87,440 transcript and certificate request records across both institutions to object storage in a single day's execution on 2026-08-15, using a mapping-driven, dry-run-by-default migration tool I built.",
+      "evidence_level": "VERIFIED",
+      "evidence": "EKSU 37,346 transcript + 48,770 certificate rows and BOUESTI 1,324 certificate rows, all timestamped 2026-08-15 and 100% correlated with blob references",
+      "period": "2026-08-15",
+      "qualification": null
+    },
+    {
+      "id": "C7",
+      "claim": "Drove codebase-wide adoption of the storage abstraction across 263 call sites in 91 files of a ~1.17-million-line legacy procedural PHP codebase, using procedural wrappers so no OO refactor was required.",
+      "evidence_level": "VERIFIED",
+      "evidence": "repository grep, 2026-10-13",
+      "period": "2026-08",
+      "qualification": null
+    },
+    {
+      "id": "C8",
+      "claim": "Restored Apache extensionless URL routing on nginx for a 5,400-file legacy codebase via a custom nginx site config and an App Service startup hook that discovers the image's config path at runtime, validates with nginx -t and reloads.",
+      "evidence_level": "VERIFIED",
+      "evidence": "azure-nginx-default.conf, startup.sh sole author; live startup command on both apps",
+      "period": "2026-08-08",
+      "qualification": null
+    },
+    {
+      "id": "C9",
+      "claim": "Hardened the database layer for Azure MySQL Flexible Server with enforced TLS, configurable port, connect timeout and CA path, auto-detecting Azure by hostname so local development required no configuration change.",
+      "evidence_level": "VERIFIED",
+      "evidence": "commits b5560b0c, f7528ec9; module/Database.php:38-90",
+      "period": "2026-08-08",
+      "qualification": "The Database class itself was created by a colleague; the Azure/TLS capability is mine."
+    },
+    {
+      "id": "C10",
+      "claim": "Built a GitHub Actions matrix pipeline deploying one commit to two independent Azure Web Apps in parallel with per-target publish profiles and an rsync-trimmed deployment package.",
+      "evidence_level": "VERIFIED",
+      "evidence": ".github/workflows/azure-app-service.yml, .webapp-deploy-ignore, sole author",
+      "period": "2026-08 to 2026-10",
+      "qualification": null
+    },
+    {
+      "id": "C11",
+      "claim": "Eliminated hardcoded database and payment-gateway credentials from source control, moving them to Azure App Settings (52 on EKSU, 32 on BOUESTI).",
+      "evidence_level": "VERIFIED",
+      "evidence": "commits 881bbc7f, 2dfdd315; live App Settings name listing; .env gitignored",
+      "period": "2026-08",
+      "qualification": null
+    },
+    {
+      "id": "C13",
+      "claim": "Authored the application health endpoint now used as the Azure App Service health probe, which reported 100.00% availability over the 7 days to 2026-10-13.",
+      "evidence_level": "VERIFIED",
+      "evidence": "health.php sole author, commit f0a556c6; live healthCheckPath; Azure Monitor HealthCheckStatus",
+      "period": "2026-08-16 onward",
+      "qualification": "7-day measurement window."
+    },
+    {
+      "id": "C14",
+      "claim": "The platform carried a student-union election (7,188 ballots from 5,730 voters over ~48 hours, peaking at 1,809 ballots/hour) alongside a traffic peak of 962,046 requests/day, with no 5xx spike.",
+      "evidence_level": "VERIFIED",
+      "evidence": "production tbvotedetails; Azure Monitor, 2026-09-26 to 2026-09-29",
+      "period": "2026-09",
+      "qualification": "The e-voting application was built by a colleague, and it ran on the EKSU instance only - BOUESTI's tbvotedetails is empty. The claim is platform capacity and reliability, not the feature."
+    },
+    {
+      "id": "C15",
+      "claim": "Identified from production data that the bulk migration silently rewrote ~86,000 business timestamps via ON UPDATE CURRENT_TIMESTAMP, and established the schema mechanism and 100% correlation with migrated rows.",
+      "evidence_level": "VERIFIED",
+      "evidence": "information_schema column definition plus correlation query",
+      "period": "2026-10-13",
+      "qualification": "This is a self-reported defect and its root-cause analysis."
+    },
+    {
+      "id": "C16",
+      "claim": "Ran the same migration and platform work against two independent production deployments - separate databases (6.30 GB / 153 tables and 5.20 GB / 151 tables), separate blob containers, separate App Service plans - from a single codebase and a single deployment pipeline.",
+      "evidence_level": "VERIFIED",
+      "evidence": "both databases queried directly; .github/workflows/azure-app-service.yml matrix; live Azure RM state",
+      "period": "2026-08 to 2026-10",
+      "qualification": null
+    },
+    {
+      "id": "C17",
+      "claim": "The two instances together served 82,176 distinct users in 30 days and hold 1,789,984 successful payment transactions across their production history.",
+      "evidence_level": "VERIFIED",
+      "evidence": "both activity_log tables (2026-09-14 to 2026-10-14) and both fees_remita_transaction tables",
+      "period": "30 days / full history",
+      "qualification": "Payments are full historical totals predating my involvement; the user figure may double-count anyone with accounts at both institutions."
+    },
+    {
+      "id": "C18",
+      "claim": "Co-authored and co-own a production academic portal that has run continuously for approximately seven years (EKSU from September 2019, BOUESTI from May 2021) with a two-person engineering team and no third engineer at any point.",
+      "evidence_level": "STRONGLY SUPPORTED",
+      "evidence": "Five independent signals: only two author emails in the entire Git history; 1,822,938 EKSU records tagged to pre-2019 academic sessions; EKSU production timestamps from 2020-07-09; BOUESTI activity log from 2021-05-07; first commit bulk-imports 10,000 files",
+      "period": "2019-2026",
+      "qualification": "'In production by July 2020' is VERIFIED; the September 2019 start is USER-REPORTED (that phase leaves no datable trace). Original authorship cannot be proven from this repository. Present as co-founder/co-owner, not sole author."
+    },
+    {
+      "id": "C19",
+      "claim": "Operated that system as one of two engineers responsible for product, development, database administration, cloud infrastructure, deployment, security and institutional support across two universities simultaneously.",
+      "evidence_level": "STRONGLY SUPPORTED",
+      "evidence": "Two-committer fact VERIFIED; breadth user-reported but consistent with a repository containing no CODEOWNERS, no team process, no test suite and no application/infrastructure separation",
+      "period": "2020-2026",
+      "qualification": null
+    },
+    {
+      "id": "C20",
+      "claim": "Migrated 1,822,938 historical academic records into the system at EKSU - 1,543,811 raw scores, 220,164 level/progression records and 58,963 student records tagged to academic sessions predating 2019, with session configuration back to 1990.",
+      "evidence_level": "VERIFIED",
+      "evidence": "EKSU production MySQL session-tag aggregation, 2026-10-15",
+      "period": "2019-2020 (import phase)",
+      "qualification": "Counts records whose academic session predates 2019, not the date of import. BOUESTI has effectively no legacy import - EKSU-specific achievement."
+    },
+    {
+      "id": "C21",
+      "claim": "Built and operated the student portal for a third institution - the College of Education, Ikere-Ekiti - from December 2020, serving 11,785 students, 278 staff, 132,243 raw scores and 41,707 payment transactions, and ran it in parallel with the new BOUESTI university instance through the institution's change of status, winding the legacy cohort down over roughly four years.",
+      "evidence_level": "VERIFIED",
+      "evidence": "coeikere-db queried directly 2026-10-15: first activity 2020-12-11; peak 2022 (206,754 events, 14,384 distinct users); decay 2023-2026; BOUESTI instance first activity 2021-05-07",
+      "period": "2020-2026",
+      "qualification": "The claim that the portal ENABLED the college's upgrade to university status is user-reported and NOT verifiable - accreditation turns on many factors. Claim the parallel-run transition, which is fully evidenced; do not claim causation."
+    }
+  ],
+  "derived_claims": [
+    {
+      "id": "C12",
+      "claim": "Reduced bulk-export latency against object storage by replacing sequential blob fetches with a bounded-concurrency curl_multi pipeline (default 12 in flight) with per-item failure isolation and per-request temp caching.",
+      "evidence_level": "VERIFIED as implemented; performance improvement INFERRED",
+      "evidence": "Storage.php:434-586, commit a61a1b8f",
+      "qualification": "No before/after measurement exists. DO NOT quote a speedup figure."
+    },
+    {
+      "id": "D1",
+      "claim": "Application servers became disposable with respect to user data, which is the precondition for horizontal scaling.",
+      "evidence_level": "DERIVED",
+      "evidence": "571,040 references migrated off local disk",
+      "qualification": "Precondition only. The apps still run one worker each because session state is local-file; see decisions.reverted."
+    }
+  ],
+  "inferred_claims": [
+    {
+      "claim": "The commercial driver was a managed-hosting engagement consolidating two universities' portals onto one Azure subscription under a single resource group with a single pipeline.",
+      "evidence_level": "INFERRED",
+      "basis": "repository and Azure layout",
+      "qualification": "Not stated in any artefact I can read."
+    },
+    {
+      "claim": "Cost or operational-overhead improvement versus the previous cPanel hosting.",
+      "evidence_level": "UNKNOWN",
+      "basis": "none",
+      "qualification": "No billing or prior-hosting data available. DO NOT claim."
+    }
+  ],
+  "business_impact": {
+    "verified": [
+      "Two live university portals migrated to managed Azure App Service + managed MySQL + Blob Storage, both Running and serving 22.56M requests in 31 days",
+      "~85.8 GB / ~1.2M user-uploaded files moved off application-local disk into a durable access-tiered object store",
+      "571,040 EKSU database references migrated with zero legacy local paths remaining in those columns",
+      "Sensitive documents stored in private/protected containers and served via authenticated proxy or time-boxed signed URLs rather than web-reachable directories",
+      "Deployment moved from manual upload to an automated two-target pipeline on push to main",
+      "Credentials moved out of source control into Azure App Settings",
+      "0.0076% 5xx on EKSU and 100% health-probe availability over 7 days"
+    ],
+    "derived": [
+      "Application servers became disposable with respect to user data, enabling (not achieving) horizontal scaling"
+    ],
+    "not_established": [
+      "Cost change versus previous hosting",
+      "Effect on student experience or administrative effort",
+      "Staff time saved",
+      "Any before/after performance comparison"
+    ],
+    "qualitative_only": [
+      "The system's functional impact (digitising admissions, registration, results, transcripts, fees and elections for ~135,000 student records) is real but largely predates and is independent of my contribution. I claim the platform migration, not the digitisation."
+    ]
+  },
+  "engineering_challenges": [
+    {
+      "name": "Restoring Apache routing semantics on nginx without touching 5,400 files",
+      "why_hard": "App Service's PHP image gives no supported hook for a custom nginx site config; the config path differs between image versions and is overwritten on restart. Failure mode is a site returning 404 for every page with no obvious cause."
+    },
+    {
+      "name": "Writing an Azure Blob client by hand in legacy PHP",
+      "why_hard": "Two distinct, unforgiving signing schemes (SharedKey canonical string-to-sign with strict 12-newline format and canonicalized x-ms-* headers; service SAS with its own field order and API-version pinning), both failing with an identical opaque 403. RFC-3986 path encoding must encode the path but not the separators."
+    },
+    {
+      "name": "Making an incremental migration survivable",
+      "why_hard": "A straight cutover breaks every page the moment the first row updates. The design invariant - every read path falls back to the legacy local file when the value is not a blob reference - is what allowed column-by-column migration against a live database."
+    },
+    {
+      "name": "Bulk export performance against object storage",
+      "why_hard": "Moving files off local disk converts fopen() into an HTTPS round trip plus TLS handshake, pushing N-file exports into the FastCGI timeout. The curl_multi scheduling loop has a subtle bug: a job failing before reaching curl consumes its slot without entering the active set, so refill must happen at the top of the iteration or a batch of failures spins with nothing in flight."
+    },
+    {
+      "name": "Multi-tenancy without a tenancy model",
+      "why_hard": "The application has no tenant column. Isolation is achieved by deploying the same commit to two Web Apps with different App Settings, databases and container names, plus a per-hostname DB route for a sub-tenant. Tenant-specific behaviour therefore lives in environment variables rather than code."
+    }
+  ],
+  "decisions": [
+    {
+      "name": "nginx config installed by a startup script rather than a custom container",
+      "problem": "App Service's built-in PHP image ignores .htaccess",
+      "alternatives": [
+        "rewrite all URLs",
+        "ship a custom Docker image"
+      ],
+      "reasoning": "URL rewriting touches thousands of files with no test suite; a custom image means owning PHP patching for a team that wanted managed hosting",
+      "tradeoff": "Coupled to App Service's internal nginx layout; could break on an image update - mitigated by probing four paths, nginx -t validation and logging",
+      "result": "Extensionless routes work on both apps; startup command live in production"
+    },
+    {
+      "name": "blob:// reference scheme in the database rather than storing URLs",
+      "problem": "What goes in the passport column once files move to Blob",
+      "alternatives": [
+        "full HTTPS URL",
+        "container-relative path"
+      ],
+      "reasoning": "A URL bakes account name, endpoint and container into every row, making account migration a data migration. A bare path loses the visibility tier.",
+      "tradeoff": "Values are not directly usable outside the app",
+      "result": "571,040 production rows carry these references; account, endpoint and container names remain environment-configurable"
+    },
+    {
+      "name": "Dual-mode storage with permanent legacy fallback",
+      "problem": "Migrating hundreds of thousands of rows while serving live traffic",
+      "alternatives": [
+        "big-bang cutover",
+        "a temporary shim to be removed"
+      ],
+      "reasoning": "PLANS.md explicitly warns not to switch uploads to Blob without supporting legacy reads",
+      "tradeoff": "Permanent complexity in every read path; and it removes the pressure to finish - ebooks.fileUrl is still unmigrated",
+      "result": "Safe incremental migration with residual legacy debt"
+    },
+    {
+      "name": "Three containers by exposure level, prefixed per school",
+      "problem": "The application mixes public brand images with private identity documents",
+      "reasoning": "AGENTS.md requires treating student/staff/admission/transcript documents as sensitive by default",
+      "tradeoff": "Visibility must be declared at every upload site; a wrong declaration silently over-exposes",
+      "result": "Six containers live; private/protected content served via SAS or authenticated proxy"
+    },
+    {
+      "name": "Hand-rolled signing rather than the Azure SDK",
+      "reasoning": "The Azure PHP SDK is effectively unmaintained and would drag a dependency tree into a PHP 8.3 app with PHP-7-era assumptions",
+      "tradeoff": "I own correctness and API-version pinning (REST 2021-12-02, SAS 2023-11-03); no SDK upgrade path; and this is the component most deserving of tests, which it does not have",
+      "result": "Working, dependency-free Blob client"
+    },
+    {
+      "name": "Matrix deployment to both schools from one main push",
+      "tradeoff": "No per-school release isolation - a bad commit reaches both universities simultaneously. fail-fast:false limits partial-failure blast radius, not bad-code blast radius."
+    },
+    {
+      "name": "Exclude the EKSU activity_log from the Azure migration",
+      "problem": "After nearly seven years the EKSU audit log had grown very large; migrating it would carry its full history into paid, provisioned Azure MySQL capacity on a 25 GB server already holding 6.30 GB of live data",
+      "decision": "Leave it behind; keep the historical log on the old cPanel host as a cold fallback; the Azure table starts fresh from the migration date",
+      "reasoning": "Append-only log data with no transactional dependency, consulted rarely and never on a hot path - the largest thing droppable from a migration without affecting application behaviour",
+      "tradeoff": "The live system no longer holds its own pre-Aug-2026 audit trail. For a system whose auditability underpinned institutional trust, answering 'what happened in 2022?' now needs an offline copy, whose retention is only as good as the old host's. BOUESTI took the opposite path and kept full history (8,471,215 rows back to 2021-05), so the two instances differ in audit depth.",
+      "result": "EKSU activity_log holds 846,971 rows from 2026-08-15 onward; historical log retained off-cloud. DELIBERATE cost/scope decision, NOT data loss - an earlier draft wrongly flagged it as possible migration damage."
+    }
+  ],
+  "decisions_reverted_reason_unknown": [
+    {
+      "name": "Redis-backed sessions",
+      "added": "2026-08-16 (commit 62b5805f)",
+      "reverted": "2026-08-17 (commit 3008db2a)",
+      "problem_it_addressed": "PHP's file session handler fails on the Azure Files /home mount with 'Session data file is not created by your uid', so cross-instance sessions need Redis or a DB handler",
+      "consequence": "Both apps still run a single worker; this is the system's main scaling blocker",
+      "evidence_level": "UNKNOWN / REQUIRES CONFIRMATION",
+      "note": "Branch codex/redis-session still exists locally"
+    },
+    {
+      "name": "Staging deployment slot",
+      "added": "2026-08-16 (commit 5993941b)",
+      "reverted": "2026-10-10 (commit d082b638)",
+      "evidence_level": "UNKNOWN / REQUIRES CONFIRMATION",
+      "note": "Commit messages record the what, not the why"
+    }
+  ],
+  "lessons": [
+    {
+      "lesson": "A bulk UPDATE on a legacy schema rewrites columns you did not name.",
+      "detail": "transcript.appliedDate and transc_certificate.appliedDate are DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP. The migration's UPDATE silently reset the application date on ~86,000 rows. Evidence: 37,346 transcript rows all dated 2026-08-15, of which 100% hold blob references, versus 19.4% for all other dates.",
+      "rule_adopted": "Before any bulk UPDATE on a legacy schema, enumerate every ON UPDATE CURRENT_TIMESTAMP column and every trigger on the target tables, and either exclude those columns or pin them explicitly in the SET clause. Run data migrations against a restored copy first and diff."
+    },
+    {
+      "lesson": "Legacy compatibility is a feature until it removes the pressure to finish.",
+      "detail": "The local-file fallback made a live incremental migration possible, and is exactly why ebooks.fileUrl is still 100% legacy two months later - nothing breaks, so nothing forces completion.",
+      "rule_adopted": "Pair a migration fallback with an explicit completion tracker."
+    },
+    {
+      "lesson": "Object storage changes the performance model, not just the storage layer.",
+      "detail": "Every fopen() becomes an HTTPS round trip. Code that was fine iterating files sequentially is not fine iterating blobs sequentially.",
+      "rule_adopted": "Treat 'find every loop that touches more than a handful of files' as a mandatory planning step of any disk-to-object migration."
+    },
+    {
+      "lesson": "Platform compatibility is where lift-and-shift migrations actually fail.",
+      "detail": "Not the database and not the code, but .htaccess, TLS enforcement, CAST(x AS INT), only_full_group_by, session storage on a CIFS mount, and PHP 8 throwing where PHP 7 returned false. Individually small; collectively most of the migration."
+    },
+    {
+      "lesson": "Reverts without recorded reasoning destroy decisions.",
+      "detail": "Redis sessions and the staging slot were both added and removed within weeks with no recorded why. One of them is still the system's main scaling blocker.",
+      "rule_adopted": "Write a two-line why in every revert commit, or an ADR."
+    }
+  ],
+  "cv_bullets": {
+    "high_confidence_quantified": [
+      "Migrated two live university portals (168,000+ student records across 11.5 GB of MySQL) from cPanel/Apache to Azure App Service and Azure Database for MySQL Flexible Server, now serving 22.5M+ HTTP requests and 82,000+ distinct users per month at a 0.013% 5xx rate and 100% health-probe availability.",
+      "Designed and shipped a 1,000-line Azure Blob Storage layer with hand-rolled SharedKey and SAS signing (no SDK), then migrated 675,000+ production file references across 24 columns and 11 tables on two independent production databases - 98.7% of all mapped values, with every high-volume document mapping fully migrated and no downtime.",
+      "Moved ~85.8 GB / ~1.2M user-uploaded documents off ephemeral App Service disk into access-tiered Azure Blob containers, separating private student identity documents from public assets and serving them via authenticated proxy or time-boxed signed URLs.",
+      "Migrated 87,440 transcript and certificate records across two institutions to object storage in a single day's controlled execution, using a mapping-driven, dry-run-by-default migration tool covering 14 mappings across 11 tables.",
+      "Drove adoption of a new storage abstraction across 263 call sites in 91 files of a 1.17-million-line legacy PHP codebase without an OO refactor, using procedural wrappers to preserve existing call patterns.",
+      "Built a GitHub Actions matrix pipeline deploying a single commit to two independent Azure Web Apps in parallel, replacing manual deployment for a 5,400-file PHP application."
+    ],
+    "high_confidence_non_quantified": [
+      "Restored Apache .htaccess extensionless routing on nginx by authoring a custom site config and an App Service startup hook that discovers the PHP image's nginx config path at runtime, validates and reloads - avoiding both a mass URL rewrite and ownership of a custom container image.",
+      "Hardened a legacy mysqli/PDO data layer for Azure MySQL with enforced TLS, configurable port, connect timeout and CA path, auto-detecting the Azure host so local development needed no config change.",
+      "Eliminated hardcoded database and payment-gateway credentials from source control, moving all runtime secrets to Azure App Settings.",
+      "Designed an opaque blob://visibility/path reference scheme so the database stores no hostnames, endpoints or filesystem layout, and enabled a live incremental migration by making every read path fall back to the legacy filesystem.",
+      "Diagnosed from production data that a bulk migration had silently rewritten ~86,000 business timestamps via ON UPDATE CURRENT_TIMESTAMP, establishing the root cause and exact blast radius."
+    ],
+    "requires_confirmation": [
+      "Cost, performance or operational-overhead improvement versus the previous hosting - no baseline data exists.",
+      "Any specific speedup from the concurrent blob fetch - implemented, but never measured.",
+      "Reduction in manual deployment time - no before measurement.",
+      "Whether I was sole engineer on the Azure migration - Git shows me as sole author of every infrastructure file, which is strong but not conclusive."
+    ],
+    "per_institution_eksu": [
+      "Migrated the EKSU student portal (135,067 student records, 6.30 GB MySQL, 153 tables) from cPanel/Apache to Azure App Service, moving 571,040 file references to Azure Blob Storage; the instance now serves 14.09M requests/month at a 0.0076% 5xx rate with 100.00% health-probe availability.",
+      "Carried the September 2026 EKSU student-union election on the migrated platform - 7,188 ballots from 5,730 voters in ~48 hours, peaking at 1,809 ballots/hour against a 962,046-request day - with no 5xx spike. (Platform and reliability are mine; the e-voting feature was built by a colleague.)",
+      "Migrated 86,116 EKSU transcript and certificate records to object storage in a single controlled execution."
+    ],
+    "per_institution_bouesti": [
+      "Migrated the BOUESTI student portal (33,099 student records, 5.20 GB MySQL, 151 tables) to Azure App Service, moving 104,550 file references to Azure Blob Storage; the instance serves 8.47M requests/month at a 0.021% 5xx rate with 99.99% health-probe availability.",
+      "Implemented per-hostname database routing for BOUESTI's third tenant (portalcoe/ptpportal to a separate COE database), the more complex of the two multi-tenant cases.",
+      "Verified migration completeness directly against the BOUESTI production database: 100% of rows touched on migration day were blob-backed against 0% of all others - the cleanest available proof that the migration executed as designed."
+    ],
+    "two_delivery_framing": [
+      "Delivered an Azure migration and object-storage rollout to two universities from a single codebase and a single CI matrix - separate databases, container sets and App Service plans - covering 168,166 student records and 82,176 distinct monthly users, at 98.70% file-migration completeness across both estates."
+    ],
+    "presentation_guidance": {
+      "credibility_risk": "Headline figures are large enough that a recruiter may assume they are invented, especially alongside a two-person team. Manage deliberately.",
+      "currency_figure_hazard": "The NGN 65.51bn payment figure is PROCESSED volume, not revenue generated or captured. Naira is hard for UK readers to size, and it invites 'if your system handles that, why are you applying here?'",
+      "rules": [
+        "Lead with transaction and user counts, not currency: '1.79M payment transactions', '82,000 monthly users'",
+        "If using currency, convert to GBP at a stated rate and date, and always use the verb 'processed' - never 'generated' or 'earned'",
+        "State the two-engineer team size as an asset: scale and team size explain each other",
+        "Put verifiable technical figures first: 675,590 migrated references, 263 call sites, 22.5M requests, 0.013% 5xx",
+        "Keep this JSON and section 23 to hand - every number has a stated source, window and calculation, which converts a credibility problem into an advantage"
+      ]
+    },
+    "junior_labelling_guidance": {
+      "verdict": "Reasonable to label pre-2020 undergraduate and startup work as junior-level. Accurate, fills timeline, shows progression.",
+      "caution": "Do NOT let 'junior' bleed into this project - six years of production ownership, two institutions, 22.5M requests/month. Date it from 2020 and title it founding engineer / co-founder / lead engineer.",
+      "premise_check": "The perception that a 'junior developer' title helps in the UK is more likely about recognisable employment STRUCTURE than the word 'junior'. Screeners look for a checkable employer, a defined role and date ranges. Make this project read as structured employment (registered company, named role, clear dates, two named institutional clients).",
+      "do_not": "Do not omit the earlier period - gaps invite more questions than modest early roles."
+    }
+  },
+  "interview_stories": [
+    {
+      "id": "S1",
+      "theme": "Production debugging / owning a mistake",
+      "strength": "strongest",
+      "situation": "Auditing production data two months after a storage migration I had run.",
+      "task": "Establish real usage volumes for transcript and certificate requests.",
+      "action": "Yearly breakdown showed 41,835 transcript requests in 2026 vs ~1,500-5,000 in prior years - implausible. Monthly put 39,035 in August; daily put 37,346 on 15 August, the exact date of my migration. information_schema showed appliedDate declared ON UPDATE CURRENT_TIMESTAMP. Correlation: of the 37,346 rows stamped that day, 100% held blob references, vs 2,926 of 15,111 for every other date.",
+      "result": "Confirmed my migration had silently rewritten the application date on ~86,000 records. Reported it rather than quietly correcting the statistic.",
+      "evidence": "schema definition, correlation query, commit date"
+    },
+    {
+      "id": "S2",
+      "theme": "Architecture / making an irreversible change reversible",
+      "situation": "571,000+ rows referencing files on disk, on a live system with no tests.",
+      "action": "Chose an opaque blob:// reference plus the invariant that every read path falls back to the legacy file - preview, download, ZIP, PDF, delete - enabling table-by-table migration with a dry-run-by-default tool.",
+      "result": "571,040 references migrated, zero legacy remaining, no downtime.",
+      "reflection": "The fallback also removed pressure to finish; ebooks is still unmigrated. Pair it with a completion tracker."
+    },
+    {
+      "id": "S3",
+      "theme": "Platform constraints / knowing when not to rewrite",
+      "situation": "After lift-and-shift every internal link 404'd because nginx ignores .htaccess.",
+      "action": "Rejected rewriting URLs across 5,427 untested files and rejected a custom container image; built an nginx config installed by a startup script probing four candidate paths with nginx -t validation and durable logging.",
+      "result": "Live on both apps.",
+      "tradeoff": "Coupled to App Service's internal layout; could break on an image update - which is why it validates and logs."
+    },
+    {
+      "id": "S4",
+      "theme": "Performance / understanding a changed cost model",
+      "situation": "Pages ZIPping several hundred student documents started timing out after the storage cutover.",
+      "action": "Diagnosed each fopen() had become an HTTPS round trip plus TLS handshake; built materializeMany() on curl_multi with a bounded in-flight window, streaming to disk with per-item failure isolation. The non-obvious part was slot refill at the top of the iteration.",
+      "result": "Implemented and in production.",
+      "caveat": "Never captured before/after timings."
+    },
+    {
+      "id": "S5",
+      "theme": "Technical judgement / dependency choice",
+      "content": "Why I hand-rolled Azure SharedKey and SAS signing rather than using the SDK: the PHP SDK is effectively unmaintained and would pull a dependency tree into a PHP 8.3 app with PHP-7-era assumptions. Cost: I own correctness of two unforgiving signing schemes with pinned API versions and no test coverage - the piece I would write tests for first."
+    },
+    {
+      "id": "S6",
+      "theme": "Reliability under a known deadline",
+      "content": "The September 2026 student-union election ran on this platform: 7,188 ballots from 5,730 voters over ~48 hours, peaking at 1,809 ballots/hour, against 962,046 requests on the busiest day. Response time rose to ~2s and 5xx did not spike.",
+      "honesty_note": "I built the platform; a colleague built the voting feature. 100% health-probe availability came with no HA and a single worker, so the margin was thinner than the numbers suggest."
+    },
+    {
+      "id": "S7",
+      "theme": "A decision I can no longer defend",
+      "content": "I added Redis-backed sessions and removed them the next day; added a staging slot and removed it eight weeks later. Neither commit message records why. The session decision still constrains the system. The lesson is cheap and concrete: a two-line why in a revert commit, or an ADR."
+    },
+    {
+      "id": "S8",
+      "theme": "Multi-tenancy without a tenancy model",
+      "situation": "One codebase had to serve two universities with completely separate data, documents and users.",
+      "task": "Isolate them without a tenant column, which the application has never had.",
+      "action": "Isolation at deployment time rather than in code: the same commit deploys to two App Service instances via a CI matrix, each with its own database, its own three blob containers and its own App Settings. BOUESTI additionally carries a third tenant through per-hostname routing in server.php to a separate coeikere-db.",
+      "result": "Both run in production off one commit stream - 14.09M and 8.47M requests in 31 days, with the storage migration executing independently against each (571,040 and 104,550 references).",
+      "tradeoff": "Tenant-specific behaviour lives in environment variables rather than code, invisible to anyone reading the repository, and a bad commit reaches both universities simultaneously. Right call for two tenants, wrong one for ten."
+    },
+    {
+      "id": "S9",
+      "theme": "Proving a migration worked, twice",
+      "situation": "Needed to show the blob migration had actually completed, not just that the script exited cleanly.",
+      "action": "Queried both production databases for the ratio of blob:// values to surviving legacy paths, per column.",
+      "result": "Every high-volume document mapping fully migrated on both instances; 98.70% of all mapped values overall. BOUESTI gave the cleaner proof of when it ran - 1,324 rows stamped 2026-08-15, 100% blob-backed, versus 0% of all other rows.",
+      "why_good": "Shows verification against production rather than trust in a script, and it is the same query that surfaced the timestamp defect in S1."
+    }
+  ],
+  "portfolio_material": {
+    "overview": "A legacy PHP/MySQL academic portal serving two Nigerian universities - ~135,000 student records, 1.9M payment transactions, 5.5M result rows - moved from shared cPanel hosting onto Azure, with ~85 GB of sensitive student documents moved from application disk into object storage, while the system stayed live through an admissions cycle, a fee cycle and a student-union election.",
+    "challenge": "~1.17M lines of procedural PHP across 5,427 files, 5,039 raw mysqli_query() call sites, no test suite, assuming Apache rewriting, local filesystem writes and MariaDB dialect tolerance. It could not go down, and it could not be rewritten.",
+    "my_role": "Cloud migration and storage platform engineer - not the application's author (121 of 155 commits belong to a colleague).",
+    "solution_pillars": [
+      "Runtime compatibility: nginx config + runtime-discovering startup hook",
+      "Storage: dependency-free Blob client, three-tier visibility, opaque blob:// references, authenticated proxy, concurrent materialisation, permanent local fallback",
+      "Delivery: GitHub Actions matrix, secrets in App Settings"
+    ],
+    "results_headline": [
+      "22.56M requests / 31 days at 0.013% 5xx",
+      "100% health-probe availability over 7 days",
+      "571,040 migrated references, zero legacy remaining",
+      "~1.2M blobs / ~85.8 GB",
+      "263 call sites across 91 files",
+      "86,116 records migrated in one execution",
+      "peak 19,769 daily active users"
+    ],
+    "what_i_would_improve_next": [
+      "Shared session store (Redis or DB handler) - the single blocker to horizontal scaling",
+      "Managed Identity + RBAC to retire the long-lived storage account key",
+      "A test suite for the signing code",
+      "Finish the ebooks migration and add a completion tracker",
+      "Enable MySQL HA and a second App Service worker",
+      "Rewrite repository history to shed the 261 GB .git"
+    ]
+  },
+  "content_ideas": {
+    "articles": [
+      {
+        "title": "Your bulk UPDATE is rewriting columns you didn't name",
+        "core_problem": "ON UPDATE CURRENT_TIMESTAMP on a legacy schema turns a one-column migration into a silent rewrite of business dates",
+        "why_interesting": "A documented MySQL feature almost nobody accounts for in migration review; damage is invisible for months",
+        "anonymise": [
+          "institution names",
+          "table and column names",
+          "exact row counts"
+        ],
+        "do_not_publish": [
+          "the schema",
+          "the migration script",
+          "anything identifying the universities"
+        ]
+      },
+      {
+        "title": "Running an Apache-era PHP app on Azure App Service nginx",
+        "core_problem": ".htaccess is ignored and the platform gives no supported config hook",
+        "why_interesting": "A very common lift-and-shift wall with little good public writing",
+        "publishable": "the config pattern is generic",
+        "do_not_publish": [
+          "hostnames",
+          "FastCGI timeout values tied to this app",
+          "deny rules revealing internal file layout"
+        ]
+      },
+      {
+        "title": "Signing Azure Blob requests by hand, and when that's the right call",
+        "core_problem": "SharedKey and service SAS are strict, differently-shaped, and fail identically with an opaque 403",
+        "do_not_publish": [
+          "account names",
+          "container names",
+          "TTL values",
+          "any real signature"
+        ]
+      },
+      {
+        "title": "Migrate a live system by making the old path a permanent fallback",
+        "core_problem": "Moving hundreds of thousands of file references on a system that cannot go down",
+        "honesty_note": "Be explicit that the fallback has a cost - one mapping is still unmigrated"
+      },
+      {
+        "title": "Object storage changes your performance model, not just your storage",
+        "core_problem": "fopen() becomes an HTTPS round trip; linear loops become timeouts",
+        "caveat": "No before/after numbers were captured, so the article teaches the pattern rather than claiming a speedup"
+      }
+    ],
+    "social_posts": [
+      {
+        "hook": "My migration deleted 86,000 dates and I found out two months later",
+        "basis": "the ON UPDATE CURRENT_TIMESTAMP finding with the full diagnostic chain",
+        "why_credible": "it is a mistake, found by me, shown rather than asserted"
+      },
+      {
+        "hook": "The hardest part of our cloud migration wasn't the database",
+        "basis": ".htaccess vs nginx, TLS enforcement, CAST(x AS INT), PHP 8 throwing where PHP 7 returned false, sessions on a CIFS mount"
+      },
+      {
+        "hook": "571,000 file references, zero downtime, one invariant",
+        "basis": "the fallback-path design, with the honest coda that it is why one mapping is still unmigrated"
+      },
+      {
+        "hook": "Two reverts, no reasons: a short case for writing down why",
+        "basis": "Redis sessions and the staging slot"
+      },
+      {
+        "hook": "We ran a student election on a single App Service worker",
+        "basis": "7,188 ballots, 5,730 voters, 1,809 in the peak hour, 962k requests that day, no 5xx spike - with the no-HA caveat"
+      },
+      {
+        "hook": "When is hand-rolling a cloud SDK the right answer?",
+        "basis": "the SharedKey/SAS decision, argued both ways, ending on the test-coverage debt"
+      },
+      {
+        "hook": "263 call sites, one procedural wrapper",
+        "basis": "introducing a modern abstraction into 1.17M lines of procedural PHP without an OO refactor"
+      }
+    ]
+  },
+  "public_safe_claims": [
+    "Architecture pattern described generically: legacy PHP on managed PaaS, nginx rewrite restoration, blob-backed storage with three visibility tiers, matrix CI/CD to two deployment targets.",
+    "The ON UPDATE CURRENT_TIMESTAMP lesson, phrased as 'a legacy MySQL schema' and '~86,000 records'.",
+    "The fallback-invariant migration pattern, described generically.",
+    "The curl_multi bounded-concurrency pattern, as generic PHP.",
+    "The SharedKey/SAS vs SDK decision framework, without any real values.",
+    "Order-of-magnitude scale only: 'a portal serving 100,000+ student records', '20M+ requests/month across two deployments', '500,000+ file references migrated', '~85 GB of documents'.",
+    "Role framing: 'cloud migration and storage platform engineering on an existing large legacy PHP system'."
+  ],
+  "private_only_information": [
+    "HIGHEST SENSITIVITY - the predecessor fraud incident. Concerns a real, identifiable individual reportedly arrested, and a named institution. NEVER publish in any form, including anonymised: institution + role + timeframe would identify the person locally. Defamation exposure. Safe interview formulation only if asked: 'we replaced a system that had been discontinued after a loss of institutional trust'.",
+    "Compensation history and current arrangement; commercial terms with either institution; any future per-student billing discussion; the reasons the current arrangement is below market. Recorded for the user's own negotiation decisions only.",
+    "Azure subscription and resource IDs, resource group name, Web App names, storage account name, container names, MySQL server hostname and database names",
+    "All credentials, keys, publish profiles and connection strings",
+    "The specific list of App Settings names (it maps the attack surface)",
+    "Institution identification tied to specific production statistics",
+    "Per-table row counts, the NGN 48.78bn payment figure and the 1.55M transaction count",
+    "The blob:// scheme details and the storage proxy's reference encoding",
+    "Rate-limit thresholds and allow-list paths in server.php",
+    "The hand-rolled signing implementation and its pinned API versions",
+    "The identified data-integrity defect tied to a named institution",
+    "CSRF scope configuration and feature-flag names",
+    "Everything in activity_log and every table containing student or staff records",
+    "RULE: anything that pairs an institution name with a production number is private"
+  ],
+  "operational_weaknesses_known": [
+    "No high availability: MySQL highAvailability Disabled; both App Service plans run one worker with alwaysOn false",
+    "Horizontal scaling blocked by local-file session state; the Redis fix was reverted",
+    "AZURE_STORAGE_ACCOUNT_KEY is a long-lived account key in App Settings; Managed Identity + RBAC is the obvious next step",
+    "Storage account shared between both universities, isolated only by container naming",
+    "No automated tests anywhere in the repository, including the hand-rolled signing code",
+    ".git is 261 GB locally because uploads were historically committed; history was never rewritten",
+    "7-day backup retention with no evidence of a tested restore"
+  ],
+  "evidence_gaps": [
+    {
+      "gap": "Dated artefacts from Sept 2019 - mid 2020",
+      "why_useful": "Would convert the September 2019 start from user-reported to verified. The production database cannot supply it: that phase used session-tagged tables with no row timestamps and predates payment integration",
+      "where_it_might_exist": "Early institutional correspondence; the original repository; first deployment or hosting account records",
+      "question_to_ask": "Do we have anything dated from the 2019 build-and-load phase - an email, an invoice, a hosting signup?"
+    },
+    {
+      "gap": "Retention and retrievability of the off-cloud EKSU activity_log",
+      "why_useful": "The pre-Aug-2026 audit trail was deliberately left on the old host. Its usefulness depends on that copy still existing and being restorable - an operational risk, not a migration defect",
+      "where_it_might_exist": "The old cPanel host; any archive of it",
+      "question_to_ask": "Where exactly is the historical EKSU activity_log now, who can restore it, and how long will that host remain available?"
+    },
+    {
+      "gap": "Dated proof of the founding timeline",
+      "why_useful": "Would convert C18 from STRONGLY SUPPORTED to VERIFIED - the single highest-value gap remaining",
+      "where_it_might_exist": "The original 2019-2022 repository or backups; the first institutional agreement or NYSC posting letter; early email with the university",
+      "question_to_ask": "Can we recover the pre-2023 repository, and do we still have the original engagement letter?"
+    },
+    {
+      "gap": "Exact production go-live date on Azure",
+      "why_useful": "Dates the cloud migration precisely; Azure metrics retention only reaches 2026-09-12. The system's overall production start is now resolved (EKSU 2020, BOUESTI 2021)",
+      "where_it_might_exist": "DNS cutover records; App Service activity log (90-day retention - check soon)",
+      "question_to_ask": "When did the DNS for the portal domains move to the Azure apps?"
+    },
+    {
+      "gap": "Why BOUESTI averages ~2.6x EKSU's response time",
+      "why_useful": "0.496 s vs 0.19 s on the same plan size with lower traffic; unexplained, and a weak spot if raised in an interview",
+      "where_it_might_exist": "Application Insights dependency/request breakdown on bouesti-app-prod; the COE routing path is a candidate",
+      "question_to_ask": "Is the slower BOUESTI response time the COE host routing, a query difference, or just the heavier activity_log?"
+    },
+    {
+      "gap": "Why Redis sessions were reverted",
+      "why_useful": "It is the current scaling blocker and the decision is unrecoverable from Git",
+      "where_it_might_exist": "Team chat / PR discussion around 2026-08-16/17; the reverted branch codex/redis-session",
+      "question_to_ask": "What broke when we tried Predis sessions on App Service?"
+    },
+    {
+      "gap": "Why the staging slot was removed",
+      "why_useful": "A release-engineering decision I made and cannot currently defend",
+      "where_it_might_exist": "Chat / notes around 2026-10-10",
+      "question_to_ask": "Was the slot removed for cost, swap failures, or deploy time?"
+    },
+    {
+      "gap": "Before/after bulk-export timings",
+      "why_useful": "Would convert C12 from 'implemented' to a quantified performance win",
+      "where_it_might_exist": "App Service logs before 2026-08-10; the SIGKILL-after-1410s entry in the modernization log suggests a baseline exists",
+      "question_to_ask": "Do we have request-duration logs for the ZIP/PDF export pages before and after the storage change?"
+    },
+    {
+      "gap": "Previous cPanel hosting cost and spec",
+      "why_useful": "The only route to a credible cost/efficiency claim",
+      "where_it_might_exist": "Client billing records; the hosting invoice",
+      "question_to_ask": "What was the previous hosting costing per month, and what were the specs?"
+    },
+    {
+      "gap": "Pre-migration traffic baseline",
+      "why_useful": "Would let me claim capacity improvement rather than just capacity",
+      "where_it_might_exist": "cPanel AWStats/Webalizer on the old host, if still accessible",
+      "question_to_ask": "Do we still have access to the old server's traffic stats?"
+    },
+    {
+      "gap": "Number of staff/administrators using the portal",
+      "why_useful": "activity_log shows only 203 staff in session 2026, which likely undercounts",
+      "where_it_might_exist": "The institutions' registry/ICT units",
+      "question_to_ask": "How many staff accounts are actually in use across the registry and faculties?"
+    },
+    {
+      "gap": "Whether I was sole engineer on the Azure migration",
+      "why_useful": "Git strongly implies it; confirmation makes C1 unimpeachable",
+      "where_it_might_exist": "The team",
+      "question_to_ask": "Was anyone else working on the Azure infrastructure alongside me?"
+    },
+    {
+      "gap": "Whether the timestamp loss caused operational harm",
+      "why_useful": "Determines whether S1 is a lesson or an incident",
+      "where_it_might_exist": "The registry / transcript office",
+      "question_to_ask": "Does anyone rely on appliedDate for transcript SLA reporting?"
+    },
+    {
+      "gap": "Restore test for the 7-day MySQL backup",
+      "why_useful": "Backups that have never been restored are not backups",
+      "where_it_might_exist": "Azure portal / ops records",
+      "question_to_ask": "Have we ever test-restored the Flexible Server backup?"
+    },
+    {
+      "gap": "Per-school split of blob storage capacity",
+      "why_useful": "The ~85.8 GB / ~1.2M blob figures are account-wide and cannot be attributed per institution from metrics alone",
+      "where_it_might_exist": "Per-container blob enumeration, or Storage Insights with a container dimension",
+      "question_to_ask": "Can we get per-container capacity broken out for the eksu-* and bouesti-* containers?"
+    },
+    {
+      "gap": "Why activity_log.session on BOUESTI still reads 2025",
+      "why_useful": "Current events are tagged to the prior session, which would corrupt any session-based reporting on that instance",
+      "where_it_might_exist": "The session rollover procedure / setup table",
+      "question_to_ask": "Has the 2026 session been activated on BOUESTI, and what sets activity_log.session?"
+    }
+  ],
+  "audit_method_notes": {
+    "database_access": "mysql client with --init-command=\"SET SESSION TRANSACTION READ ONLY\" against eksu-db (2026-10-13) and bouesti-db (2026-10-14). Only SELECT, COUNT, SUM, GROUP BY and information_schema reads. No write, DDL, migration or administrative statement was executed. BOUESTI credentials were read from bouesti-app-prod App Service settings at the user's instruction and resolve to the same server-administrator account on the same Flexible Server.",
+    "azure_access": "az CLI read-only: webapp show, appsettings list restricted to names, mysql flexible-server show, storage account list, monitor metrics list.",
+    "recovered_document": "MODERNIZATION_PROGRESS.md (470 lines) deleted from the working tree 2026-08-20, recovered via git show 5c4f5274^:MODERNIZATION_PROGRESS.md. Session entries signed 'Claude' indicate AI-assisted sessions; commit authorship was used to attribute the work they describe.",
+    "diffstat_caveat": "My 33 commits show ~40,596 insertions / ~38,947 deletions across 1,409 file-paths, inflated by commit 62b5805f vendoring Predis and 3008db2a reverting it, plus cbf3b356 removing 85 committed upload files. File-level ownership is the reliable evidence, not line counts.",
+    "metric_caveats": [
+      "information_schema.table_rows is an InnoDB estimate, used only for the size overview; headline counts use exact COUNT(*)",
+      "paymentAmount is varchar and non-Successful rows contain non-amount values; payment totals restricted to paymentStatus='Successful'",
+      "transcript/transc_certificate appliedDate values dated 2026-08-15 are migration artefacts, not application dates",
+      "'distinct users' counts distinct activityUser identifiers with at least one logged event"
+    ],
+    "pii_handling": "Student and staff identifiers, email addresses and user-agent strings were encountered during schema inspection and are deliberately excluded from all outputs. Every figure is an aggregate.",
+    "scope": "Both production instances.",
+    "correction_log": "The 2026-10-13 draft stated 'zero legacy paths remaining in the migrated columns'. That overstated completeness: the legacy side of leave_of_absence.attachedFile had not been queried, and it holds 5,906 legacy values on EKSU and 352 on BOUESTI. Completeness is now reported as 98.70% with the four unmigrated mappings itemised; claim C4 and the corresponding CV bullet were restated. No other figure changed."
+  },
+  "per_institution": {
+    "presentation_guidance": {
+      "recommended": "One role, two deliveries. The engineering was built once; the migration, cutover and operation happened twice against separate production estates.",
+      "do_not": "Do not list EKSU and BOUESTI as two separate jobs or work experiences. One repository, one commit stream, one period - an interviewer who checks will read it as padding and it undercuts otherwise strong evidence.",
+      "legitimate_framings": [
+        "One role, combined scale (use combined_only figures)",
+        "One role, two named deliveries",
+        "Two separate portfolio case studies, each using only that school's figures",
+        "Interview answers picking the instance that fits the question"
+      ],
+      "never": [
+        "Quote a combined figure under one school's name",
+        "Quote EKSU's 100% availability or its election for BOUESTI",
+        "Claim 'zero legacy remaining' for either school - it is 98.70% combined, with 8,386 outstanding at EKSU and 500 at BOUESTI"
+      ]
+    },
+    "shared_not_separable": {
+      "engineering": [
+        "module/Storage.php",
+        "scripts/migrate_legacy_files_to_blob.php",
+        "azure-nginx-default.conf",
+        "startup.sh",
+        "health.php",
+        "the GitHub Actions workflow",
+        "the 263 storage call-site migrations"
+      ],
+      "infrastructure": [
+        "one MySQL Flexible Server instance",
+        "one storage account (portalfilestorage01)",
+        "one CI pipeline (matrix over two targets)"
+      ],
+      "metrics_that_cannot_be_split": {
+        "blob_count": 1197452,
+        "blob_capacity_gb": 85.77,
+        "storage_transactions_30d": 1966226,
+        "note": "Account-wide. Quote only as combined, never attributed to one school."
+      }
+    },
+    "eksu": {
+      "http_requests_31d": 14092342,
+      "http_5xx": 1064,
+      "http_5xx_rate_pct": 0.0076,
+      "peak_single_day_requests": 1239422,
+      "health_availability_pct": 100.0,
+      "mean_response_time_s": 0.19,
+      "response_time_basis": "median of 14 daily averages",
+      "database_gb": 6.3,
+      "tables": 153,
+      "student_records": 135067,
+      "staff_records": 2900,
+      "department_codes": 193,
+      "blob_references_migrated": 571040,
+      "legacy_values_remaining": 8386,
+      "distinct_users_30d": 53143,
+      "peak_dau": 19769,
+      "successful_payments": 1551157,
+      "payment_success_rate_pct": 83.55,
+      "payment_value_bn_ngn": 48.78,
+      "distinct_payers": 223663,
+      "rawscore_rows": 5517117,
+      "cbt": {
+        "tests": 3472,
+        "questions": 127083,
+        "results": 374799
+      },
+      "records_migrated_2026_08_15": 86116,
+      "distinctives": [
+        "1,822,938 historical academic records migrated INTO the system (raw scores, level records, student records tagged to pre-2019 sessions, session config back to 1990). BOUESTI has effectively none - EKSU-specific.",
+        "The September 2026 student-union election ran here and ONLY here: 7,188 ballots, 5,730 voters, 1,809 peak hour",
+        "Heavy transcript/certificate workflow: 120,744 combined requests vs BOUESTI's 3,223",
+        "Carries the bulk of the migration-day timestamp damage: 86,116 of 87,440 rows"
+      ]
+    },
+    "bouesti": {
+      "http_requests_31d": 8469006,
+      "http_5xx": 1776,
+      "http_5xx_rate_pct": 0.021,
+      "health_availability_pct": 99.99,
+      "mean_response_time_s": 0.496,
+      "response_time_basis": "mean of 7 daily averages",
+      "database_gb": 5.2,
+      "tables": 151,
+      "student_records": 33099,
+      "staff_records": 747,
+      "blob_references_migrated": 104550,
+      "legacy_values_remaining": 500,
+      "distinct_users_30d": 29033,
+      "distinct_users_90d": 39096,
+      "peak_dau": 16075,
+      "successful_payments": 238827,
+      "payment_success_rate_pct": 87.98,
+      "payment_value_bn_ngn": 16.73,
+      "distinct_payers": 61758,
+      "rawscore_rows": 1335391,
+      "activity_log_rows": 8471215,
+      "records_migrated_2026_08_15": 1324,
+      "distinctives": [
+        "Carries a THIRD tenant: server.php routes portalcoe/ptpportal hostnames to a separate coeikere-db. EKSU has no equivalent - BOUESTI is the more complex routing case",
+        "Higher payment success rate than EKSU: 87.98% vs 83.55%",
+        "Cleanest migration proof: 100% of migration-day rows blob-backed vs 0% of all others, with no pre-existing blob rows to muddy the signal",
+        "No e-voting in production - tbvotedetails is empty",
+        "Runs ~2.6x slower per request than EKSU on the same plan size; cause not established",
+        "Retains full activity_log history from 2021-05 (8,471,215 rows), where EKSU's was deliberately left off-cloud at migration - the two instances differ in audit depth."
+      ]
+    },
+    "combined_only": {
+      "http_requests_31d": 22561348,
+      "http_5xx_rate_pct": 0.013,
+      "blob_references_migrated": 675590,
+      "migration_completeness_pct": 98.7,
+      "records_migrated_2026_08_15": 87440,
+      "database_gb": 11.5,
+      "student_records": 168166,
+      "distinct_users_30d": 82176,
+      "successful_payments": 1789984,
+      "payment_value_bn_ngn": 65.51,
+      "distinct_payers": 285421,
+      "caveats": [
+        "DO NOT sum table counts: EKSU's 153 and BOUESTI's 151 are the same schema deployed twice, not 304 distinct tables. The same applies to any codebase measure (5,427 PHP files, 263 call sites) - built once, deployed twice, never doubled.",
+        "Combined distinct user (82,176) and payer (285,421) counts are the weakest sums: adding two distinct-counts is only exact if the populations are disjoint. Identifier formats make overlap very unlikely but it was not cross-matched (would mean handling personal data for no analytical gain). Treat as upper bounds.",
+        "Payment totals are full historical figures predating the Azure migration and this contribution.",
+        "Blob storage totals (~1,197,452 blobs / ~85.77 GB) are account-wide measurements, NOT sums - they cannot be split per school."
+      ]
+    },
+    "coe_ikere": {
+      "database_gb": 0.25,
+      "tables": 151,
+      "students": 11785,
+      "staff": 278,
+      "rawscore_rows": 132243,
+      "payment_transactions": 41707,
+      "activity_log_rows": 498788,
+      "first_activity": "2020-12-11",
+      "peak_year": 2022,
+      "peak_year_events": 206754,
+      "peak_year_users": 14384,
+      "wind_down_events_by_year": {
+        "2023": 118333,
+        "2024": 52973,
+        "2025": 22340,
+        "2026": 1457
+      },
+      "note": "Do NOT fold these figures into the EKSU/BOUESTI combined totals in combined_only - those were computed before this instance was identified and deliberately exclude it. Quote separately.",
+      "distinctives": [
+        "Third institutional deployment, not a routing quirk",
+        "Became BOUESTI; the two instances ran in parallel through the change of status",
+        "setup.siteName now reads the BOUESTI name - same institution, renamed",
+        "The 2022-2026 activity decay curve is textbook parallel-run cohort wind-down"
+      ]
+    }
+  },
+  "context_only_claims": [
+    {
+      "id": "C22",
+      "claim": "EKSU has been publicly ranked among Nigeria's leading state universities during the period this system has served it: 3rd best state university (Webometrics 2021), later cited as 2nd best state university, and in 2025 described by the Ekiti State Government as the leading state university, citing 12th of 270 Nigerian universities.",
+      "rankings_evidence_level": "VERIFIED from public sources",
+      "causal_link_evidence_level": "UNVERIFIED - rests on verbal remarks reported by institutional staff, with no document, citation or assessor finding. Rankings are multi-factor and no methodology isolates a student portal's contribution.",
+      "sources": [
+        "https://en.wikipedia.org/wiki/Ekiti_State_University",
+        "https://eksu.edu.ng/eksu-one-of-the-best-sought-institutions-ranked-as-3rd-best-state-university/",
+        "https://ekitistate.gov.ng/?p=30278",
+        "https://timeshighereducation.com/world-university-rankings/ekiti-state-university"
+      ],
+      "safe_wording": "Built and operated the student records and payments platform for Ekiti State University from 2019 - a period during which the institution was ranked among Nigeria's leading state universities.",
+      "never_write": "Any phrasing stating or implying the system caused or materially contributed to the ranking. It is unfalsifiable, and it would make a reader retrospectively doubt the verifiable evidence (675,590 migrated references, 22.5M monthly requests). Trading the most verifiable evidence for the least.",
+      "interview_only": "If asked, may add that institutional staff credited the portal as a contributing factor - spoken, attributed, framed as THEIR assessment, not the candidate's claim."
+    }
+  ]
+}

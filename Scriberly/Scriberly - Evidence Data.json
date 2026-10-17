@@ -1,0 +1,1186 @@
+{
+  "schema_version": "1.0",
+  "generated_on": "2026-10-15",
+  "subject": {
+    "name": "Abraham Akintola",
+    "git_identities": [
+      "AbrahamNobleOX",
+      "Abraham Akintola",
+      "abramseyakid"
+    ],
+    "git_email": "abramseyakid@gmail.com"
+  },
+  "project_name": "Scriberly",
+  "project_type": "Commercial B2C SaaS web application (AI-assisted CV and cover-letter platform)",
+  "project_description": "A CV and cover-letter builder for job-seekers with generative-AI optimisation, including ATS-targeted variants. Laravel 11 REST API with Statamic CMS, consumed by a Next.js web app. The contributor designed and built the AI generation layer, a token-credit economy, Stripe monetisation, a database-driven AI control plane and a per-request cost audit trail.",
+  "delivery_context": {
+    "engagement_type": "Fixed-scope freelance contract to deliver the AI and payments capability for version 1",
+    "client": "Early-stage startup product, built with/alongside the agency Fifteen",
+    "how_won": "Direct referral from a former manager who recommended the contributor by name as capable of the AI integration",
+    "original_scope": "Backend API plus written API documentation handed to the front-end developer",
+    "scope_extension": "A full reference front end, after the remote front-end developer could not integrate the API from written documentation alone",
+    "inherited_documentation": "Pre-existing project documentation was not sufficient to onboard from; the contributor read the code directly and documented his own work, but did not remediate legacy docs (out of scope)",
+    "outcome": "Contract completed on delivery and paid in full; repository and database access revoked at roll-off; the product went live afterwards",
+    "team_size_observed": 6,
+    "workflow": "Bitbucket, per-developer dev/* branches -> staging -> master, pull-request based",
+    "evidence_level": "ATTESTED",
+    "corroboration": [
+      "Commit history is a clean continuous 11-week block confined to AI, token and payment files, with no activity before or after — the signature of a scoped contract",
+      "No OpenAI, token-wallet, Stripe or AI-cost code exists in the repository before 2025-11-05; all of it is authored by this contributor, matching the stated capability gap",
+      "demo-ii begins 2025-11-30, three weeks into the engagement, consistent with a mid-engagement scope change rather than an original deliverable",
+      "OpenAPI annotations on every added endpoint and six commits touching storage/docs/openapi.json corroborate documentation as a deliverable"
+    ],
+    "framing_note": "Record the scope extension as 'the written API contract was not enough for a remote integrator, so I built a working reference implementation'. Characterisations of other individuals do not belong in career records."
+  },
+  "dates": {
+    "contributor_first_commit": "2025-11-05",
+    "contributor_last_commit": "2026-01-21",
+    "contributor_active_weeks": 11,
+    "project_first_commit": "2024-09-24",
+    "repository_refs_fetched": "2026-02-12",
+    "production_launch_date": null,
+    "production_launch_evidence_level": "ATTESTED_UNDATED",
+    "production_launch_note": "The contributor confirms the product is now live; it launched after the contract ended, so no production outcome is attributable to this contributor."
+  },
+  "repositories": [
+    {
+      "name": "api",
+      "role": "Backend REST API + CMS",
+      "stack": [
+        "PHP 8.3",
+        "Laravel 11",
+        "Statamic 5",
+        "Sanctum 4",
+        "MySQL"
+      ],
+      "total_commits": 1128,
+      "contributor_commits_non_merge": 176
+    },
+    {
+      "name": "frontend",
+      "package_name": "scriberfy",
+      "role": "Production web app",
+      "stack": [
+        "Next.js 14",
+        "React 18",
+        "TanStack Query 5",
+        "Tailwind",
+        "Radix UI"
+      ],
+      "contributor_commits_non_merge": 0
+    },
+    {
+      "name": "demo-ii",
+      "package_name": "scrib-demo",
+      "role": "AI/billing demo and QA console",
+      "stack": [
+        "React 19",
+        "Vite 7",
+        "TypeScript 5.9",
+        "Ant Design 6",
+        "Formik",
+        "Yup",
+        "Axios"
+      ],
+      "total_commits": 139,
+      "contributor_commits_non_merge": 139,
+      "sole_author": true
+    }
+  ],
+  "technologies": {
+    "backend": [
+      "PHP 8.3",
+      "Laravel 11",
+      "Laravel Sanctum 4",
+      "Laravel Socialite 5",
+      "Statamic 5",
+      "MySQL",
+      "database cache driver",
+      "database queue driver",
+      "Redis (configured)"
+    ],
+    "ai": [
+      "OpenAI Responses API /v1/responses",
+      "OpenAI /v1/responses/input_tokens",
+      "json_schema structured outputs (strict)",
+      "gpt-4o-2024-08-06",
+      "gpt-4o",
+      "gpt-4o-mini",
+      "gpt-4.1-mini"
+    ],
+    "payments": [
+      "Stripe PHP SDK 19",
+      "Stripe Checkout",
+      "Stripe Webhooks",
+      "Stripe Billing Portal"
+    ],
+    "frontend_contributor": [
+      "React 19",
+      "TypeScript 5.9",
+      "Vite 7",
+      "Ant Design 6",
+      "Formik",
+      "Yup",
+      "React Router 7",
+      "Axios",
+      "react-toastify"
+    ],
+    "documents_and_integrations": [
+      "Api2PDF",
+      "barryvdh/laravel-dompdf",
+      "HubSpot (by others)",
+      "Google/LinkedIn/Apple/Facebook OAuth"
+    ],
+    "tooling": [
+      "Git",
+      "Bitbucket",
+      "Bitbucket Pipelines (present but fully commented out)",
+      "l5-swagger / OpenAPI",
+      "Laravel Pint",
+      "PHPUnit 11 (installed, unused for this subsystem)"
+    ]
+  },
+  "architecture": {
+    "style": "Modular monolith REST API with a service layer, consumed by separate SPA/SSR front ends",
+    "auth": "Laravel Sanctum personal access tokens via custom api.auth middleware; session middleware retained; policies for Cv, CoverLetter, User",
+    "async": "Database-backed queue used for HubSpot sync jobs (authored by others); AI generation is synchronous",
+    "contributor_subsystems": [
+      "AI generation layer (OpenAiService, OpenAiServiceContinuation, OpenAiServiceContinuationTwo)",
+      "Token quotation engine (AiTokenController, AiTokenCalculatorService)",
+      "Token wallet (ScriberlyToken, chargeUserTokens)",
+      "Stripe monetisation (StripeTokenController, StripeWebhookController, StripeFulfillmentService, StripeBillingPortalController, PaymentTransactionController)",
+      "Runtime AI control plane (ai_models, ai_pricing_settings, ai_limits, ai_system_instructions, ai_feature_prices, topup_levels)",
+      "AI cost observability (ai_request_stats, AiRequestStatsService, AiRequestStatsController)",
+      "AI result persistence (SaveAiResponseService)"
+    ]
+  },
+  "integrations": [
+    {
+      "name": "OpenAI",
+      "purpose": "Text generation and exact input-token counting",
+      "built_by_contributor": true
+    },
+    {
+      "name": "Stripe",
+      "purpose": "Token top-up checkout, webhooks, billing portal, receipts",
+      "built_by_contributor": true
+    },
+    {
+      "name": "HubSpot",
+      "purpose": "CRM sync of profiles, CVs, cover letters, jobs",
+      "built_by_contributor": false
+    },
+    {
+      "name": "Api2PDF / dompdf",
+      "purpose": "CV and cover-letter PDF rendering",
+      "built_by_contributor": false
+    },
+    {
+      "name": "Google / LinkedIn / Apple / Facebook OAuth",
+      "purpose": "Social login",
+      "built_by_contributor": false,
+      "note": "contributor refactored SocialMediaAuthController"
+    }
+  ],
+  "workflows": [
+    {
+      "name": "Priced AI generation",
+      "steps": [
+        "Quote via OpenAI input_tokens endpoint + per-feature output multiplier + margin",
+        "User confirms cost in UI",
+        "Debit wallet inside DB transaction with lockForUpdate",
+        "Call OpenAI Responses API with strict json_schema and DB-sourced system instruction",
+        "Roll back debit on any failure",
+        "Persist AI output as a NEW CV/cover letter inheriting un-optimised fields",
+        "Write ai_request_stats audit row"
+      ],
+      "built_by_contributor": true
+    },
+    {
+      "name": "Stripe token top-up",
+      "steps": [
+        "Resolve topup_level to tokens and stripe_price_id from DB with config fallback",
+        "Ensure Stripe customer exists on user",
+        "Create Checkout session with user_id/tokens/topup_level metadata",
+        "Fulfil via signature-verified webhook OR direct success-page call",
+        "Idempotency guard on event_id AND session_id",
+        "Credit wallet + write payment_transactions in one transaction",
+        "Send receipt email outside the transaction"
+      ],
+      "built_by_contributor": true
+    },
+    {
+      "name": "Runtime pricing administration",
+      "steps": [
+        "GET/PUT /ai-settings for margin % and AI-tokens-per-Scriberly-token",
+        "GET/POST/PUT /ai-models for provider, model and per-million costs",
+        "ai_feature_prices, ai_limits, ai_system_instructions, topup_levels editable in DB"
+      ],
+      "built_by_contributor": true
+    },
+    {
+      "name": "Granular optimisation",
+      "steps": [
+        "Single employment entry optimisation",
+        "Single Q&A answer optimisation",
+        "Each with own price, system instruction and token quote"
+      ],
+      "built_by_contributor": true
+    }
+  ],
+  "my_contributions": {
+    "verified_personal": [
+      "Complete OpenAI integration: 8 AI operations across 3 service classes (~3,373 lines)",
+      "Token-credit economy: wallet model, transactional charging under row lock, pre-flight quotation, margin model",
+      "Stripe end to end: Checkout, webhooks, idempotent fulfilment, billing portal, receipt emails, transaction ledger",
+      "Database-driven AI control plane: 6 control tables with config fallbacks",
+      "AI cost observability: ai_request_stats table, service and paginated per-user API",
+      "SaveAiResponseService: non-destructive persistence of AI output into new CV/cover-letter records",
+      "35 database migrations creating 9 new tables",
+      "OpenAPI/Swagger annotations for all new endpoints",
+      "X-AI-Debug header to suppress internal cost data from public responses",
+      "demo-ii React 19/TypeScript console in full (14 pages, 15 components, typed API client)",
+      "Early refactors of WebLinksController and SocialMediaAuthController"
+    ],
+    "not_attributable_to_contributor": [
+      "CV/cover-letter data model and builder",
+      "PDF rendering and templates",
+      "HubSpot integration and queue jobs",
+      "Next.js production front end",
+      "Authentication and social login (authored by others; contributor refactored)",
+      "Statamic CMS content",
+      "Job tracker"
+    ],
+    "primary_authored_files": [
+      {
+        "path": "app/Services/OpenAiServiceContinuation.php",
+        "lines": 1748
+      },
+      {
+        "path": "app/Services/OpenAiService.php",
+        "lines": 1125
+      },
+      {
+        "path": "app/Http/Controllers/Api/CvOptimiseController.php",
+        "lines": 733
+      },
+      {
+        "path": "app/Http/Controllers/Api/AiTokenController.php",
+        "lines": 656
+      },
+      {
+        "path": "app/Services/OpenAiServiceContinuationTwo.php",
+        "lines": 500
+      },
+      {
+        "path": "app/Http/Controllers/Api/CoverLetterAiController.php",
+        "lines": 466
+      },
+      {
+        "path": "app/Services/SaveAiResponseService.php",
+        "lines": 424
+      },
+      {
+        "path": "app/Http/Controllers/Api/AiModelController.php",
+        "lines": 299
+      },
+      {
+        "path": "app/Http/Controllers/Api/OpenAiController.php",
+        "lines": 234
+      },
+      {
+        "path": "app/Http/Controllers/Api/ScriberlyTokenController.php",
+        "lines": 206
+      },
+      {
+        "path": "app/Http/Controllers/Api/StripeTokenController.php",
+        "lines": 171
+      },
+      {
+        "path": "app/Services/StripeFulfillmentService.php",
+        "lines": 151
+      },
+      {
+        "path": "app/Http/Controllers/Api/AiSettingsController.php",
+        "lines": 117
+      },
+      {
+        "path": "app/Http/Controllers/Api/AiRequestStatsController.php",
+        "lines": 97
+      },
+      {
+        "path": "app/Services/AiSettingsService.php",
+        "lines": 84
+      },
+      {
+        "path": "app/Services/StripeService.php",
+        "lines": 77
+      },
+      {
+        "path": "app/Services/AiTokenCalculatorService.php",
+        "lines": 69
+      },
+      {
+        "path": "app/Http/Controllers/Api/StripeWebhookController.php",
+        "lines": 62
+      },
+      {
+        "path": "app/Http/Controllers/Api/StripeBillingPortalController.php",
+        "lines": 61
+      },
+      {
+        "path": "app/Services/AiRequestStatsService.php",
+        "lines": 19
+      }
+    ],
+    "new_tables_authored": [
+      "scriberly_tokens",
+      "ai_models",
+      "ai_pricing_settings",
+      "ai_request_stats",
+      "ai_system_instructions",
+      "ai_limits",
+      "ai_feature_prices",
+      "payment_transactions",
+      "topup_levels"
+    ]
+  },
+  "production_metrics": {
+    "available": false,
+    "reason": "No production database, staging database, log store, APM or analytics was reachable. The .env in api/ is a local development configuration (APP_ENV=local, DB_HOST=127.0.0.1, local schema) and no local MySQL server is running. No production data of any kind was read.",
+    "metrics": []
+  },
+  "repository_metrics": [
+    {
+      "name": "contributor_commits_api_non_merge",
+      "value": 176,
+      "unit": "commits",
+      "start_date": "2025-11-05",
+      "end_date": "2026-01-21",
+      "evidence_source": "git log --all --author=abramseyakid --no-merges",
+      "calculation_method": "count of non-merge commits across all refs matching the contributor email",
+      "evidence_level": "VERIFIED",
+      "qualification": "Commit count measures activity, not value or scope."
+    },
+    {
+      "name": "contributor_commits_reachable_from_master",
+      "value": 174,
+      "unit": "commits",
+      "evidence_source": "git log origin/master --author=abramseyakid --no-merges",
+      "calculation_method": "non-merge commits reachable from origin/master",
+      "evidence_level": "VERIFIED",
+      "qualification": "Confirms the work was merged to the main branch; origin/master head dated 2026-02-11."
+    },
+    {
+      "name": "share_of_master_non_merge_commits",
+      "value": 25.14,
+      "unit": "percent",
+      "evidence_source": "174 of 692 non-merge commits on origin/master",
+      "calculation_method": "174 / 692 * 100",
+      "evidence_level": "DERIVED",
+      "qualification": "Counts commits, not functionality or lines; other contributors' commits may be larger or smaller."
+    },
+    {
+      "name": "lines_added_api",
+      "value": 18072,
+      "unit": "lines",
+      "evidence_source": "git log --numstat on contributor's non-merge commits",
+      "calculation_method": "sum of insertions column",
+      "evidence_level": "VERIFIED",
+      "qualification": "Includes generated OpenAPI JSON, docblocks and comments."
+    },
+    {
+      "name": "lines_deleted_api",
+      "value": 7033,
+      "unit": "lines",
+      "evidence_source": "git log --numstat",
+      "calculation_method": "sum of deletions column",
+      "evidence_level": "VERIFIED",
+      "qualification": "Same as above."
+    },
+    {
+      "name": "pull_requests_merged",
+      "value": 35,
+      "unit": "pull requests",
+      "start_date": "2025-11-24",
+      "end_date": "2026-01-21",
+      "evidence_source": "merge commit subjects 'Merged in dev/abraham (pull request #NNN)'",
+      "calculation_method": "unique PR numbers, range #402-#452",
+      "evidence_level": "VERIFIED",
+      "qualification": "Bitbucket PR numbering is repo-wide; the range is not contiguous for this contributor."
+    },
+    {
+      "name": "migrations_authored",
+      "value": 35,
+      "unit": "migrations",
+      "evidence_source": "git log --diff-filter=A --name-only on database/migrations/",
+      "calculation_method": "unique added migration files",
+      "evidence_level": "VERIFIED",
+      "qualification": "Includes data-seeding and corrective migrations, not only schema creation."
+    },
+    {
+      "name": "new_app_files_authored",
+      "value": 33,
+      "unit": "files",
+      "evidence_source": "git log --diff-filter=A --name-only on app/",
+      "calculation_method": "unique added files under app/",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "name": "primary_authored_application_code",
+      "value": 6988,
+      "unit": "lines",
+      "evidence_source": "wc -l over the 20 files listed in my_contributions.primary_authored_files (18 counted in the dossier narrative plus StripeService and AiRequestStatsService)",
+      "calculation_method": "sum of file line counts for files the contributor created and dominantly authored",
+      "evidence_level": "DERIVED",
+      "qualification": "Current line counts, not lines written; includes comments and OpenAPI docblocks; excludes migrations and demo-ii."
+    },
+    {
+      "name": "demo_console_commits",
+      "value": 139,
+      "unit": "commits",
+      "start_date": "2025-11-30",
+      "end_date": "2026-01-21",
+      "evidence_source": "demo-ii git shortlog -sne --all",
+      "calculation_method": "all commits; single author",
+      "evidence_level": "VERIFIED",
+      "qualification": "Internal demo/QA tool, not a customer-facing product."
+    },
+    {
+      "name": "demo_console_lines_added",
+      "value": 16203,
+      "unit": "lines",
+      "evidence_source": "demo-ii git log --numstat",
+      "evidence_level": "VERIFIED",
+      "qualification": "Includes lockfile and generated content."
+    },
+    {
+      "name": "priced_ai_features",
+      "value": 10,
+      "unit": "features",
+      "evidence_source": "config/ai.php fixed_feature_prices",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "name": "ai_endpoints_built",
+      "value": 13,
+      "unit": "endpoints",
+      "evidence_source": "routes/api.php lines 307-322 (8 generation + 5 token-quotation)",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "name": "topup_tiers",
+      "value": 4,
+      "unit": "tiers",
+      "evidence_source": "config/ai.php topup_levels (free_on_signup, start_pack, job_hunter_pack, pro_searcher_pack)",
+      "evidence_level": "VERIFIED",
+      "qualification": "Pack token amounts are commercially sensitive; see private_only_information."
+    }
+  ],
+  "verified_claims": [
+    {
+      "id": "C1",
+      "claim": "Designed and built the complete AI generation layer of a commercial CV platform — eight distinct AI operations on OpenAI's Responses API using strict json_schema structured outputs.",
+      "evidence_level": "VERIFIED",
+      "evidence": "routes/api.php lines 307-314; OpenAiService, OpenAiServiceContinuation, OpenAiServiceContinuationTwo",
+      "period": "2025-11 to 2026-01"
+    },
+    {
+      "id": "C2",
+      "claim": "Built a token-credit economy from scratch: per-user wallet with transactional debit/credit, lifetime accounting, row-level locking against concurrent double-spend, pre-flight cost quotation and automatic rollback on generation failure.",
+      "evidence_level": "VERIFIED",
+      "evidence": "ScriberlyToken model; OpenAiService::chargeUserTokens(); create_scriberly_tokens_table migration; transaction blocks in OpenAiController and CvOptimiseController"
+    },
+    {
+      "id": "C3",
+      "claim": "Delivered Stripe payments end to end: tiered Checkout top-ups, signature-verified webhooks, an idempotent fulfilment service guarding on both event and session ID, Billing Portal access, receipt emails and a queryable transaction ledger.",
+      "evidence_level": "VERIFIED",
+      "evidence": "StripeTokenController, StripeWebhookController, StripeFulfillmentService, StripeBillingPortalController, PaymentTransactionController, PaymentReceiptMail, payment_transactions migrations",
+      "period": "2025-12-13 to 2026-01-21"
+    },
+    {
+      "id": "C4",
+      "claim": "Contributed 176 non-merge commits (+18,072/-7,033 lines) across 35 merged pull requests in an 11-week engagement; 174 commits are merged into origin/master.",
+      "evidence_level": "VERIFIED",
+      "qualification": "Commit and line counts measure activity, not value."
+    },
+    {
+      "id": "C5",
+      "claim": "Authored 35 database migrations introducing nine new tables for the AI and billing domain.",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "id": "C6",
+      "claim": "Designed a database-driven AI control plane allowing models, per-million token costs, margin percentage, per-feature prices, output-token limits, system prompts and top-up pack sizes to be changed in production without a code deploy, each with a config fallback.",
+      "evidence_level": "VERIFIED",
+      "evidence": "AiSettingsService, AiModel, AiFeaturePrice, AiLimit, AiSystemInstruction, TopupLevel and their seeding migrations"
+    },
+    {
+      "id": "C7",
+      "claim": "Built per-request AI cost observability capturing model, real input/output tokens, provider fee, tokens charged, margin tokens and margin fee, plus full request and response payloads, exposed through a paginated per-user size-capped API.",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "id": "C8",
+      "claim": "Solved structured-output reliability for nested, identifier-bearing JSON by combining strict JSON-schema enforcement, runtime-injected ID enumeration in the system prompt, and a defensive multi-strategy JSON recovery parser.",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "id": "C9",
+      "claim": "Independently designed and built a React 19/TypeScript console (139 commits, sole author, +16,203 lines) covering all AI features, cost-confirmation flows, Stripe top-up and success handling, request-stats inspection and admin margin controls.",
+      "evidence_level": "VERIFIED",
+      "qualification": "An internal demo/QA tool, not a customer-facing product."
+    },
+    {
+      "id": "C11",
+      "claim": "Identified and closed a commercial data-exposure gap by making internal cost and margin detail opt-in behind a request header while keeping public responses minimal.",
+      "evidence_level": "VERIFIED",
+      "evidence": "parseAiDebugHeader() and response-rebuild branches, 20-21 Jan 2026"
+    }
+  ],
+  "derived_claims": [
+    {
+      "id": "C4b",
+      "claim": "Represented approximately 25% of all non-merge commits on the main branch of the API repository.",
+      "evidence_level": "DERIVED",
+      "calculation": "174 / 692",
+      "qualification": "Counts commits, not scope."
+    },
+    {
+      "id": "D2",
+      "claim": "Primary author of approximately 7,000 lines of the API's AI and billing application code across 20 files.",
+      "evidence_level": "DERIVED",
+      "calculation": "sum of wc -l over files created and dominantly authored by the contributor",
+      "qualification": "Current line counts, not lines written."
+    }
+  ],
+  "strongly_supported_claims": [
+    {
+      "id": "C10",
+      "claim": "Worked to an established team architecture: Bitbucket PR workflow, per-developer branches merged through staging to master, documented house conventions for routing, response envelopes, validation and migrations, with OpenAPI annotations maintained for every new endpoint.",
+      "evidence": "35 PR merge commits; branch topology; COPILOT_INSTRUCTIONS.md; Swagger annotations; storage/docs/openapi.json updates"
+    },
+    {
+      "id": "S1",
+      "claim": "The engagement was a freelance/contract contribution to an agency-built product.",
+      "evidence": "Workspace path contains 'freelance'; all other committers use @fifteen.co.uk addresses; the contributor uses a personal gmail identity."
+    }
+  ],
+  "inferred_claims": [
+    {
+      "claim": "The AI and token subsystem reached production, since all 174 commits are merged into origin/master and master is the release branch.",
+      "evidence_level": "INFERRED",
+      "note": "No release tags, deployment logs or production data were available to confirm a live deployment or its date."
+    },
+    {
+      "claim": "The 'rewrote only the first employment' defect occurred in real use rather than being anticipated defensively.",
+      "evidence_level": "INFERRED",
+      "note": "Inferred from the three independent countermeasures and the commit sequence; no written post-mortem exists."
+    }
+  ],
+  "unknown_requires_confirmation": [
+    "Number of users, AI requests, or payments processed in production",
+    "Revenue or tokens sold",
+    "Latency, throughput, uptime or error rates in production",
+    "Production launch date for the AI/token features",
+    "Cost savings or margin realised",
+    "Conversion impact of the free-on-signup grant",
+    "Whether anyone besides the contributor used the demo-ii console",
+    "Whether tests were added to this subsystem after January 2026",
+    "Production CORS, queue and cache configuration",
+    "Any leadership or mentoring scope"
+  ],
+  "business_impact": [
+    {
+      "category": "Monetisation",
+      "statement": "The product gained a complete paid-AI path: quote, charge, generate, rollback-on-failure, fulfil, receipt, ledger. No token wallet, Stripe integration or AI cost accounting existed in the repository before this work.",
+      "evidence_level": "VERIFIED as capability",
+      "quantified": false
+    },
+    {
+      "category": "Cost control",
+      "statement": "Per-feature output-token ceilings and a configurable margin make the unit economics of every AI feature explicit and boundable.",
+      "evidence_level": "VERIFIED as mechanism and stated intent",
+      "evidence": "Two commits titled 'Update AI usage limits for improved cost control and output quality'",
+      "quantified": false
+    },
+    {
+      "category": "Commercial agility",
+      "statement": "Prices, margin, models, prompts and top-up packs are database rows; a pricing change needs no developer, release or downtime.",
+      "evidence_level": "VERIFIED",
+      "quantified": false
+    },
+    {
+      "category": "Financial observability",
+      "statement": "Every AI call records what the business paid versus what the user was charged.",
+      "evidence_level": "VERIFIED that the mechanism exists; no data read",
+      "quantified": false
+    },
+    {
+      "category": "Revenue surface",
+      "statement": "Four top-up tiers and ten individually priced AI features, with a free token grant on signup creating a try-before-you-buy funnel.",
+      "evidence_level": "VERIFIED from config and RegisterController",
+      "quantified": false
+    },
+    {
+      "category": "Product differentiation",
+      "statement": "ATS-specific optimisation for CVs and cover letters, plus granular single-job and single-answer optimisation, materially widen the product beyond a plain CV builder.",
+      "evidence_level": "VERIFIED",
+      "quantified": false
+    }
+  ],
+  "engineering_challenges": [
+    {
+      "title": "Charging real money for a non-deterministic, variable-cost operation",
+      "why_hard": "LLM cost is unknown until the call completes, but a consumer product must quote before it charges.",
+      "resolution": "Price on exactly measurable inputs (OpenAI's own input-token endpoint) plus a bounded output ceiling (input x per-feature multiplier), apply margin to that ceiling, and record actual-versus-charged per request."
+    },
+    {
+      "title": "Charge-then-generate without stealing from users",
+      "why_hard": "Charging after generation gives away paid output; charging before risks taking money for a failure; concurrent requests can double-spend one balance.",
+      "resolution": "Debit and OpenAI call inside one DB transaction with lockForUpdate() on the wallet row; rollback on any throwable; 422 with required_tokens before any AI call when the balance is short."
+    },
+    {
+      "title": "Structurally valid output from an LLM",
+      "why_hard": "A CV is a nested object graph where prose must change but identifiers, counts and ordering must not.",
+      "resolution": "strict json_schema on the API call; runtime-injected system instructions enumerating required employment IDs; safeJsonDecode() recovering from markdown fences, noise and stray terminators."
+    },
+    {
+      "title": "Payment idempotency across two fulfilment paths",
+      "why_hard": "Fulfilment can be triggered by a Stripe webhook and by the browser hitting the success page; double-crediting is a direct revenue leak.",
+      "resolution": "One fulfilment service guarding on event_id AND session_id against the payment_transactions ledger before crediting inside a transaction."
+    },
+    {
+      "title": "Making the economics changeable without deploys",
+      "why_hard": "A pricing mistake in code requires a release; the business needed to retune prices, prompts, models and limits live.",
+      "resolution": "Every lever reads from a DB table with a config fallback and tolerant try/catch; short cache on the settings singleton."
+    },
+    {
+      "title": "Operating inside an established architecture",
+      "why_hard": "COPILOT_INSTRUCTIONS.md prescribes route shapes, response envelopes, validation style, migration naming and model conventions.",
+      "resolution": "35 migrations and all new endpoints follow the documented house style, with matching OpenAPI annotations."
+    }
+  ],
+  "decisions": [
+    {
+      "id": 1,
+      "problem": "LLM cost unknown before the call",
+      "decision": "Price on exact input tokens from OpenAI's input_tokens endpoint x a per-feature output multiplier, plus margin",
+      "reasoning": "Gives a quotable upper bound; config/ai.php comments name the multipliers as cost/quality controls",
+      "tradeoffs": "Extra network round-trip per quote; quote exceeds typical actual cost",
+      "result": "Users see a firm price; actual-vs-charged recorded per request"
+    },
+    {
+      "id": 2,
+      "problem": "Charge before or after generation?",
+      "decision": "Before, inside a DB transaction with a row lock, rolled back on failure",
+      "reasoning": "Code comment: 'Charge user tokens before generation'; explicit rollback message to the user",
+      "tradeoffs": "Transaction held open across an external API call",
+      "result": "No unpaid generation, no charge for a failure, no concurrent double-spend"
+    },
+    {
+      "id": 3,
+      "problem": "Pure usage pricing vs fixed prices",
+      "decision": "Both: usage breakdown computed, per-feature fixed price charged (ai_feature_prices, Jan 2026)",
+      "reasoning": "Fixed prices are simpler to communicate; added two months after usage pricing",
+      "tradeoffs": "Margin now varies per request instead of being guaranteed",
+      "result": "Predictable UX; ai_request_stats.fixed_price records charged alongside cost"
+    },
+    {
+      "id": 4,
+      "problem": "Where should prompts, limits and prices live?",
+      "decision": "Database tables with config fallbacks",
+      "reasoning": "Migrations seed defaults; every read uses optional(...) with a config() fallback",
+      "tradeoffs": "More queries; prompts become untracked state outside Git",
+      "result": "Tunable in production without a deploy"
+    },
+    {
+      "id": 5,
+      "problem": "How to deliver AI output into the CV?",
+      "decision": "Write a NEW CV/cover-letter record copying all un-optimised fields from the original",
+      "reasoning": "A dense commit run on 2 Jan 2026 adds each category of persistence in turn",
+      "tradeoffs": "Duplicates data; more records per user",
+      "result": "The original CV is never mutated; the user compares and keeps what they want"
+    },
+    {
+      "id": 6,
+      "problem": "Webhook only, or also direct fulfilment?",
+      "decision": "Both, behind one idempotent service",
+      "reasoning": "Code comment: 'mirrors the webhook processing to guarantee immediate fulfillment when customer is present'",
+      "tradeoffs": "Two entry points to keep consistent",
+      "result": "Tokens appear immediately on return from Stripe"
+    },
+    {
+      "id": 7,
+      "problem": "Exposing cost internals without leaking them to end users",
+      "decision": "Opt-in X-AI-Debug header toggling the verbose breakdown; minimal response rebuilt when absent",
+      "reasoning": "The final week of work is almost entirely this change",
+      "tradeoffs": "Response shape varies by header",
+      "result": "Internal tooling keeps full visibility; public responses expose only content and fixed price"
+    },
+    {
+      "id": 8,
+      "problem": "One very large service class, or many?",
+      "decision": "Three sequential classes: OpenAiService -> Continuation -> ContinuationTwo",
+      "reasoning": "Names and chronology show file growth drove the split, not domain boundaries",
+      "tradeoffs": "Boundaries are historical, not conceptual; discoverability suffers",
+      "result": "Acknowledged limitation; see lessons"
+    }
+  ],
+  "problems_solved": [
+    {
+      "id": "9.1",
+      "title": "The model rewrote only the first employment",
+      "situation": "CV optimisation sends a full employment history for rewriting.",
+      "problem": "Valid-looking JSON returned with only the first employment rewritten; later entries unchanged or dropped; output sometimes truncated mid-JSON.",
+      "investigation": "Evidenced by the layered countermeasures rather than a written post-mortem.",
+      "solution": "strict json_schema; runtime-appended system instruction enumerating the employment IDs that must be returned and forbidding omissions/additions; safeJsonDecode() recovery parser.",
+      "result": "Multi-employment optimisation became reliable enough to ship and price.",
+      "evidence": "OpenAiServiceContinuation lines ~82,134-189,497,704,1120; OpenAiService::safeJsonDecode(); commit 2025-11-10"
+    },
+    {
+      "id": "9.2",
+      "title": "Optimisation silently discarded parts of the user's CV",
+      "situation": "AI-optimised CVs are saved as new records.",
+      "problem": "Only AI-returned fields were persisted, so education, skills, additional details, external activities, profile/contact fields, template and section preferences were lost.",
+      "solution": "SaveAiResponseService extended to take the original CV and backfill every untouched field.",
+      "result": "An optimised CV is a complete CV.",
+      "evidence": "Nine commits on 2026-01-02; the ?array $originalCv parameter and ?? fallbacks in createCvFromAi()"
+    },
+    {
+      "id": "9.3",
+      "title": "Double-crediting paid top-ups",
+      "situation": "Stripe can redeliver checkout.session.completed, and the success page also triggers fulfilment.",
+      "problem": "Without guards one payment credits tokens multiple times — a direct revenue leak.",
+      "solution": "Single StripeFulfillmentService checking event_id and session_id against payment_transactions before crediting; credit and ledger write in one transaction; receipt email outside it; webhook signature verification.",
+      "result": "Fulfilment is safe to retry from any path.",
+      "evidence": "Commit 2025-12-13; StripeFulfillmentService::fulfillSession(); migration 2026_01_06_000100"
+    },
+    {
+      "id": "9.4",
+      "title": "Token balances could not represent real costs",
+      "situation": "Wallet balances were unsignedInteger and Scriberly-token totals were rounded up.",
+      "problem": "Integer-only balances forced rounding on every charge, distorting pricing and creating an unintended 'rounding profit' that had to be tracked as its own field.",
+      "solution": "Migrations converted balance and lifetime columns to decimal with scale 2; AiTokenCalculatorService moved from ceil() to round(...,2) and zeroed rounding_profit_tokens.",
+      "result": "Charges reflect computed cost rather than a rounding artefact.",
+      "evidence": "Migrations 2026_01_05_000002/000003, 2026_01_06_000000; commented-out ceil() in AiTokenCalculatorService"
+    },
+    {
+      "id": "9.5",
+      "title": "Internal cost data leaking into public API responses",
+      "situation": "AI responses carried model, real token usage, provider fee, margin percentage and margin tokens.",
+      "problem": "That is the company's cost structure and margin, exposed to any authenticated user.",
+      "solution": "X-AI-Debug header parsed by parseAiDebugHeader(); minimal response rebuilt when absent; applied across AI controllers, token calculators and the stats endpoint; header added to CORS allow-list.",
+      "result": "One codebase serves both a safe public response and a full internal one.",
+      "evidence": "Commits 2026-01-20 and 2026-01-21; config/cors.php allowed_headers"
+    }
+  ],
+  "security_and_reliability": {
+    "implemented": [
+      "Stripe webhook signature verification; missing secret fails closed",
+      "Idempotent payment fulfilment keyed on event_id and session_id",
+      "Wallet debits under lockForUpdate() inside a transaction with rollback",
+      "Sanctum bearer auth on all AI, wallet and payment endpoints; Cv/CoverLetter/User policies; explicit user_id ownership checks before reading a CV",
+      "ai_request_stats paginated per authenticated user with a hard per_page cap of 100",
+      "Cost internals suppressed unless X-AI-Debug is sent",
+      "OpenAI calls: 30s timeout, 2 retries, 200ms backoff; distinct logging for transport errors, non-2xx and JSON decode failures",
+      "Structured logging with duration_ms, http_status, response_size and token usage",
+      "Secrets in environment variables; fail-fast with a clear message when the OpenAI key is missing"
+    ],
+    "weaknesses_observed": [
+      "No automated tests for this subsystem; Bitbucket Pipelines entirely commented out; COPILOT_INSTRUCTIONS.md records a deliberate no-tests stance. Payment and billing logic without tests is the largest risk in this work.",
+      "Local .env sets CORS_ALLOWED_ORIGIN=* while config/cors.php reads CORS_ALLOWED_ORIGINS — a latent naming mismatch; production values unknown.",
+      "AiSettingsService cache TTL is 0.6 seconds, which is close to no caching.",
+      "AI generation is synchronous inside a request and a transaction rather than queued.",
+      "Prompts live in database rows, outside version control and without a review trail."
+    ]
+  },
+  "lessons": [
+    "Price what you can measure: an exact input-token count plus a bounded output ceiling turns an unknowable cost into a quotable one.",
+    "Record charged-versus-actual from day one; ai_request_stats arrived in week three and made every later pricing change arguable.",
+    "Put the business levers in the database; seven weeks of commits consist of moving constants out of config and into tables.",
+    "Usage-based pricing is honest; fixed pricing is sellable. Users want a price, not a formula.",
+    "Constrain LLMs at three levels — schema, instruction and parser. Any one alone was insufficient for nested, ID-bearing JSON.",
+    "Never mutate the user's original; writing to a new record made the feature safe to iterate on and gave users a comparison view for free.",
+    "Splitting a class by line count is not refactoring; the Service -> Continuation -> ContinuationTwo chain should have been split by concern.",
+    "Ship billing with tests whatever the house policy; the absence of tests around idempotency and wallet debits is the hardest part of this work to defend."
+  ],
+  "cv_bullets": {
+    "high_confidence_quantified": [
+      "Designed and shipped the full AI layer of a commercial CV platform — eight generative features on OpenAI's Responses API with strict JSON-schema outputs — contributing 176 commits and ~18,000 lines across 35 merged pull requests in 11 weeks.",
+      "Built a token-credit billing system from scratch for a Laravel 11 SaaS product: per-user wallet, transactional charge-with-rollback under row-level locking, pre-flight cost quotation and nine new database tables across 35 migrations.",
+      "Integrated Stripe end to end — tiered Checkout top-ups, signature-verified webhooks and an idempotent fulfilment service guarding on both event and session identifiers — eliminating double-credit risk across two independent fulfilment paths.",
+      "Authored a 1,750-line AI optimisation service and a per-request cost-audit pipeline recording provider fee, tokens charged and margin for every one of ten individually priced AI features.",
+      "Independently delivered a React 19/TypeScript console (139 commits, sole author, 16,000+ lines) exercising every AI, pricing and payment flow, used to validate the backend before front-end integration."
+    ],
+    "high_confidence_non_quantified": [
+      "Made generative-AI features commercially viable by pricing on exact provider-measured input tokens plus a bounded output ceiling, so users receive a firm quote before any spend is committed.",
+      "Designed a database-driven AI control plane letting the business change models, prices, margin, prompts and usage limits in production with no code deploy.",
+      "Solved LLM structured-output reliability for nested, identifier-bearing JSON by combining schema enforcement, runtime prompt constraints and a defensive recovery parser.",
+      "Re-architected AI result persistence so optimised CVs are written as new records inheriting every un-optimised field from the original, making the feature non-destructive.",
+      "Closed a commercial-data exposure gap by putting internal cost and margin detail behind an opt-in debug header.",
+      "Delivered within an established agency codebase, following documented house conventions for routing, responses, validation and migrations, with OpenAPI documentation maintained for every endpoint."
+    ],
+    "requires_confirmation": [
+      "Any claim of production volume, user numbers, revenue, token sales, latency or uptime",
+      "'Reduced AI costs by X%' — the mechanism is verified, the outcome is not measured",
+      "Any claim of leading or mentoring"
+    ]
+  },
+  "interview_stories": [
+    {
+      "id": "S1",
+      "theme": "Complex problem solving / commercial thinking",
+      "title": "Pricing an unpriceable operation",
+      "result": "Exact input-token count plus a bounded output ceiling plus margin produced a firm quote before the user commits."
+    },
+    {
+      "id": "S2",
+      "theme": "Correctness under concurrency and failure",
+      "title": "Charge-then-generate",
+      "result": "Transaction + lockForUpdate + rollback: no free generation, no charge for a failure, no double-spend."
+    },
+    {
+      "id": "S3",
+      "theme": "Production debugging of non-deterministic systems",
+      "title": "'It only rewrote the first job'",
+      "result": "Three layers of defence made multi-entry optimisation shippable."
+    },
+    {
+      "id": "S4",
+      "theme": "Protecting revenue / integration design",
+      "title": "Payment idempotency across two paths",
+      "result": "One fulfilment service, safe to retry from webhook or success page."
+    },
+    {
+      "id": "S5",
+      "theme": "Judgement and security awareness",
+      "title": "The response was leaking our margin",
+      "result": "Opt-in debug header; one codebase serves public and internal responses."
+    },
+    {
+      "id": "S6",
+      "theme": "Technical trade-offs / responding to the business",
+      "title": "Usage pricing to fixed pricing",
+      "result": "Kept usage computation for accounting, charged a fixed price for clarity; per-request margin is no longer guaranteed."
+    },
+    {
+      "id": "S7",
+      "theme": "Ownership and data-design care",
+      "title": "Optimisation was dropping users' data",
+      "result": "Nine commits in one day backfilling every un-optimised field; the original CV is never mutated."
+    },
+    {
+      "id": "S8",
+      "theme": "Working in an established team",
+      "title": "Someone else's conventions",
+      "result": "35 PRs merged through staging to master without architectural conflict."
+    },
+    {
+      "id": "S9",
+      "theme": "Self-awareness",
+      "title": "A weakness to own",
+      "result": "Billing shipped without automated tests; the demo console mitigated but did not replace them."
+    }
+  ],
+  "portfolio_material": {
+    "overview": "Consumer SaaS CV and cover-letter builder with AI optimisation; the brief was to make the AI features sellable.",
+    "challenge": "Generative AI costs real money per request and the cost is unknown until after the request completes; the platform needed a pricing model users could trust, margin the business could rely on, and controls retunable without shipping code.",
+    "role": "Contract backend/full-stack engineer owning the AI and monetisation subsystem end to end inside an existing agency team of five to six engineers.",
+    "solution_parts": [
+      "Quotation engine",
+      "Transactionally charged token wallet",
+      "Stripe top-ups with idempotent fulfilment",
+      "Database-backed control plane and per-request cost audit"
+    ],
+    "results": "Moved the platform from having no AI monetisation in the codebase to a complete, auditable, runtime-tunable paid-AI path, merged to the main branch. Outcome metrics were not accessible and are not claimed.",
+    "what_i_would_improve": [
+      "Automated tests around wallet debits and payment idempotency",
+      "Decompose the AI services by concern rather than by file size",
+      "Move generation onto a queue",
+      "Version prompts in Git with a database overlay",
+      "Reconcile the CORS environment-variable naming mismatch"
+    ]
+  },
+  "content_ideas": {
+    "articles": [
+      {
+        "title": "Quoting a price for something you can't measure yet: billing for LLM calls",
+        "must_not_publish": [
+          "pricing table",
+          "margin %",
+          "conversion ratio",
+          "per-million costs"
+        ]
+      },
+      {
+        "title": "Charge before you generate: transactional credits around a third-party API",
+        "must_not_publish": [
+          "internal schema names"
+        ]
+      },
+      {
+        "title": "Three layers of defence for structured LLM output",
+        "must_not_publish": [
+          "production prompt text"
+        ]
+      },
+      {
+        "title": "Idempotent payment fulfilment across two paths",
+        "must_not_publish": [
+          "internal table names"
+        ]
+      },
+      {
+        "title": "Put your business levers in the database",
+        "must_not_publish": [
+          "actual prices, margins and prompts"
+        ]
+      }
+    ],
+    "social": [
+      {
+        "angle": "The hardest part of shipping AI features wasn't the AI",
+        "anchor": "the quotation engine"
+      },
+      {
+        "angle": "Charge first or generate first?",
+        "anchor": "chargeUserTokens inside a transaction"
+      },
+      {
+        "angle": "The model returned perfect JSON. It was still wrong.",
+        "anchor": "the 'only rewrote the first employment' bug"
+      },
+      {
+        "angle": "Nine commits in one day, each adding one field",
+        "anchor": "the 2 Jan 2026 commit run"
+      },
+      {
+        "angle": "We shipped usage-based pricing. Two months later we shipped fixed prices.",
+        "anchor": "ai_feature_prices, Jan 2026"
+      },
+      {
+        "angle": "Your API response was leaking your margin",
+        "anchor": "the X-AI-Debug header"
+      },
+      {
+        "angle": "Why I built a second front end nobody will ever use",
+        "anchor": "demo-ii, 139 commits"
+      },
+      {
+        "angle": "Instrument the economics before you tune them",
+        "anchor": "ai_request_stats in week three"
+      },
+      {
+        "angle": "Splitting a class because it got long is not refactoring",
+        "anchor": "Service -> Continuation -> ContinuationTwo"
+      }
+    ],
+    "caution": "Say 'a CV platform' rather than naming the client unless permission is granted; never quote prompt text, prices or margin figures."
+  },
+  "public_safe_claims": [
+    "Architectural patterns described generically: pre-flight token quotation, bounded output ceilings, transactional charge-with-rollback, idempotent payment fulfilment, database-driven configuration, three-layer structured-output defence, non-destructive AI persistence",
+    "Technology names: Laravel 11, PHP 8.3, MySQL, OpenAI Responses API, Stripe Checkout/Webhooks/Billing Portal, Sanctum, React 19, TypeScript, Vite",
+    "Contribution volume: commits, pull requests, lines, migrations, duration",
+    "Feature descriptions at the level of 'AI CV optimisation with ATS variants' (publicly marketed)",
+    "The lessons learned"
+  ],
+  "private_only_information": [
+    "Client and agency identities (Fifteen, scriberly.co.uk, *.fifteen.dev hosts) unless permission to name them is obtained",
+    "All pricing economics: default margin percentage, AI-tokens-per-Scriberly-token ratio, the ten per-feature fixed prices, the four top-up pack sizes, per-million model costs",
+    "System-prompt text in ai_system_instructions and the service classes",
+    "Internal table, column and endpoint names; the X-AI-Debug header name",
+    "Colleague names and the authorship distribution",
+    "Repository contents, commit messages and branch names",
+    "The security weaknesses listed under security_and_reliability.weaknesses_observed"
+  ],
+  "evidence_gaps": [
+    {
+      "id": 1,
+      "missing": "Production ai_request_stats row count, date range and breakdown by request_type",
+      "why_useful": "Would convert the AI subsystem from 'built' to 'processed N requests over M months' — the highest-value gap",
+      "where_it_exists": "Production MySQL, ai_request_stats",
+      "question_to_ask": "Can I get a read-only count of ai_request_stats by request_type and month?"
+    },
+    {
+      "id": 2,
+      "missing": "Actual-versus-charged totals (total_fee vs token_charged_user_fee)",
+      "why_useful": "Would evidence that the margin model worked in practice",
+      "where_it_exists": "Production MySQL, ai_request_stats",
+      "question_to_ask": "What did aggregate provider spend versus tokens charged look like?"
+    },
+    {
+      "id": 3,
+      "missing": "payment_transactions count and total amount_paid",
+      "why_useful": "Would evidence that the Stripe integration processed real revenue",
+      "where_it_exists": "Production MySQL / Stripe dashboard",
+      "question_to_ask": "How many top-ups have been fulfilled since launch?"
+    },
+    {
+      "id": 4,
+      "missing": "Count of users with a scriberly_tokens wallet and with non-zero lifetime_spent",
+      "why_useful": "Adoption of the paid AI features",
+      "where_it_exists": "Production MySQL",
+      "question_to_ask": "How many users have spent tokens?"
+    },
+    {
+      "id": 5,
+      "missing": "Exact production launch date of the AI/token features",
+      "why_useful": "Every claim currently ends at the last commit, not at a release",
+      "where_it_exists": "Bitbucket PR merge dates to master, release notes, deployment logs",
+      "question_to_ask": "When did the token economy go live for customers?"
+    },
+    {
+      "id": 6,
+      "missing": "AI request latency and OpenAI failure/retry rates",
+      "why_useful": "Would support reliability claims",
+      "where_it_exists": "Application logs (openai.responses entries carry duration_ms)",
+      "question_to_ask": "Can I get p50/p95 duration from the openai.responses log entries?"
+    },
+    {
+      "id": 7,
+      "missing": "Whether demo-ii was used by anyone besides the contributor",
+      "why_useful": "Would upgrade it from a personal harness to a team tool",
+      "where_it_exists": "The team; personal recollection",
+      "question_to_ask": "Did QA or the front-end team use the demo console?"
+    },
+    {
+      "id": 8,
+      "missing": "Before/after on manual CV editing time or any user-facing outcome",
+      "why_useful": "Would give the only genuine business-impact number",
+      "where_it_exists": "Product analytics, user research, HubSpot",
+      "question_to_ask": "Is there any measurement of what AI optimisation did for users?"
+    },
+    {
+      "id": 9,
+      "missing": "Production CORS, queue and cache configuration",
+      "why_useful": "Would resolve whether the configuration issues noted are real in production",
+      "where_it_exists": "Production .env / deployment config",
+      "question_to_ask": "What are the production CORS origins and queue driver?"
+    },
+    {
+      "id": 10,
+      "missing": "Code-review feedback on PRs #402-#452",
+      "why_useful": "Third-party evidence of collaboration and code quality",
+      "where_it_exists": "Bitbucket PR comments"
+    },
+    {
+      "id": 11,
+      "missing": "Whether tests were added to this subsystem after January 2026",
+      "why_useful": "Affects how the testing weakness should be framed",
+      "where_it_exists": "Current master"
+    }
+  ],
+  "methodology": {
+    "sources_used": [
+      "Working copies of three Git repositories",
+      "Full commit history including remote branches",
+      "Source code",
+      "Configuration files",
+      "Database migrations",
+      "In-repo engineering documentation (COPILOT_INSTRUCTIONS.md)"
+    ],
+    "sources_unavailable": [
+      "Production database",
+      "Staging database",
+      "Application log store",
+      "APM",
+      "Product analytics",
+      "Stripe dashboard",
+      "Bitbucket PR comments"
+    ],
+    "reproduction_commands": [
+      "git log --all --author=abramseyakid --no-merges --oneline | wc -l",
+      "git log --all --author=abramseyakid --no-merges --numstat --format='' | awk '{a+=$1;d+=$2} END {print a,d}'",
+      "git log origin/master --author=abramseyakid --no-merges --oneline | wc -l",
+      "git log origin/master --no-merges --oneline | wc -l",
+      "git log --all --merges --format='%s' | grep -oE 'Merged in dev/abraham \\(pull request #[0-9]+\\)' | sort -u | wc -l",
+      "git log --all --author=abramseyakid --no-merges --diff-filter=A --name-only --format='' | grep '^database/migrations/' | sort -u | wc -l",
+      "git log --all --author=abramseyakid --no-merges --diff-filter=A --name-only --format='' | grep '^app/' | sort -u | wc -l"
+    ],
+    "limitations": [
+      "No production data of any kind was read",
+      "origin/* refs reflect a fetch dated 2026-02-12; later work is not visible",
+      "Commit authorship proves who wrote a change, not who designed it",
+      "Line counts include generated OpenAPI JSON and documentation",
+      "Four Git identities map to this contributor; all queries matched on the shared email",
+      "No credentials, keys, connection strings or personal data are reproduced in these outputs"
+    ]
+  },
+  "attested_claims": [
+    {
+      "id": "C12",
+      "claim": "Engaged by direct referral from a former manager to deliver a capability the client had no in-house ability to build — generative-AI and payment integration — and completed the contract on delivery of version 1, which subsequently went live.",
+      "evidence_level": "ATTESTED",
+      "corroboration": "No OpenAI, token-wallet, Stripe or AI-cost code exists in the repository before 2025-11-05; all of it is authored by this contributor.",
+      "qualification": "Referral, payment and go-live are the contributor's account; the codebase corroborates only the capability gap."
+    },
+    {
+      "id": "C13",
+      "claim": "Had scope extended mid-engagement from backend-only to include a full reference front end, after the remote front-end developer could not integrate the API from written documentation alone, then delivered that front end solo in parallel with continuing backend work.",
+      "evidence_level": "ATTESTED",
+      "corroboration": "demo-ii begins 2025-11-30, runs concurrently with API commits to 2026-01-21, 139 commits, single author, covering every AI, pricing and payment flow.",
+      "qualification": "The reason for the extension is the contributor's account."
+    },
+    {
+      "id": "C14",
+      "claim": "Produced API documentation as a first-class deliverable in a codebase whose existing documentation was not sufficient to onboard from.",
+      "evidence_level": "ATTESTED",
+      "corroboration": "OpenAPI annotations on every endpoint added; storage/docs/openapi.json updated across six commits; the pre-existing repository has no architectural or integration guide.",
+      "qualification": "The quality judgement on inherited docs is the contributor's account."
+    }
+  ],
+  "presenting_without_metrics": {
+    "principle": "When you cannot show what the system did, show what the mandate was, what you built, and that it shipped.",
+    "why_no_metrics": "Fixed-scope contract for v1; repository and database access revoked at roll-off, before the product went live. No production metric is attributable to this contributor and none should be sought.",
+    "four_substitutes": [
+      {
+        "proof_type": "Mandate",
+        "evidences": "That a company had a problem they could not solve internally and chose you for it",
+        "what_you_have": "Brought in specifically to integrate AI and payments; neither existed in the codebase before, both authored entirely by this contributor"
+      },
+      {
+        "proof_type": "Scope and complexity",
+        "evidences": "The size and difficulty of what was built",
+        "what_you_have": "8 AI operations, 9 new tables, 35 migrations, ~7,000 lines of subsystem code, 35 merged PRs, 11 weeks"
+      },
+      {
+        "proof_type": "Engineering judgement",
+        "evidences": "Defensible decisions, not just working code",
+        "what_you_have": "Eight documented decisions and five documented problems, each with an arguable trade-off"
+      },
+      {
+        "proof_type": "Delivery",
+        "evidences": "That it was accepted, merged and shipped",
+        "what_you_have": "174 commits on master; contract completed and paid; product subsequently went live"
+      }
+    ],
+    "cv_block": {
+      "header": "Backend / AI Engineer (Contract) — Scriberly (CV & cover-letter SaaS) · Nov 2025 – Jan 2026",
+      "context_line": "Engaged on referral to deliver the AI and payments capability for v1 of the platform; now live.",
+      "bullets": [
+        "Built the platform's entire generative-AI layer — 8 AI operations on OpenAI's Responses API with strict JSON-schema outputs — and the token-credit billing system that made them sellable: per-user wallet, transactional charge-with-rollback under row-level locking, and pre-flight cost quotation so users see a firm price before any spend.",
+        "Integrated Stripe end to end (tiered Checkout top-ups, signature-verified webhooks, idempotent fulfilment across two independent paths) and a runtime pricing control plane letting the business change models, prices, margin and prompts without a deploy — 9 new tables across 35 migrations.",
+        "Delivered 35 merged pull requests in 11 weeks, plus a React 19 reference front end (sole author, 139 commits) built so the remote front-end developer could integrate the API from working code."
+      ],
+      "why_it_works": "Each bullet opens with a verb and closes with either a capability the business did not have before, or a quantity of work. Neither requires production data."
+    },
+    "portfolio_structure": [
+      "Hook: 'How do you charge a user for an AI request when you don't know what it will cost until after it finishes?'",
+      "Context: existing CV platform, startup, no in-house AI or payments capability, fixed-scope contract to build both",
+      "Constraint: firm price before the user commits; business stays margin-positive",
+      "Solution: quotation engine -> wallet -> generation -> audit chain, with the architecture diagram",
+      "Two deep dives: structured-output reliability and payment idempotency",
+      "What I'd do differently: tests for billing; decompose services by concern not file size",
+      "Honest close: delivered as v1 under contract; product went live after the engagement ended, so no production figures"
+    ],
+    "public_writing_rule": "Publish the patterns, not the project. Default to 'a UK CV-building SaaS' until explicit permission to name the client is obtained; the person to ask is the former manager who made the referral.",
+    "interview_script": "It was a fixed-scope contract for version one, so I don't have production numbers — my access ended at delivery and the product went live afterwards. What I can tell you is what they didn't have before and what they had after: no AI integration and no payments at all, and at the end, eight AI features, a token-credit billing system, Stripe top-ups with idempotent fulfilment, and pricing the business could change without a deploy. All of it merged to master. If it's useful I can walk you through the hardest part, which was pricing an LLM call before you know what it costs.",
+    "avoid": [
+      "Apologising for the absence of data or volunteering it before being asked",
+      "Inventing percentages, user counts or cost savings",
+      "Responsibility statements such as 'Worked on AI features for a CV platform'"
+    ]
+  },
+  "evidence_gaps_note": "Gaps 1-4, 6 and 9 cannot be closed by the contributor: access was revoked at contract end and any current production figures post-date his involvement, so they would not be attributable to him. Only gaps 5, 7, 10 and 11 are realistically worth pursuing, and only gap 5 (launch date) would change how the project is presented."
+}

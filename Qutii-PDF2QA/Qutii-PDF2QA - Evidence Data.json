@@ -1,0 +1,1374 @@
+{
+  "schema_version": "2.3",
+  "audit_date": "2026-10-17",
+  "subject": {
+    "name": "Akintola Abraham",
+    "git_identities": [
+      "Akintola Abraham <abramseyakid@gmail.com>",
+      "Abraham <abramseyakid@gmail.com>",
+      "AbrahamNobleOX <abramseyakid@gmail.com>"
+    ],
+    "github_handle": "AbrahamNobleOX"
+  },
+  "project_name": "Qutii (TiiQu PDF2QA)",
+  "project_aliases": [
+    "Qutii",
+    "PDF2QA",
+    "PDF2QA Converter",
+    "qutii"
+  ],
+  "project_type": "Authenticated web SaaS — document processing / PDF-to-Q&A extraction with human-in-the-loop review",
+  "project_description": "Users authenticate via Auth0, upload a PDF and declare its copyright status. An upstream pipeline extracts question-and-answer pairs from the document's paragraph structure. Users review and edit the pairs in-browser, mark editing complete, and download the finished set as a Word document. Subscriptions run through Stripe.",
+  "owner_organisation": "TiiQu Network",
+  "repositories": [
+    {
+      "name": "TiiQu-Network/FrontEnd-PDF2QA",
+      "role": "Next.js web application",
+      "fork_used_by_subject": "AbrahamNobleOX/FrontEnd-PDF2QA"
+    },
+    {
+      "name": "TiiQu-Network/2024-backend-pdf2qa",
+      "role": "Fastify API layer on AWS Lambda",
+      "branches": [
+        "main",
+        "websocket",
+        "internet-tasks",
+        "agmodified",
+        "deleteuser"
+      ]
+    },
+    {
+      "name": "frontend_api_layer-websocket (local working copy)",
+      "role": "Standalone WebSocket status service"
+    },
+    {
+      "name": "hashicorp/learn-terraform-rds",
+      "role": "EXCLUDED — unmodified upstream tutorial clone, zero content changes, contributes no evidence"
+    }
+  ],
+  "dates": {
+    "frontend_first_commit": "2023-05-10",
+    "backend_first_commit": "2024-05-22",
+    "last_commit_audited": "2024-10-29",
+    "subject_sole_active_frontend_period": {
+      "start": "2024-04-01",
+      "end": "2024-10-29"
+    },
+    "production_launch_date": null,
+    "production_decommission_date": null,
+    "production_status_at_audit": "decommissioned",
+    "date_notes": "Launch and decommission dates are UNKNOWN. Only the code-activity window is evidenced.",
+    "subject_first_commit": "2024-01-31",
+    "subject_last_commit": "2024-10-29",
+    "subject_engagement_months": 9
+  },
+  "technologies": {
+    "frontend": [
+      "Next.js 12",
+      "React 17",
+      "TypeScript 5",
+      "Tailwind CSS 3",
+      "MUI 5",
+      "@mui/x-data-grid 6",
+      "Material-UI 4",
+      "Reactstrap",
+      "Chart.js 4",
+      "pdfjs-dist 3",
+      "@react-pdf/renderer 3",
+      "react-toastify",
+      "axios"
+    ],
+    "backend": [
+      "Fastify 4",
+      "TypeScript",
+      "@fastify/postgres",
+      "@fastify/aws-lambda 4",
+      "ws 8",
+      "aws-sdk v2",
+      "auth0 node SDK 4",
+      "dotenv"
+    ],
+    "data": [
+      "PostgreSQL on Amazon RDS"
+    ],
+    "cloud": [
+      "AWS Lambda",
+      "AWS API Gateway",
+      "Amazon S3",
+      "Amazon RDS",
+      "Amazon ECR",
+      "Amazon ECS",
+      "AWS Lambda Layers"
+    ],
+    "identity_and_payments": [
+      "Auth0 (OIDC, Management API, custom claims)",
+      "Stripe (pricing table, customer portal)"
+    ],
+    "devops": [
+      "GitHub Actions",
+      "Docker (multi-stage, node:18-alpine, non-root)",
+      "bespoke npm/AWS SDK deployment scripts"
+    ],
+    "region": "eu-west-2",
+    "removed_during_rebuild": [
+      "sequelize",
+      "sequelize-typescript",
+      "@fastify/websocket",
+      "fastify-websocket"
+    ],
+    "not_used": [
+      "NestJS — see corrections"
+    ]
+  },
+  "architecture": {
+    "pattern": "Serverless REST API + container-hosted SSR frontend + direct browser-to-object-storage transfer",
+    "components": [
+      {
+        "name": "Next.js web app",
+        "hosting": "Docker -> ECR -> ECS",
+        "notes": "18 pages, 21 components, ~5,300 lines TS/TSX"
+      },
+      {
+        "name": "Fastify API layer",
+        "hosting": "AWS Lambda behind API Gateway",
+        "notes": "10 REST endpoints, 473-line route module, warm-start initialisation guard"
+      },
+      {
+        "name": "internet-tasks Lambda",
+        "hosting": "separate Lambda + API Gateway",
+        "notes": "DELETE /api/web/v1/user; Auth0 Management API + relational cascade"
+      },
+      {
+        "name": "WebSocket status service",
+        "hosting": "standalone Node process",
+        "notes": "5s upstream poll, in-memory status map, delta push; NOT evidenced as deployed to production"
+      },
+      {
+        "name": "PostgreSQL (RDS)",
+        "notes": "Schema defined upstream; no migrations in these repositories"
+      },
+      {
+        "name": "S3",
+        "notes": "landing/ (uploads), processed/ (generated artefacts), runtime_dependencies/ (Lambda layer zips)"
+      },
+      {
+        "name": "Upstream PDF-to-Q&A pipeline",
+        "notes": "NOT in these repositories; owned elsewhere"
+      }
+    ],
+    "data_model_reconstructed": [
+      "User",
+      "Document",
+      "Task",
+      "Article",
+      "Paragraph",
+      "Qna",
+      "Download",
+      "UserUpload"
+    ],
+    "data_model_evidence_level": "DERIVED",
+    "data_model_qualification": "Reconstructed from SQL in src/routes/app.ts. The schema itself is defined upstream; no DDL or migrations exist in these repositories.",
+    "api_endpoints": [
+      {
+        "method": "GET",
+        "path": "/api/web/v1/alldocuments",
+        "purpose": "All documents joined to task status (admin)"
+      },
+      {
+        "method": "GET",
+        "path": "/api/web/v1/document",
+        "purpose": "Caller's documents, scoped by JWT sub"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/web/v1/document",
+        "purpose": "Transactional cascade delete"
+      },
+      {
+        "method": "GET",
+        "path": "/api/web/v1/document/download",
+        "purpose": "Presigned URL for original upload"
+      },
+      {
+        "method": "GET",
+        "path": "/api/web/v1/document/task",
+        "purpose": "Single-document status (polling)"
+      },
+      {
+        "method": "GET",
+        "path": "/api/web/v1/QnA",
+        "purpose": "Q&A pairs with paragraph context"
+      },
+      {
+        "method": "GET",
+        "path": "/api/web/v1/QnA/download",
+        "purpose": "30s presigned URL for generated file"
+      },
+      {
+        "method": "PUT",
+        "path": "/api/web/v1/QnA",
+        "purpose": "Batch update Q&A; sets qnasEdited"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/web/v1/QnA",
+        "purpose": "Delete all Q&As + S3 object + set status QnADeleted"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/web/v1/QnA/single",
+        "purpose": "Delete one Q&A pair"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/web/v1/user",
+        "purpose": "internet-tasks Lambda: Auth0 delete + relational cascade"
+      }
+    ],
+    "external_endpoints_called_but_not_in_repos": [
+      "GET /api/web/v1/NewDoc",
+      "POST /api/web/v1/editcomplete"
+    ],
+    "document_status_machine": [
+      "Processing",
+      "Processed",
+      "CreateQnA",
+      "Edit ready",
+      "PDF ready",
+      "Download ready",
+      "Processing failed",
+      "QnADeleted",
+      "Download expired"
+    ]
+  },
+  "integrations": [
+    {
+      "name": "Auth0",
+      "purpose": "OIDC login, JWT issuance, Management API user deletion, admin role via custom claim",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "name": "Stripe",
+      "purpose": "Embedded pricing table and customer portal",
+      "evidence_level": "VERIFIED",
+      "qualification": "No server-side Stripe code in these repositories"
+    },
+    {
+      "name": "Amazon S3",
+      "purpose": "Presigned upload and download; Lambda layer artefact storage",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "name": "Amazon RDS PostgreSQL",
+      "purpose": "Primary data store",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "name": "Upstream PDF-to-Q&A pipeline",
+      "purpose": "Text extraction and Q&A generation",
+      "evidence_level": "STRONGLY SUPPORTED",
+      "qualification": "Inferred from data it writes; code not present"
+    }
+  ],
+  "workflows": [
+    {
+      "name": "Document upload",
+      "steps": [
+        "Auth0 login",
+        "select PDF + mandatory copyright flag",
+        "GET presigned URL from NewDoc",
+        "PUT file direct to S3 landing/",
+        "redirect to documents list"
+      ]
+    },
+    {
+      "name": "Processing and status",
+      "steps": [
+        "upstream pipeline writes Article/Paragraph/Qna and advances Task.status",
+        "frontend polls GET /document/task every 30s for non-terminal documents",
+        "WebSocket service (built) pushes status deltas every 5s"
+      ]
+    },
+    {
+      "name": "Q&A review and edit",
+      "steps": [
+        "open editor at Edit ready",
+        "inline edit question/answer",
+        "PUT /QnA per save; sets Document.qnasEdited = true",
+        "POST /editcomplete advances to Download ready"
+      ]
+    },
+    {
+      "name": "Download",
+      "steps": [
+        "GET /QnA/download returns 30s presigned S3 URL",
+        "browser fetches blob",
+        "filename rewritten .pdf -> .docx",
+        "saved client-side"
+      ]
+    },
+    {
+      "name": "Deletion",
+      "steps": [
+        "single Q&A, or whole Q&A set + S3 object + status QnADeleted, or full document cascade Qna->Paragraph->Article->Task->Document in one transaction"
+      ]
+    },
+    {
+      "name": "Account deletion",
+      "steps": [
+        "client-credentials token from Auth0",
+        "DELETE user in Auth0",
+        "resolve internal id from authProviderId",
+        "cascade delete Task, UserUpload, User"
+      ]
+    }
+  ],
+  "my_contributions": {
+    "verified": [
+      "Created the backend API repository and authored its first commit (2024-05-22)",
+      "Authored the AWS Lambda deployment pipeline: package-build, package-layer, upload, lambda, deploy npm scripts plus uploadZipToS3.ts and updateLambdaFunction.ts",
+      "Introduced AWS Lambda layers to separate runtime dependencies from function code (2024-05-25)",
+      "Authored src/aws/lambda.ts — Fastify-to-Lambda proxy with warm-start initialisation guard",
+      "Built the account-deletion Lambda spanning Auth0 Management API, PostgreSQL and the internal user mapping (2024-08-21)",
+      "Built the WebSocket document-status service with in-memory state and delta push (2024-07-14)",
+      "Integrated Auth0 access tokens between the Next.js app and the backend API (2024-04-24)",
+      "Built the upload flow: presigned URL request, direct-to-S3 PUT, copyright gate, MIME validation (2024-06-25)",
+      "Built MyDocumentsTable.tsx (704 lines) with the eight-state status machine, colour/icon mapping and conditional action gating",
+      "Built the Q&A editor with per-row PUT save (2024-07-12)",
+      "Built Q&A download via presigned URL with blob handling and .pdf->.docx filename rewrite (2024-07-07)",
+      "Built document status polling (2024-07-20) and the edit-complete stage advance (2024-10-01 to 2024-10-07)",
+      "Built the account-deletion UI and confirmation flow on the profile page",
+      "Earlier ticketed feature work: admin dashboard and access gating (PDF-186), custom 404, Q&A line chart (PDF-188), Q&A pie/doughnut chart (PDF-189), dashboard right panel, home-page responsiveness"
+    ],
+    "authorship_not_established": [
+      "The PDF parsing and Q&A generation pipeline — not in these repositories",
+      "GET /api/web/v1/NewDoc and POST /api/web/v1/editcomplete — separate Lambdas, not in these repositories",
+      "Backend task-status, user-details and parts of the document-delete cascade — authored by avstxn98 (12 commits, Jun-Jul 2024)",
+      "The original 2023 frontend: design system, home page, navigation, early auth scaffolding — built by a larger team",
+      "Docker / ECR / ECS deployment pipeline and GitHub Actions workflows — present in the repository, authorship unconfirmed",
+      "AWS account, RDS, API Gateway and ECS provisioning — no infrastructure-as-code in these repositories"
+    ]
+  },
+  "repository_metrics": [
+    {
+      "metric": "subject_commits_backend",
+      "value": 49,
+      "unit": "commits",
+      "total": 61,
+      "share_percent": 80.3,
+      "start_date": "2024-05-22",
+      "end_date": "2024-08-21",
+      "evidence_source": "git shortlog -sne --all on 2024-backend-pdf2qa",
+      "calculation_method": "Sum of commits across both of the subject's Git identities on all branches, divided by total",
+      "evidence_level": "VERIFIED (counts) / DERIVED (percentage)",
+      "qualification": "Commit counts measure activity, not lines changed or difficulty. One other engineer contributed 12 commits."
+    },
+    {
+      "metric": "subject_commits_frontend_all_time",
+      "value": 92,
+      "unit": "commits",
+      "total": 278,
+      "share_percent": 33.1,
+      "start_date": "2023-05-10",
+      "end_date": "2024-10-29",
+      "evidence_source": "git shortlog -sne --all on FrontEnd-PDF2QA",
+      "calculation_method": "63 + 28 + 1 across three Git identities sharing one email, divided by 278",
+      "evidence_level": "VERIFIED / DERIVED",
+      "qualification": "Largest single contributor of 19 identities; includes merge commits."
+    },
+    {
+      "metric": "subject_commits_frontend_sole_period",
+      "value": 68,
+      "unit": "commits",
+      "total": 71,
+      "share_percent": 95.8,
+      "start_date": "2024-04-01",
+      "end_date": "2024-10-29",
+      "evidence_source": "git log --all --since=2024-04-01 --format='%an'",
+      "calculation_method": "42 (Akintola Abraham) + 26 (Abraham) of 71 total in window",
+      "evidence_level": "VERIFIED / DERIVED",
+      "qualification": "'Sole active' means no one else committed meaningfully; it does not prove no one else was assigned."
+    },
+    {
+      "metric": "frontend_contributors",
+      "value": 19,
+      "unit": "distinct git identities",
+      "evidence_source": "git shortlog -sne --all",
+      "evidence_level": "VERIFIED",
+      "qualification": "Identity count, not headcount; some people may use multiple identities."
+    },
+    {
+      "metric": "frontend_source_lines",
+      "value": 5312,
+      "unit": "lines of TS/TSX/JSX",
+      "evidence_source": "find src -name '*.ts' -o -name '*.tsx' -o -name '*.jsx' | xargs wc -l",
+      "calculation_method": "Excludes fonts, images, lockfiles, node_modules; one file skipped by shell glob",
+      "evidence_level": "VERIFIED",
+      "qualification": "Line count is a size indicator, not a quality or effort measure."
+    },
+    {
+      "metric": "backend_route_module_lines",
+      "value": 473,
+      "unit": "lines",
+      "evidence_source": "git show origin/main:src/routes/app.ts | wc -l",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "metric": "backend_rest_endpoints",
+      "value": 10,
+      "unit": "endpoints",
+      "evidence_source": "grep of app.get/post/put/delete in origin/main src/routes/app.ts",
+      "evidence_level": "VERIFIED",
+      "qualification": "Plus one endpoint on the separate internet-tasks Lambda."
+    },
+    {
+      "metric": "frontend_pages",
+      "value": 18,
+      "unit": "pages",
+      "evidence_source": "ls src/pages/*/index.tsx src/pages/*.tsx",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "metric": "frontend_components",
+      "value": 21,
+      "unit": "components",
+      "evidence_source": "ls src/components/*.tsx src/components/common/*.tsx",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "metric": "merge_commits_frontend",
+      "value": 49,
+      "unit": "merge commits",
+      "evidence_source": "git log --all --oneline | grep -c 'Merge pull request'",
+      "evidence_level": "VERIFIED",
+      "qualification": "Repository-wide, not all authored by the subject."
+    },
+    {
+      "metric": "largest_component_file",
+      "value": 704,
+      "unit": "lines",
+      "evidence_source": "wc -l src/components/MyDocumentsTable.tsx",
+      "evidence_level": "VERIFIED"
+    }
+  ],
+  "production_metrics": {
+    "available": false,
+    "reason": "Two causes. First, the subject contributed as an unpaid volunteer on his own equipment and no longer has access to the organisation's cloud account, GitHub organisation or database. Second, the environment itself has been torn down: the RDS hostname returns NXDOMAIN against both the system resolver and 8.8.8.8, and all four production API Gateway endpoints fail to respond. No database connection was established and no query was executed.",
+    "checks_performed": [
+      {
+        "target": "production PostgreSQL (RDS, eu-west-2)",
+        "method": "DNS resolution then psql with default_transaction_read_only",
+        "result": "NXDOMAIN — instance deleted"
+      },
+      {
+        "target": "backend API Gateway",
+        "method": "curl HTTPS GET, 12s timeout",
+        "result": "no response (000)"
+      },
+      {
+        "target": "internet-tasks API Gateway",
+        "method": "curl HTTPS GET",
+        "result": "no response (000)"
+      },
+      {
+        "target": "editcomplete API Gateway",
+        "method": "curl HTTPS GET",
+        "result": "no response (000)"
+      },
+      {
+        "target": "validation API Gateway",
+        "method": "curl HTTPS GET",
+        "result": "no response (000)"
+      },
+      {
+        "target": "qutii.com",
+        "method": "curl",
+        "result": "HTTP 200, no readable content extracted"
+      },
+      {
+        "target": "tiiqu.com",
+        "method": "curl",
+        "result": "HTTP 200 (redirects to www) — corporate site, not the product"
+      }
+    ],
+    "metrics": [],
+    "do_not_cite": [
+      "src/sample_response_qna.json contains 638 Paragraph/Question/Answer objects for one document. This is a DEVELOPMENT FIXTURE committed to source control, not production evidence. It may only be described as 'a sample response in the repository contains 638 extracted pairs from one document'.",
+      "src/sample.json and src/sample2.json are mock data powering the admin dashboard. They are not measurements."
+    ]
+  },
+  "verified_claims": [
+    {
+      "id": "C1",
+      "claim": "Created and was principal author of the backend API service for a document-processing SaaS, writing 49 of its 61 commits (80%).",
+      "evidence_level": "VERIFIED/DERIVED",
+      "evidence": "git shortlog -sne --all on TiiQu-Network/2024-backend-pdf2qa",
+      "period": "2024-05 to 2024-08",
+      "qualification": "Commit counts measure activity, not difficulty; one other engineer contributed 12 commits."
+    },
+    {
+      "id": "C2",
+      "claim": "Sole active frontend developer on a production Next.js application for seven consecutive months, authoring 68 of 71 commits (96%); largest of 19 contributors overall at 33%.",
+      "evidence_level": "VERIFIED/DERIVED",
+      "evidence": "git log author breakdown by month",
+      "period": "2024-04 to 2024-10 (sole); 2023-05 to 2024-10 (overall)",
+      "qualification": "'Sole active' means no other contributor committed meaningfully, not that no one else was assigned."
+    },
+    {
+      "id": "C3",
+      "claim": "Rebuilt a Lambda-hosted API layer: removed an ORM and a per-cold-start schema sync from the cold path, eliminated a connection-pool leak that could stall requests for up to 30 seconds, externalised hardcoded production credentials, and standardised on parameterised SQL in a layered service.",
+      "evidence_level": "VERIFIED (mechanisms)",
+      "evidence": "Archived src/app.ts and src/db.ts: un-awaited and never-released app.pg.connect() in the /alldocuments handler; sequelize.sync() in a floating Promise at module load; pool acquire timeout 30000ms with max 10; connection string hardcoded. Versus 2024-backend-pdf2qa: 32 pool-managed app.pg.query() call sites, zero pg.connect() calls, connection string in POSTGRES_CONNECTION_STRING.",
+      "period": "2024-05",
+      "qualification": "The mechanisms are verified from the code and can be claimed without reservation. Authorship of the prior version is not established. The latency figure is a separate claim — see C3a."
+    },
+    {
+      "id": "C3a",
+      "claim": "The rebuild reduced API response time from seconds to milliseconds.",
+      "evidence_level": "STRONGLY SUPPORTED",
+      "evidence": "Six independently verifiable defects in the archived pre-rewrite implementation, each plausibly costing hundreds of milliseconds to seconds under the testing method used; all six removed by the rewrite.",
+      "defects_found": [
+        "Two separate connection pools to the same RDS instance (a Sequelize pool and a registered @fastify/postgres pool)",
+        "Sequelize pool configured min: 0 with idle: 10000 — no warm connections held, idle connections evicted after ten seconds",
+        "acquire: 30000 — pool contention surfaces as a 30-second stall rather than a fast failure",
+        "The /alldocuments handler called app.pg.connect() without await and never released the client — simultaneously broken and leaking a pool slot per call",
+        "Five handlers call client.release() twice on the same client; releasing an already-released pg client throws",
+        "sequelize.sync() invoked in a floating, unawaited Promise at module load, issuing DDL round trips per registered model"
+      ],
+      "period": "before: pre-2024-05-22 / after: post-2024-05-25",
+      "qualification": "Direction and order of magnitude follow from the code itself, independent of anyone's memory. The precise figures are a separate claim — see C3b."
+    },
+    {
+      "id": "C3b",
+      "claim": "Specifically, average response time fell from approximately 11 seconds to approximately 110 milliseconds.",
+      "evidence_level": "UNVERIFIED RECOLLECTION (methodologically sound)",
+      "evidence": "Subject's recollection, volunteered 2026-10-17. No benchmark or written record survives; the organisation removed his access, including to the Microsoft Teams history in which the slowness was discussed.",
+      "measurement_context": "Both figures were observed the same way: the API running locally, called through Postman, against the same remote cloud database, before and after the rewrite.",
+      "superseded_objection": "An earlier revision of this dossier objected that the two figures likely compared a Lambda cold start against a warm invocation. That objection does NOT apply — no Lambda is involved on either side of the comparison, and the method was consistent.",
+      "remaining_limitation": "No record of the measurement was kept. The claim rests on recollection of a consistent comparison, not on a preserved benchmark.",
+      "period": "2024-05",
+      "qualification": "Honest to state with 'roughly'/'about' and with the measurement method named. Never imply instrumented production telemetry."
+    },
+    {
+      "id": "C4",
+      "claim": "Designed and implemented a 10-endpoint REST API in Fastify/TypeScript on AWS Lambda behind API Gateway against PostgreSQL on RDS, including a Lambda proxy with a warm-start initialisation guard.",
+      "evidence_level": "VERIFIED",
+      "evidence": "src/routes/app.ts (473 lines, 10 handlers), src/aws/lambda.ts, src/config/db.ts",
+      "period": "2024-05 to 2024-08",
+      "qualification": "Some endpoint bodies were contributed by a second engineer; the service, its structure and its Lambda integration are the subject's."
+    },
+    {
+      "id": "C5",
+      "claim": "Built a bespoke AWS deployment pipeline in TypeScript that packages code and dependencies separately, publishes a Lambda layer, uploads to S3 and updates the live function via the SDK.",
+      "evidence_level": "VERIFIED",
+      "evidence": "package.json deploy scripts, src/aws/uploadZipToS3.ts, src/aws/updateLambdaFunction.ts; commits 2024-05-23 to 2024-05-25",
+      "period": "2024-05",
+      "qualification": "Sole author; no competing commits in these files."
+    },
+    {
+      "id": "C6",
+      "claim": "Diagnosed that AWS Lambda cannot host persistent WebSocket connections, removed the in-process WebSocket dependencies, and delivered a standalone status service with server-side state and delta push.",
+      "evidence_level": "VERIFIED (code and commits)",
+      "evidence": "Commit acd6a13 'removed a library' (2024-07-13) dropping @fastify/websocket and fastify-websocket; websocket branch and websocket/src/server.ts (2024-07-14).",
+      "period": "2024-07",
+      "qualification": "No evidence of production deployment — the frontend's NEXT_PUBLIC_WS_URL still points at ws://localhost:3365. Describe as built, not running."
+    },
+    {
+      "id": "C7",
+      "claim": "Implemented a GDPR-style account-deletion capability spanning Auth0 Management API, PostgreSQL and S3, ordered to fail safe if identity deletion is rejected.",
+      "evidence_level": "VERIFIED",
+      "evidence": "internet-tasks branch src/routes/app.ts; ApiFunctions.ts; pages/profile/index.tsx; commits 2024-08-21",
+      "period": "2024-08",
+      "qualification": "Not atomic across systems; a crash between steps can orphan local rows."
+    },
+    {
+      "id": "C8",
+      "claim": "Customised Auth0 login and callback handling to fix post-login redirect routing and add error propagation on both paths.",
+      "evidence_level": "VERIFIED",
+      "evidence": "Commit 14481a0 (2024-07-27), src/pages/api/auth/[...auth0].ts — replaced default handleAuth() with explicit login/callback handlers setting returnTo '/redirect' and propagating error.status/error.message.",
+      "period": "2024-07",
+      "qualification": "Sole author."
+    },
+    {
+      "id": "C9",
+      "claim": "Implemented transactional cascade deletion across a four-level relational hierarchy plus associated S3 objects and task state, with rollback on failure.",
+      "evidence_level": "VERIFIED",
+      "evidence": "src/routes/app.ts delete handlers",
+      "period": "2024-07 to 2024-08",
+      "qualification": "Shared attribution with one other engineer; the S3 delete sits outside the transaction."
+    },
+    {
+      "id": "C10",
+      "claim": "Built the document lifecycle UI for an eight-state asynchronous pipeline, including per-state colour/icon mapping and conditional gating of destructive actions, in a 704-line MUI DataGrid component.",
+      "evidence_level": "VERIFIED",
+      "evidence": "src/components/MyDocumentsTable.tsx",
+      "period": "2024-06 to 2024-10",
+      "qualification": "Line count is a size indicator, not a quality one."
+    },
+    {
+      "id": "C11",
+      "claim": "Implemented direct browser-to-S3 transfer in both directions with presigned URLs, keeping document bytes out of the API tier, with 30-second download expiry.",
+      "evidence_level": "VERIFIED",
+      "evidence": "pages/upload/index.tsx, ApiFunctions.ts handleDownload, backend presign handlers",
+      "period": "2024-06 to 2024-07",
+      "qualification": null
+    },
+    {
+      "id": "C12",
+      "claim": "Integrated Auth0 authentication, role-based admin access via custom claims, and Stripe subscription management into a Next.js application.",
+      "evidence_level": "VERIFIED",
+      "evidence": "pages/api/auth/[...auth0].ts, get-access-token.ts, userContext.tsx, dashboard access gate, services/stripe/*",
+      "period": "2024-04 onwards",
+      "qualification": "Auth0 scaffolding predates the subject; the token-to-backend integration and handler customisation are his."
+    },
+    {
+      "id": "C13",
+      "claim": "Delivered responsive layout work on the public landing page.",
+      "evidence_level": "VERIFIED",
+      "evidence": "Commit 'Added responsiveness to home page', 2024-04-05.",
+      "period": "2024-04",
+      "qualification": null
+    },
+    {
+      "id": "C14",
+      "claim": "Delivered feature work under a Jira-style ticketing process across 10+ tracked tickets, merged through pull requests, over a 9-month engagement.",
+      "evidence_level": "VERIFIED",
+      "evidence": "Remote branch names (PDF-145, -163, -164, -186, -188, -189, -193, -57, -78, pdf-133); first commit 2024-01-31, last 2024-10-29",
+      "period": "2024-01 to 2024-10",
+      "qualification": "The 49 merge commits counted repository-wide are not all the subject's."
+    },
+    {
+      "id": "C15",
+      "claim": "Containerised a Next.js application with a multi-stage, non-root Dockerfile and a GitHub Actions pipeline deploying to Amazon ECR and ECS.",
+      "evidence_level": "STRONGLY SUPPORTED",
+      "evidence": "Dockerfile, .github/workflows/AWS_ECS.yml, .aws/task-definition.json",
+      "period": "present in the repository through 2024",
+      "qualification": "AUTHORSHIP NOT ESTABLISHED — these files predate the subject's sole-ownership period and no commit attributes them to him. Claim familiarity with and operation of this pipeline, not authorship, unless confirmed."
+    },
+    {
+      "id": "C16",
+      "claim": "Production usage, scale, reliability and business-outcome metrics.",
+      "evidence_level": "UNKNOWN",
+      "evidence": "None. Access ended with the engagement, and the production database and all API endpoints were decommissioned before this audit.",
+      "period": null,
+      "qualification": "DO NOT CITE any volume, user, revenue or performance figure for this project."
+    },
+    {
+      "id": "C17",
+      "claim": "Use of NestJS on this project.",
+      "evidence_level": "FALSE — DO NOT CLAIM",
+      "evidence": "Zero '@nestjs' matches across all repositories and the archive.",
+      "period": null,
+      "qualification": "See corrections. The stack is Fastify; the ORM removed was Sequelize."
+    },
+    {
+      "id": "C18",
+      "claim": "Built and owned the production platform delivering an AI-powered document-processing product — asynchronous inference-job orchestration, model-failure handling, human-in-the-loop review of generated output, and rights governance over the source corpus.",
+      "evidence_level": "VERIFIED",
+      "evidence": "Status machine in MyDocumentsTable.tsx; PUT /QnA and completeEdit review gate; Document.qnasEdited; isCopyrighted upload gate; websocket/src/server.ts",
+      "period": "2024-04 to 2024-10",
+      "qualification": "This is an AI PLATFORM claim, not an AI INTEGRATION claim. See ai_positioning."
+    },
+    {
+      "id": "C19",
+      "claim": "Integration of AI/ML, use of LLMs, prompt engineering, RAG, embeddings, or development of an NLP pipeline on this project.",
+      "evidence_level": "FALSE — DO NOT CLAIM",
+      "evidence": "Exhaustive search across every branch of both repositories, compiled dist/, and the archived snapshot returned zero AI vendor SDKs, model invocations or ML libraries.",
+      "period": null,
+      "qualification": "The extraction pipeline was owned by others and never called directly from this code. Source any AI-integration claim from the other freelance engagement."
+    }
+  ],
+  "derived_claims": [
+    {
+      "claim": "Was the only meaningful contributor to the customer-facing application for seven months while simultaneously owning the backend repository.",
+      "derivation": "Overlay of per-month frontend author counts (Apr-Oct 2024: 68/71 subject) with backend commit dates (2024-05-22 to 2024-08-21, 49/61 subject).",
+      "evidence_level": "DERIVED"
+    },
+    {
+      "claim": "Code activity spans approximately 18 months across the two product repositories.",
+      "derivation": "2023-05-10 (frontend first commit) to 2024-10-29 (last commit audited).",
+      "evidence_level": "DERIVED",
+      "qualification": "This is code-activity lifespan, not production lifespan, which is UNKNOWN."
+    }
+  ],
+  "inferred_claims": [
+    {
+      "claim": "The account-deletion route was separated into its own Lambda to avoid provisioning a NAT gateway for the VPC-attached main API.",
+      "basis": "Branch name 'internet-tasks', separate API Gateway host, Lambda name 'frontend-api-layer-axios-task', and the need for outbound access to the Auth0 Management API.",
+      "evidence_level": "INFERRED",
+      "qualification": "Rationale is not documented anywhere; the deletion route still queries RDS, so the networking story is not clean-cut."
+    },
+    {
+      "claim": "The business intended to accumulate a shareable knowledge corpus from open-source documents alongside private copyrighted ones.",
+      "basis": "Mandatory shareable / non-shareable copyright flag at upload, persisted as Document.isCopyrighted and surfaced in the UI.",
+      "evidence_level": "INFERRED",
+      "qualification": "No product requirements document exists in the repositories."
+    },
+    {
+      "claim": "The product aimed to replace manual authoring of Q&A sets from long documents.",
+      "basis": "Human-in-the-loop edit workflow, qnasEdited tracking column, .docx output.",
+      "evidence_level": "INFERRED"
+    }
+  ],
+  "business_impact": {
+    "quantified": [],
+    "qualitative_strongly_supported": [
+      "Human-in-the-loop automation: automated extraction with human effort reserved for review, tracked via Document.qnasEdited",
+      "Self-service lifecycle: upload, monitor, edit, download, delete document and delete account, all without staff involvement",
+      "Compliance posture: a complete right-to-erasure path across identity provider, relational store and object storage",
+      "Copyright governance: a mandatory blocking declaration at upload, persisted and surfaced in the product",
+      "Operational visibility for users: an eight-state machine with live updates over an otherwise opaque asynchronous pipeline"
+    ],
+    "unknown": [
+      "user counts",
+      "documents processed",
+      "revenue",
+      "subscription conversion",
+      "failure rates",
+      "processing times",
+      "infrastructure cost",
+      "time saved per document",
+      "commercial traction"
+    ]
+  },
+  "engineering_challenges": [
+    {
+      "challenge": "Communicating asynchronous pipeline state to a synchronous UI with no event feed",
+      "why_hard": "Each solution trades differently: load-time fetch is free but stale within seconds; per-document 30s polling is correct but scales as documents x users against a per-invocation-billed Lambda; a WebSocket delta service centralises the poll but introduces a stateful long-lived process that does not fit the Lambda model.",
+      "evidence": "MyDocumentsTable.tsx:203-255; websocket/src/server.ts; commits 2024-07-20 and 2024-07-14"
+    },
+    {
+      "challenge": "Deleting a user across three systems with no distributed transaction",
+      "why_hard": "Auth0, PostgreSQL and S3 cannot participate in one transaction. The chosen ordering fails safe on Auth0 rejection but still orphans local rows if the process crashes mid-cascade.",
+      "evidence": "internet-tasks branch src/routes/app.ts"
+    },
+    {
+      "challenge": "Fastify's single-lifecycle model versus Lambda's container reuse",
+      "why_hard": "Duplicate route registration only fails on warm starts, so it passes local testing and first deploy.",
+      "evidence": "src/aws/lambda.ts isInitialized guard"
+    },
+    {
+      "challenge": "Lambda package size with Fastify + aws-sdk + pg + auth0",
+      "why_hard": "Bundling dependencies with function code makes every deploy slow and risks the unzipped size limit; splitting required five coordinated npm scripts and hand-written SDK deployment code.",
+      "evidence": "package.json; src/aws/*.ts"
+    },
+    {
+      "challenge": "Leaf-first ordered deletion across a four-level foreign-key hierarchy",
+      "why_hard": "Each level is reachable only through correlated subqueries from a single documentId; wrong order gives FK violations, wrong transaction boundary leaves orphans.",
+      "evidence": "src/routes/app.ts delete handlers"
+    },
+    {
+      "challenge": "Inheriting and consolidating a multi-author codebase",
+      "why_hard": "Three overlapping UI libraries (MUI 5, Material-UI 4, Reactstrap) and a duplicated component file left by a rotating team of 19.",
+      "evidence": "package.json dependencies; src/components/'MyDocumentsTable copy.tsx'"
+    }
+  ],
+  "decisions": [
+    {
+      "problem": "Low, bursty API traffic alongside an existing serverless pipeline",
+      "decision": "Run the HTTP API as Fastify on AWS Lambda rather than a container",
+      "reasoning": "Pay-per-invocation economics; the team already ran ECS for the frontend and chose per workload",
+      "tradeoffs": "Cold starts on an RDS-backed API; no cross-invocation connection pooling (many containers can exhaust RDS connections); Fastify lifecycle needed an initialisation guard",
+      "result": "Worked, with complexity pushed into the deployment pipeline",
+      "evidence_level": "VERIFIED (decision) / INFERRED (reasoning)"
+    },
+    {
+      "problem": "Account deletion needs outbound internet to Auth0; the main API needs VPC access to RDS",
+      "decision": "Separate the deletion endpoint into its own Lambda and API Gateway",
+      "reasoning": "Avoid provisioning a NAT gateway for the whole API",
+      "tradeoffs": "A second deployable, gateway and frontend base URL; the deletion route still queries RDS",
+      "result": "Shipped 2024-08",
+      "evidence_level": "INFERRED (reasoning)"
+    },
+    {
+      "problem": "File bytes through a Lambda API cost money and hit payload limits",
+      "decision": "Presigned S3 URLs for all transfer in both directions",
+      "reasoning": "Keeps the API stateless and small",
+      "tradeoffs": "The API never validates file contents; a presigned PUT is a trusted write; the upload presign has no explicit expiry (download has 30s)",
+      "result": "Implemented throughout",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "problem": "Every browser polling independently is wasteful",
+      "decision": "A standalone WebSocket service that polls the REST API once and pushes deltas",
+      "reasoning": "No event bus exists to subscribe to, so something must poll; centralise it",
+      "tradeoffs": "Single point of failure; process-local status map prevents horizontal scaling; still 5s latency and constant upstream load with no changes; pipeline-published events would remove polling entirely",
+      "result": "Built on a branch; no evidence of production deployment",
+      "evidence_level": "VERIFIED (code) / UNKNOWN (deployment)"
+    },
+    {
+      "problem": "Routine Lambda deploys shipped tens of megabytes",
+      "decision": "Lambda layers for runtime dependencies",
+      "reasoning": "Keep function-code deploys small and version dependencies independently",
+      "tradeoffs": "Layer and code can drift if package.json changes without a layer rebuild",
+      "result": "Deploys reduced to kilobytes of function code",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "problem": "Where to host the Next.js app",
+      "decision": "Container to ECR/ECS rather than Vercel or Amplify",
+      "reasoning": "Keeps the whole product in one AWS account under one IAM model",
+      "tradeoffs": "A container build and an always-on service for an app that could have run serverless",
+      "result": "GitHub Actions pipeline on push to dev",
+      "evidence_level": "VERIFIED (decision) / INFERRED (reasoning)"
+    }
+  ],
+  "problems_solved": [
+    {
+      "situation": "Users saw a document status that never changed until refresh",
+      "problem": "Processing is asynchronous and out-of-band; the web tier had no change signal",
+      "investigation": "Visible in commit sequence: 'process status polling' 2024-07-20, websocket branch 2024-07, 'fixed blank status' 2024-10",
+      "solution": "Interval polling scoped to non-terminal documents only, then a WebSocket delta-push service",
+      "result": "Live status without refresh; polling load bounded",
+      "evidence": "MyDocumentsTable.tsx:203-255; websocket/src/server.ts"
+    },
+    {
+      "situation": "Documents showed an empty status and the edit-to-download transition did not fire",
+      "problem": "Status vocabulary had gaps and the stage change was not triggered from the UI",
+      "solution": "Added the completeEdit call to the dedicated editcomplete Lambda, handled blank status explicitly, corrected status colour mapping",
+      "result": "Documents advance from Edit ready to Download ready on user action",
+      "evidence": "Commits 2024-10-01 to 2024-10-07; ApiFunctions.ts completeEdit"
+    },
+    {
+      "situation": "Deleting a document left orphaned Q&As, paragraphs, articles, tasks and S3 objects",
+      "problem": "No cascade and no transaction",
+      "solution": "Single transaction deleting leaf-first down the hierarchy with ROLLBACK; Q&A deletion also removes the S3 object and updates task status",
+      "result": "Deletion atomic within PostgreSQL",
+      "evidence": "src/routes/app.ts",
+      "qualification": "S3 delete is outside the transaction; attribution shared with avstxn98"
+    },
+    {
+      "situation": "No way for a user to delete their account",
+      "solution": "A dedicated Lambda performing Auth0 Management API deletion then a relational cascade, plus a confirmation-gated profile UI",
+      "result": "Complete self-service erasure path",
+      "evidence": "Commits 2024-08-21; internet-tasks branch; ApiFunctions.ts deleteUserAccount",
+      "qualification": "Sole author"
+    },
+    {
+      "situation": "Lambda deploys were slow and heavy",
+      "solution": "Split dependencies into a layer; wrote the build/zip/upload/update pipeline against the AWS SDK",
+      "result": "Function-code deploys reduced to kilobytes",
+      "evidence": "Commits 2024-05-23 to 2024-05-25; package.json; src/aws/*.ts",
+      "qualification": "Sole author"
+    }
+  ],
+  "security_findings": {
+    "implemented": [
+      "Auth0 OIDC with server-side sessions",
+      "withPageAuthRequired on every protected page",
+      "access tokens fetched through a server route, not exposed in client bundles",
+      "row-level scoping by JWT sub on GET /document",
+      "role-based admin gating via Auth0 custom claim",
+      "parameterised SQL throughout — no string interpolation into SQL anywhere",
+      "30-second presigned download URLs",
+      "transactions with rollback on destructive paths",
+      "non-root USER node in the production Docker image",
+      "secrets in .env / GitHub Actions secrets, never committed"
+    ],
+    "weaknesses": [
+      {
+        "issue": "IDOR on DELETE /api/web/v1/document — the ownership check is present but commented out, so any authenticated caller who knows a documentID can delete another user's document. DELETE /QnA, DELETE /QnA/single and GET /document/download are similarly unscoped.",
+        "severity": "high",
+        "status": "open in the audited code"
+      },
+      {
+        "issue": "The archived zip (frontend_api_layer-*.zip) contains a hardcoded production database connection string with credentials in src/app.ts. The rebuild removed it, but the artefact still exists on disk.",
+        "severity": "high",
+        "status": "artefact on local disk — do not circulate, attach to a portfolio, or share; consider deleting or scrubbing"
+      },
+      {
+        "issue": "QnA/download error handler console.logs and returns nothing, leaving the client hanging instead of receiving a 5xx",
+        "severity": "low"
+      },
+      {
+        "issue": "No automated tests in either repository ('test': 'echo \"Error: no test specified\" && exit 1')",
+        "severity": "medium"
+      },
+      {
+        "issue": "Node CI workflow runs 'npm build' (not a valid npm command) and pins Node 14 while the Dockerfile builds on Node 18 — the gate cannot have been meaningful",
+        "severity": "medium"
+      },
+      {
+        "issue": "No observability beyond console.log — no structured logging, metrics, tracing or alerting",
+        "severity": "medium"
+      },
+      {
+        "issue": "WebSocket service keeps status in a process-local map and cannot scale horizontally as written",
+        "severity": "low"
+      },
+      {
+        "issue": "No retry logic on Auth0 token acquisition, S3 operations or database calls",
+        "severity": "low"
+      }
+    ],
+    "publication_guidance": "Discuss these as your own retrospective in interviews. Never publish them tied to an identifiable system, even a decommissioned one."
+  },
+  "lessons": [
+    "Polling is a legitimate first answer and a bad last one — the step not taken (pipeline-published events) would have removed polling entirely",
+    "Commenting out an authorisation check is how security holes ship; a comment is not a TODO and will not come back",
+    "A CI pipeline that cannot fail is worse than none, because it looks like a safety net",
+    "Serverless pushes complexity into deployment; the cost is invisible at architecture time and very visible six weeks later",
+    "Inherited frontends accumulate UI libraries; three coexisted here and consolidation never beat features",
+    "Build dashboards against the real API from day one — this one looks finished and shows fabricated numbers",
+    "A decommissioned product erases your evidence; capture a production metrics snapshot while the system is alive"
+  ],
+  "cv_bullets": {
+    "high_confidence_quantified": [
+      "See cv_bullets.api_rebuild_tiered for the API rebuild bullet at three confidence levels.",
+      "Acted as sole active frontend developer on a production Next.js/React/TypeScript application for seven months, contributing 96% of commits in that period (68 of 71) after being the largest of 19 contributors overall.",
+      "Built a custom AWS deployment pipeline in TypeScript that packaged function code and dependencies into separate archives, published a Lambda layer and updated live functions via the AWS SDK — cutting routine deploy payloads from tens of megabytes to kilobytes.",
+      "Designed the document lifecycle UI for an eight-state asynchronous pipeline in a 704-line MUI DataGrid component, gating destructive actions by state to prevent users corrupting in-flight processing.",
+      "Delivered feature work across 10+ tracked tickets and ~49 pull requests in a team of 19 contributors."
+    ],
+    "high_confidence_non_quantified": [
+      "Diagnosed that AWS Lambda cannot host persistent WebSocket connections, removed the in-process dependencies, and delivered a standalone status service maintaining server-side document state and pushing only changed records.",
+      "Customised Auth0 login and callback handling to correct post-login redirect routing and propagate authentication errors.",
+      "Implemented a GDPR-style account-deletion flow spanning Auth0's Management API, PostgreSQL and S3, ordered to fail safe when identity deletion is rejected.",
+      "Replaced per-client status polling with a WebSocket service maintaining server-side document state and pushing only changed records, removing redundant upstream requests.",
+      "Engineered transactional cascade deletion across a four-level relational hierarchy plus associated object storage, with rollback on failure.",
+      "Eliminated file transfer through the API tier by implementing presigned direct-to-S3 upload and download with short-lived download URLs.",
+      "Resolved Fastify/Lambda lifecycle conflicts with a warm-start initialisation guard, preventing duplicate route registration across reused containers.",
+      "Integrated Auth0 authentication with role-based admin access via custom claims and Stripe subscription management into a Next.js application.",
+      "Took sole ownership of a frontend codebase previously built by a rotating team, shipping continuously for seven months."
+    ],
+    "requires_confirmation": [
+      "Any percentage or multiple for the API performance improvement — the improvement is real, the measurement was never recorded",
+      "Anything citing users, documents processed, revenue, uptime, latency or cost — no production evidence exists",
+      "Authoring the Docker/ECR/ECS deployment pipeline — present in the repository, authorship unconfirmed",
+      "Designing the PostgreSQL schema — consumed by this code but defined upstream",
+      "Any claim about the PDF parsing or Q&A generation algorithms — not in these repositories",
+      "NestJS — not used on this project",
+      "Any AI-integration claim for THIS project — use the AI platform phrasings in ai_positioning instead"
+    ],
+    "api_rebuild_tiered": {
+      "tier_1_strongest": "Rebuilt a serverless API layer on AWS Lambda, removing an ORM schema-sync from the cold-start path and eliminating a connection-pool leak that stalled requests for up to 30 seconds — reducing average response time from ~11s to ~110ms.",
+      "tier_1_condition": "Now defensible. You have an answer to 'how did you measure it?': the API running locally, called through Postman, against the same database, before and after. That is a consistent comparison, not production APM — say so plainly, and use 'roughly'/'about' with the figures.",
+      "tier_2_recommended": "Rebuilt a serverless API layer on AWS Lambda, removing an ORM schema-sync from the cold-start path and eliminating a connection-pool leak with a 30-second acquire timeout — cutting average response time from double-digit seconds to sub-second.",
+      "tier_3_zero_risk": "Rebuilt a serverless API layer serving a document-processing SaaS — removing an ORM and a per-cold-start schema sync from the cold path, eliminating a connection-pool leak, and externalising hardcoded production credentials — then delivered 10 REST endpoints in Fastify/TypeScript on AWS Lambda, API Gateway, PostgreSQL and S3, authoring 80% of the repository's commits (49 of 61).",
+      "never_write": [
+        "anything implying instrumented production measurement: 'benchmarked', 'p99 latency reduced to 110ms', 'APM showed'",
+        "claiming production telemetry that never existed — the local Postman comparison is honest and sufficient"
+      ],
+      "tier_2_note": "Safest option that keeps the magnitude; fully supported by the code alone (claim C3a) with no reliance on recollection."
+    }
+  },
+  "interview_stories": [
+    {
+      "id": "S1a",
+      "theme": "Ownership / stakeholders / initiative",
+      "title": "Volunteering for the problem nobody else could take",
+      "situation": "The API was slow and it was a recurring topic in team discussions. The cloud architect on the project was an AWS solutions specialist rather than a hands-on Node developer, so the problem sat unowned between disciplines.",
+      "task": "Nobody had picked it up; the subject volunteered because Node.js was his area.",
+      "action": "Read the existing implementation, found six distinct defects, and rebuilt the service rather than patching around them.",
+      "result": "Response times went from seconds to milliseconds when tested the same way before and after.",
+      "evidence": "The archived pre-rewrite code and the repository created three days later. The organisational context is the SUBJECT'S ACCOUNT — the Microsoft Teams history is no longer accessible to him.",
+      "why_it_is_strong": "Not 'I was assigned a performance ticket' but 'a problem sat unowned between disciplines, I recognised it was in my area, and I took it.' Deliver the organisational context as narrative and the six defects as specifics; the specifics make it credible."
+    },
+    {
+      "id": "S1",
+      "theme": "Architecture / iterative problem solving",
+      "title": "The same problem, solved three times",
+      "situation": "Documents processed asynchronously; the UI showed stale status",
+      "task": "Keep users informed with no event feed from the pipeline",
+      "action": "Load-time fetch, then per-document 30s polling excluding terminal states, then a WebSocket service holding a server-side status map polling upstream once every 5s and pushing only diffs",
+      "result": "Live status with one upstream poll per connection instead of one per document per client",
+      "evidence": "MyDocumentsTable.tsx:203-255; websocket/src/server.ts; commits 2024-07",
+      "follow_up": "What now? Publish events from the pipeline and drop polling; move the status map out of process memory"
+    },
+    {
+      "id": "S2",
+      "theme": "Distributed systems / consistency",
+      "title": "Deleting a user across three systems that can't share a transaction",
+      "action": "Auth0 first, then resolve internal id, then relational cascade",
+      "result": "Fails safe on Auth0 rejection",
+      "evidence": "internet-tasks branch src/routes/app.ts",
+      "note": "Volunteer the residual failure mode — a crash after the Auth0 delete orphans local rows"
+    },
+    {
+      "id": "S3",
+      "theme": "Debugging / runtime internals",
+      "title": "A framework fighting its runtime",
+      "action": "isInitialized guard plus await app.ready() inside the Lambda handler",
+      "evidence": "src/aws/lambda.ts",
+      "note": "Fails only on warm starts, so it passes local testing and first deploy"
+    },
+    {
+      "id": "S4",
+      "theme": "Ownership and delivery",
+      "title": "Last developer standing",
+      "action": "Inherited a codebase built by 19 people, became its only active developer in April 2024, shipped continuously through October while also creating and running the backend repository",
+      "evidence": "Per-month author breakdown"
+    },
+    {
+      "id": "S5",
+      "theme": "Humility / security",
+      "title": "A security finding in my own code",
+      "action": "Walk through the commented-out ownership check, how it would be fixed, and what practice would have prevented it",
+      "evidence": "src/routes/app.ts:95-180",
+      "caveat": "Do not claim this was discovered and fixed in production — it was found in this audit and is still open"
+    },
+    {
+      "id": "S6",
+      "theme": "Build and deployment ownership",
+      "title": "Hand-rolling a Lambda deployment tool",
+      "action": "Split dependencies into a layer; wrote SDK-based upload-and-update tooling",
+      "evidence": "package.json; src/aws/*.ts",
+      "follow_up": "Why not SAM or the Serverless Framework, and what that choice cost"
+    },
+    {
+      "id": "S7",
+      "theme": "Trade-offs under cost pressure",
+      "title": "Why one endpoint got its own Lambda",
+      "action": "A VPC-attached function has no internet route without a NAT gateway",
+      "note": "State honestly that the rationale is reconstructed from the architecture, not documented at the time"
+    },
+    {
+      "id": "S8",
+      "theme": "Reflection",
+      "title": "A dashboard that looks finished",
+      "action": "Discuss mock-first UI risk and when to force the connection to real data",
+      "evidence": "pages/dashboard/index.tsx '// Fetch data from API here'"
+    }
+  ],
+  "portfolio_material": {
+    "overview": "Qutii turned PDF documents into reviewable, editable question-and-answer sets, with a human-in-the-loop review step between automated extraction and a .docx download.",
+    "challenge": "The product sat on top of an asynchronous pipeline the web tier had no visibility into and no event feed from. Everything hard followed from that: communicating state, preventing action on in-flight documents, and cleaning up across a relational database, object storage and a third-party identity provider.",
+    "role": "Frontend began May 2023 with up to 19 contributors. From April 2024 the subject was the only person committing to it, and in May 2024 created the backend API repository from scratch and remained its principal author.",
+    "solution": "Fastify API in TypeScript on AWS Lambda behind API Gateway, PostgreSQL on RDS, presigned S3 transfer, Auth0 identity with JWT-scoped queries, a separate Lambda for account deletion needing outbound internet access, a standalone WebSocket status service, and a hand-built deployment pipeline.",
+    "results": "The full lifecycle shipped and ran in production. No production metrics survive; the environment was decommissioned before this audit.",
+    "what_id_improve": [
+      "Have the pipeline publish status events to SNS/EventBridge instead of polling anything",
+      "Never comment out an authorisation check — restore the ownership filter and cover it with a test",
+      "A CI pipeline that can actually fail, with tests behind it",
+      "Connect the admin dashboard to live data before it looks finished",
+      "Capture a production metrics snapshot while the system is alive"
+    ]
+  },
+  "content_ideas": {
+    "articles": [
+      {
+        "title": "Running Fastify on AWS Lambda: the warm-start trap nobody warns you about",
+        "core_problem": "Fastify assumes a single lifecycle; Lambda reuses containers and may invoke before ready() resolves",
+        "must_not_publish": [
+          "AWS account IDs",
+          "API Gateway hostnames",
+          "bucket names"
+        ]
+      },
+      {
+        "title": "Deleting a user across three systems you can't put in a transaction",
+        "core_problem": "Identity provider + relational database + object storage, no distributed transaction",
+        "anonymise": [
+          "use 'identity provider' generically",
+          "no real table or column names"
+        ]
+      },
+      {
+        "title": "Three ways to tell a user their job finished, and why I built all of them",
+        "core_problem": "Propagating asynchronous state with no event bus"
+      },
+      {
+        "title": "Lambda layers: splitting your dependencies from your code, and what it actually buys you",
+        "must_not_publish": [
+          "real bucket names, prefixes or function names"
+        ]
+      },
+      {
+        "title": "Keeping files out of your API: presigned S3 URLs in both directions",
+        "must_include": "Honest treatment of what validation you give up when the API never sees the bytes"
+      },
+      {
+        "title": "The authorisation check I commented out",
+        "core_problem": "A disabled ownership filter became an IDOR",
+        "framing": "A lesson from your own code, not a disclosure about a live system — the system is decommissioned, which makes this safe to write"
+      }
+    ],
+    "social_posts": [
+      {
+        "idea": "I solved the same problem three times in four months",
+        "credibility": "Three implementations and their dates are all in the commit history"
+      },
+      {
+        "idea": "Your CI pipeline runs 'npm build'. That isn't a command.",
+        "credibility": "Literally in this project's workflow file, pinned to Node 14 while Docker built on Node 18"
+      },
+      {
+        "idea": "Commenting out an auth check is how security holes ship",
+        "credibility": "Found in a retrospective audit of your own code; frame as self-critique"
+      },
+      {
+        "idea": "Deleting a user is harder than creating one",
+        "credibility": "Three systems, no transaction, and the failure mode you have to accept"
+      },
+      {
+        "idea": "The product is gone. So are the metrics.",
+        "credibility": "This audit found exactly that — take a snapshot while your system is alive"
+      },
+      {
+        "idea": "What happens when you're the last developer on a codebase 19 people built",
+        "credibility": "Contributor breakdown is verifiable"
+      },
+      {
+        "idea": "A dashboard that renders beautifully and shows nothing true",
+        "credibility": "The '// Fetch data from API here' comment is still there"
+      },
+      {
+        "idea": "Architecture thread: serverless API + presigned object storage + third-party identity",
+        "credibility": "Every box is defensible from the code"
+      }
+    ],
+    "avoid": "Any post implying production scale, user numbers or business outcomes — none of it can be supported."
+  },
+  "public_safe_claims": [
+    "Built a serverless REST API in Fastify/TypeScript on AWS Lambda behind API Gateway, with PostgreSQL on RDS and presigned S3 transfer",
+    "Technology stack names and versions",
+    "Contribution percentages and commit counts, stated as repository metrics for 'a document-processing SaaS'",
+    "The engineering problems and solutions described generically: Fastify-on-Lambda lifecycle, cross-system deletion ordering, polling-to-WebSocket evolution, Lambda layer packaging, presigned-URL transfer",
+    "Lessons learned, de-identified",
+    "The null-metrics lesson: capture metrics before your system is decommissioned"
+  ],
+  "private_only_information": [
+    "Client/employer identity (TiiQu Network), product name Qutii, repository names and URLs",
+    "AWS resource identifiers: RDS hostname, S3 bucket and prefix names, Lambda function names, API Gateway host IDs",
+    "Database schema specifics: table and column names, exact SQL, status vocabulary",
+    "The IDOR finding and all other security weaknesses, when tied to an identifiable system",
+    "Contributor names and per-person commit counts",
+    "Contents of .env files",
+    "Internal ticket keys (PDF-###)"
+  ],
+  "evidence_gaps": [
+    {
+      "item": "Corroboration for the ~11s to ~110ms figure",
+      "why_useful": "Would promote C3a from recollection to evidence and unlock the strongest CV bullet — the highest-value remaining gap",
+      "where_it_might_exist": [
+        "Microsoft Teams history — NOT accessible; the organisation removed the subject's access",
+        "CloudWatch — gone with the account",
+        "The subject's own personal email, WhatsApp, or notes from May-July 2024, if he ever mentioned the numbers outside Teams"
+      ],
+      "question_to_ask": "Teams is closed off, so the realistic remaining avenues are personal: search your own email and WhatsApp for May-Jul 2024. If nothing surfaces, this stays a recollection — and that is fine, because claim C3a (seconds to milliseconds) stands on the code alone and needs no corroboration."
+    },
+    {
+      "item": "Documents processed, Q&As generated, registered/active users",
+      "why_useful": "Would convert every qualitative claim into a quantified one; the single biggest gap",
+      "where_it_might_exist": [
+        "RDS final snapshot if taken",
+        "AWS Cost Explorer / CloudWatch if the account is open",
+        "Stripe dashboard (subscriber counts survive teardown)",
+        "Google Analytics"
+      ],
+      "question_to_ask": "Was a final snapshot taken before the RDS instance was deleted, and does the AWS account still exist?"
+    },
+    {
+      "item": "Production launch and decommission dates",
+      "why_useful": "Establishes real production lifespan; only the code window is known",
+      "where_it_might_exist": [
+        "Team records",
+        "Jira releases",
+        "AWS CloudTrail",
+        "domain/DNS history"
+      ],
+      "question_to_ask": "When did Qutii first serve real users, and when was it shut down?"
+    },
+    {
+      "item": "Processing time per document",
+      "why_useful": "Would support a throughput or performance claim",
+      "where_it_might_exist": [
+        "CloudWatch logs",
+        "Task.createdAt/updatedAt deltas in a snapshot"
+      ],
+      "question_to_ask": "Do we have any record of average PDF processing time?"
+    },
+    {
+      "item": "Whether the WebSocket service reached production",
+      "why_useful": "Claim C6 currently has to be hedged",
+      "where_it_might_exist": [
+        "Lambda/ECS deployment records",
+        "production frontend env config"
+      ],
+      "question_to_ask": "Was the WebSocket status service ever deployed, or did it stay on the branch?"
+    },
+    {
+      "item": "Authorship of the Docker/ECS/CI pipeline",
+      "why_useful": "Would upgrade C12 from 'operated' to 'built'",
+      "where_it_might_exist": [
+        "GitHub blame on the upstream org repo",
+        "team memory"
+      ],
+      "question_to_ask": "Who set up the ECR/ECS deployment for the frontend?"
+    },
+    {
+      "item": "Team size and formal role/title",
+      "why_useful": "Distinguishes 'most active contributor' from 'technical lead'",
+      "where_it_might_exist": [
+        "Contracts",
+        "org chart",
+        "Jira roles"
+      ],
+      "question_to_ask": "What was my job title and reporting line on PDF2QA?"
+    },
+    {
+      "item": "Baseline for the manual process being replaced",
+      "why_useful": "Would allow a defensible time-saving claim",
+      "where_it_might_exist": [
+        "Business stakeholders"
+      ],
+      "question_to_ask": "How long did it take to produce a Q&A set by hand before Qutii?"
+    },
+    {
+      "item": "Infrastructure cost before/after the Lambda layer change",
+      "why_useful": "Would quantify the deployment optimisation",
+      "where_it_might_exist": [
+        "AWS Cost Explorer"
+      ],
+      "question_to_ask": "Can we still see Lambda costs for mid-2024?"
+    },
+    {
+      "item": "Stakeholder or user feedback",
+      "why_useful": "Strong qualitative interview material",
+      "where_it_might_exist": [
+        "Email",
+        "Slack",
+        "Jira comments",
+        "app reviews"
+      ],
+      "question_to_ask": "Is there any written feedback on Qutii from users or stakeholders?"
+    },
+    {
+      "item": "A written reference or LinkedIn recommendation from TiiQu",
+      "why_useful": "For a volunteer engagement a reference is worth more than a CV line: it independently confirms scope, period and ownership",
+      "where_it_might_exist": [
+        "A former colleague or the project lead"
+      ],
+      "question_to_ask": "Worth doing now — ask for a short recommendation naming the period and what you owned"
+    },
+    {
+      "item": "Evidenced AI-integration work",
+      "why_useful": "The subject wants to position himself for AI-era roles; this project supplies platform experience but not integration experience",
+      "where_it_might_exist": [
+        "The separate freelance engagement in which he states he integrated AI into a client's system"
+      ],
+      "question_to_ask": "Run this same audit against that project — if it contains model calls, prompt handling or retrieval logic, it will produce the evidenced AI-integration claims this project cannot."
+    }
+  ],
+  "audit_safety_confirmations": {
+    "write_operations_executed": "none",
+    "production_database_connection_established": false,
+    "queries_executed_against_production": 0,
+    "credentials_in_output": "none — environment variables referenced by name only",
+    "customer_pii_in_output": "none",
+    "project_files_modified": "none"
+  },
+  "revision": "Revision 2 — adds first-hand context from the subject (volunteer engagement, dates, recalled contributions) and a second evidence pass over the archived pre-May-2024 API snapshot.",
+  "engagement": {
+    "type": "volunteer / unpaid contributor",
+    "equipment": "subject's own laptop — the reason the code and commit history survive locally",
+    "start_date": "2024-01-31",
+    "end_date": "2024-10-29",
+    "duration_months": 9,
+    "evidence_level": "VERIFIED (dates, from first and last commit) / stated by subject (unpaid status)",
+    "current_access": "none — subject no longer has access to the organisation's cloud account, GitHub organisation or database",
+    "project_generation": "an early version of the product; the organisation has likely iterated since"
+  },
+  "corrections": [
+    {
+      "item": "NestJS",
+      "subject_recollection": "Recalled as the first project where NestJS was used.",
+      "finding": "FALSE for this project. Zero '@nestjs' matches across all four local repositories and the archived zip. The backend is Fastify in both the pre-May-2024 version and the rebuild; the ORM removed during the rebuild was Sequelize (sequelize-typescript).",
+      "action": "Do not list NestJS under this project on any CV, portfolio or profile. If NestJS belongs on the CV it must come from different work."
+    },
+    {
+      "item": "AI integration",
+      "subject_recollection": "The project is intended to demonstrate that a company relied on him to integrate AI into their system.",
+      "finding": "Not supported for this project. No AI/ML code of any kind exists in the repositories he holds; the extraction pipeline was a separate, externally owned system he never called directly.",
+      "action": "Claim the AI PLATFORM work instead (fully evidenced, and currently in demand), and source the AI-integration claim from the other freelance engagement. See ai_positioning for exact approved and forbidden phrasings."
+    }
+  ],
+  "cv_representation_guidance": {
+    "issue": "The subject has sometimes presented this volunteer engagement as a paid role.",
+    "recommendation": "Stop doing so. Employment status is one of the few CV facts that gets verified by reference checks and background screens; when it surfaces it retroactively taints the technical claims, which are strong and true.",
+    "preferred_framings": [
+      "Experience section, labelled: 'Software Engineer (Volunteer) · TiiQu Network · Jan 2024 – Oct 2024'",
+      "A 'Selected Projects' section with dates and scope, keeping the Experience section for paid UK roles",
+      "'Open-source / community contributor' if that fits how the organisation describes itself"
+    ],
+    "avoid": [
+      "omitting dates to blur the engagement",
+      "inventing a title",
+      "listing it among paid roles with nothing to distinguish it"
+    ],
+    "interview_line": "Lead with it rather than waiting to be asked: 'I did this unpaid because I wanted production AWS experience, and within a few months I was the only developer on it.'",
+    "why_it_is_strong": "Nine months of production engineering, unpaid, arriving as one of nineteen contributors and leaving as the only developer on the application. Paid engineers are expected to ship; a volunteer who ends up owning the system is doing it on merit."
+  },
+  "ai_positioning": {
+    "finding": "NO AI or ML code exists in any repository held by the subject.",
+    "search_method": "Exhaustive search across every branch of both repositories, the compiled dist/ output, and the archived pre-May-2024 snapshot, for AI vendor SDKs (OpenAI, Anthropic, Cohere, Gemini, Bedrock, SageMaker, Textract, Comprehend), orchestration frameworks (LangChain, Hugging Face), ML/NLP libraries (spaCy, NLTK, transformers, TensorFlow, PyTorch, scikit-learn) and model-invocation patterns.",
+    "result": "Zero genuine matches. Every apparent hit was prose inside the sample Q&A fixture or MUI's paginationModel / GridRowModesModel.",
+    "pipeline_ownership": "The PDF-to-Q&A extraction pipeline ran as a separate system owned by others. The application handed documents to S3 and the pipeline collected them asynchronously; there is no direct call from the subject's code into any model.",
+    "claim_NOT_available": "'Integrated AI into their system' — not supported, and checkable in one interview question.",
+    "claim_available": "AI PLATFORM engineering: built and owned the production platform that delivered an AI product to users.",
+    "supporting_capabilities": [
+      {
+        "ai_product_need": "Human-in-the-loop review of model output",
+        "what_was_built": "Inline Q&A editing, per-row persistence, a qnasEdited flag recording human correction, and an explicit 'edit complete' gate before release",
+        "evidence": "QAResultsTable.tsx; PUT /QnA; completeEdit; commits Jul and Oct 2024",
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "ai_product_need": "Asynchronous orchestration of slow inference jobs",
+        "what_was_built": "Eight-state lifecycle, polling scoped to non-terminal jobs, WebSocket delta-push service",
+        "evidence": "MyDocumentsTable.tsx:203-255; websocket/src/server.ts",
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "ai_product_need": "Graceful handling of model failure",
+        "what_was_built": "First-class 'Processing failed' state surfaced distinctly from in-progress, with actions re-enabled for retry",
+        "evidence": "Status machine in MyDocumentsTable.tsx",
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "ai_product_need": "Handling high-volume variable model output",
+        "what_was_built": "UI paginating, editing and batch-persisting several hundred generated pairs per document",
+        "evidence": "sample_response_qna.json: 638 Q&A pairs from 279 distinct source paragraphs (2.3 per paragraph) for one document",
+        "evidence_level": "VERIFIED (fixture) — a development fixture, NOT production volume"
+      },
+      {
+        "ai_product_need": "Working with pipeline data structures",
+        "what_was_built": "Queried, joined and cascade-deleted across the four-level chunking hierarchy document -> article -> paragraph -> Qna produced by the NLP pipeline",
+        "evidence": "src/routes/app.ts",
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "ai_product_need": "Rights governance over an AI corpus",
+        "what_was_built": "Mandatory blocking copyright declaration at ingestion, persisted as isCopyrighted, separating shareable from copyrighted source material",
+        "evidence": "upload/index.tsx; Document.isCopyrighted",
+        "evidence_level": "VERIFIED",
+        "note": "Unusually current — AI and intellectual property is a live commercial and regulatory issue"
+      },
+      {
+        "ai_product_need": "Cost-aware serverless delivery of an AI workload",
+        "what_was_built": "Presigned direct-to-S3 transfer keeping payloads out of the compute tier; Lambda layer packaging; polling scoped to reduce invocations",
+        "evidence": "See architecture and deployment sections",
+        "evidence_level": "VERIFIED"
+      }
+    ],
+    "defensible_phrasings": [
+      "Built and owned the production platform for an AI-powered document-processing product, covering upload, asynchronous job orchestration, human review and delivery.",
+      "Engineered the human-in-the-loop review workflow for AI-generated content, including per-item editing, review-state tracking and an approval gate before output release.",
+      "Designed asynchronous orchestration and state management for long-running AI inference jobs, progressing from request-time fetch to scoped polling to WebSocket delta push.",
+      "Built the review and delivery surface for an NLP pipeline producing several hundred extracted question-answer pairs per document.",
+      "Implemented rights-governance controls over an AI document corpus, classifying shareable versus copyrighted source material at ingestion.",
+      "Worked within a four-level document-segmentation data model (document -> article -> paragraph -> Q&A) produced by an upstream NLP pipeline."
+    ],
+    "forbidden_phrasings": [
+      "Integrated AI into their system / Led AI integration",
+      "Built an AI-powered PDF-to-Q&A engine",
+      "Developed an NLP or machine-learning pipeline",
+      "Worked with LLMs, or any named model or vendor",
+      "Implemented prompt engineering / RAG / embeddings"
+    ],
+    "weak_avoid": "'Worked on an AI product' — true but claims nothing and invites the question you do not want to answer vaguely.",
+    "interview_script": "The extraction model itself was owned by another part of the team — I didn't build or call it. What I owned was everything around it: getting documents in, orchestrating jobs that took minutes rather than milliseconds, surfacing failure states, and building the review workflow, because the generated pairs needed human correction before anyone would trust them. A few hundred pairs per document, all editable, with the approval gate before release.",
+    "where_the_integration_claim_belongs": "A separate freelance engagement in which the subject states he genuinely integrated AI into a client's system. Keeping the two distinct is what makes both credible: this project supplies AI PLATFORM experience with nine months of verifiable ownership; that project should supply AI INTEGRATION experience with model names and integration patterns.",
+    "recommended_next_step": "Run this same evidence audit against that freelance project to produce evidenced AI-integration claims."
+  }
+}
