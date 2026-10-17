@@ -1,0 +1,434 @@
+{
+  "project_name": "Lead Reporting Platform",
+  "project_type": "Internal business-intelligence / reporting web application",
+  "organisation": "Insurance Revolution",
+  "subject": "Abraham Akintola (AbrahamNobleOX)",
+  "audit_date": "2026-10-12",
+  "audit_method": "Repository inspection, full Git history review, read-only aggregate queries against production PostgreSQL (session forced default_transaction_read_only=on, 60s statement timeout). No writes, no DDL, no raw PII retrieved.",
+  "project_description": "A NestJS + React application giving internal staff filtered, real-time analytics over inbound insurance enquiry ('lead') data held in a PostgreSQL table written by a separate .NET ingestion service. The application is strictly read-only against that shared data and owns only its own authentication/audit tables.",
+  "origin_story": {
+    "predecessor_system": "lead-api-dotnet",
+    "predecessor_description": ".NET Core service (first commit 2025-09-24; itself a C# reimplementation of an earlier Go API) that ingests inbound leads, validates/normalises UK phone numbers, and forwards them to Noetica (outbound dialer), Marketplace and Leela, plus Brevo contact creation and fleet SMS.",
+    "problem": "The ingestion service sits on the revenue path but had no user interface. Directors and managers had no way to see lead volumes, sources or performance; answering such questions required direct database access.",
+    "decision": "Build reporting as a separate full-stack application reading the same database, rather than extending the ingestion service with reporting endpoints and a UI.",
+    "reasoning": "Reporting is high-churn work (filters, columns, charts, date ranges change constantly). Coupling it to ingestion would mean frequently redeploying revenue-critical infrastructure for analytical reasons. Separation confines reporting failures to 'a chart is wrong' rather than 'leads are lost'.",
+    "tradeoffs": ["Two codebases and pipelines", "No shared validation or domain model", "Reporting can only read", "Data access logic duplicated in a second language"],
+    "result": "~8 months and 108 commits of reporting iteration with zero deployments to the ingestion service for reporting reasons.",
+    "evidence_level": "STRONGLY SUPPORTED",
+    "qualification": "Rationale reported by the project owner and corroborated by repository structure and the complete absence of any UI in lead-api-dotnet; no written design document predating the decision was found."
+  },
+  "repositories": [
+    { "name": "Insurance-Revolution/lead-reporting", "role": "backend", "commits": 52 },
+    { "name": "Insurance-Revolution/lead-reporting-frontend", "role": "frontend", "commits": 56 }
+  ],
+  "dates": {
+    "first_commit": "2026-02-18",
+    "latest_commit": "2026-10-12",
+    "active_span_months": 8,
+    "auth_system_live_from": "2026-09-28",
+    "dataset_earliest_row": "2024-01-09",
+    "note": "Dataset predates project by ~13 months; populated by other systems."
+  },
+  "technologies": {
+    "backend": ["NestJS 11", "TypeScript", "Prisma 7", "PostgreSQL", "Socket.IO", "google-auth-library (OIDC)", "@nestjs/jwt", "csv-parse", "Swagger/OpenAPI", "Jest"],
+    "frontend": ["React 18", "TypeScript", "Vite 5", "TanStack Query 5", "TanStack Table", "React Router", "Recharts", "Radix UI / shadcn", "Tailwind CSS", "socket.io-client", "Vitest"],
+    "infrastructure": ["Azure App Service", "Azure Static Web Apps", "Azure Database for PostgreSQL", "GitHub Actions", "Docker Compose (local dev DB)"],
+    "integrations": ["Google Identity (OIDC)", "UCP internal mail service (HTTP API)", "Noetica telephony/dialer (shared database only, no direct API)"]
+  },
+  "architecture": {
+    "pattern": "SPA + REST API + WebSocket, split repositories, cloud-deployed",
+    "api_prefix": "/api",
+    "auth_model": "Google SSO for identity; application database for authorisation. Global SessionAuthGuard verifies JWT then re-reads AuthUser from DB on every request, so revocation is immediate. PermissionsGuard enforces @RequirePermissions.",
+    "roles": ["admin", "user", "read_only"],
+    "permissions": ["users.manage", "invites.manage", "audit.view", "records.view"],
+    "session_token_transport": "URL fragment after OAuth callback (never sent to servers/logs), stored client-side, sent as Authorization: Bearer. Short-lived httpOnly cookies used only for OAuth state/CSRF.",
+    "realtime": "Socket.IO gateway polls SELECT MAX(id), MAX(updated_at) FROM leads every 10s and broadcasts leads:changed; clients invalidate TanStack Query keys. Deliberately not LISTEN/NOTIFY to avoid adding triggers to a non-owned table.",
+    "tables_read_only_not_owned": ["leads", "api_keys", "companies", "noetica_campaigns"],
+    "tables_owned_by_project": ["auth_users", "invites", "audit_logs"],
+    "endpoints": [
+      "GET /api/internal-leads",
+      "GET /api/internal-leads/dashboard-summary",
+      "GET /api/internal-leads/export",
+      "GET /api/internal-leads/meta/companies",
+      "GET /api/internal-leads/meta/sources",
+      "GET /api/internal-leads/:id",
+      "GET /api/noetica-campaigns",
+      "GET /api/auth/google",
+      "GET /api/auth/google/callback",
+      "GET /api/auth/me",
+      "GET /api/users",
+      "PATCH /api/users/:uuid",
+      "GET /api/invites",
+      "GET /api/invites/csv-template",
+      "POST /api/invites",
+      "POST /api/invites/bulk",
+      "POST /api/invites/:uuid/revoke",
+      "GET /api/audit-log"
+    ]
+  },
+  "codebase_size": {
+    "backend_src_loc": 3731,
+    "backend_test_loc": 466,
+    "frontend_src_loc_excluding_generated_ui": 6280,
+    "backend_spec_files": 4,
+    "backend_test_cases": 23,
+    "evidence_level": "VERIFIED"
+  },
+  "my_contributions": {
+    "attribution_backend": { "AbrahamNobleOX": 51, "gsp8181_azure_workflow_scaffold": 1 },
+    "attribution_frontend": { "Abraham_total": 39, "gpt_engineer_lovable_scaffold": 11, "Mati_colleague": 6 },
+    "verified_personal": [
+      "Entire backend application architecture and all seven feature modules",
+      "Backend-driven reporting re-architecture (dashboard aggregation, CSV export, cursor pagination)",
+      "Complete Google SSO + app-owned authorisation system (OAuth flow, guards, permissions, invites incl. bulk CSV, audit logging, three admin pages)",
+      "Real-time WebSocket gateway and client invalidation bridge",
+      "Multi-source filtering, company resolution via api_keys, source/provider enrichment with caching, metadata endpoints",
+      "Noetica Campaigns read-only feature (backend + frontend)",
+      "Local development database tooling with production-safety guards",
+      "Azure deployment (App Service + Static Web Apps) and production configuration",
+      "Project engineering documentation (AGENTS.md, CLAUDE.md, ~54KB)"
+    ],
+    "explicitly_not_mine": [
+      "Mati-Sh: date-filter query-param fix, initial Lead Details page, responsive layout work, Has Query Params filter, Export Report modal with CSV/XLSX",
+      "Lovable/gpt-engineer-app[bot]: initial dashboard UI scaffold (Feb 2026, substantially replaced later)",
+      "gsp8181: Azure deployment workflow scaffold"
+    ],
+    "cross_system_contribution": {
+      "repository": "lead-api-dotnet",
+      "commits_by_subject": 16,
+      "commits_total": 119,
+      "primary_author": "Geoffrey Prytherch (94 commits across 'Geoffrey Prytherch' and 'gsp8181')",
+      "subject_contributions": [
+        "PII redaction and conditional logging for sensitive request data in API and Function middleware (Aug 2026) - data-protection control",
+        "x-api-key header authentication across API and Function projects with Swagger docs and tests (Sep 2026)",
+        "Noetica enrolment service and API controller with models and tests (Aug-Sep 2026), later extended for type-specific handling and existing-customer identity reuse",
+        "Noetica list timing rules (list 150 / list 53 latest-time behaviour, Sep 2026)",
+        "Brevo contact strategy and fleet SMS message changes (Nov 2025)",
+        "CI/CD workflow refresh"
+      ],
+      "significance": "Establishes first-hand working knowledge of the critical service behind the separation-of-concerns decision, and competence in C#/.NET alongside TypeScript/Node.",
+      "qualification": "Contributor, not owner or architect - 16 of 119 commits.",
+      "evidence_level": "VERIFIED"
+    },
+    "ai_assistance_disclosure": {
+      "co_authored_commits_backend": 9,
+      "co_authored_commits_frontend": 13,
+      "notable": "The canonical lead sessions feature (commit 44e8d4f, 2026-09-29) was implemented by an AI coding agent under direction and review.",
+      "defensible_framing": "Specified requirements, made architectural decisions, reviewed, integrated, deployed and owns in production. Claim direction and ownership, not line-by-line authorship."
+    }
+  },
+  "production_metrics": [
+    {
+      "name": "lead_rows_in_production",
+      "value": 642348,
+      "unit": "rows",
+      "as_of": "2026-10-12",
+      "evidence_source": "pg_stat_user_tables.n_live_tup",
+      "calculation_method": "Planner estimate; exact COUNT(*) timed out at 60s",
+      "evidence_level": "VERIFIED",
+      "qualification": "Dataset predates the project and is populated by other systems. Claim 'reporting over', never 'processed'."
+    },
+    {
+      "name": "leads_table_size",
+      "value": 1213,
+      "unit": "MB",
+      "as_of": "2026-10-12",
+      "evidence_source": "pg_total_relation_size",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "name": "leads_created_12_months",
+      "value": 150030,
+      "unit": "leads",
+      "start_date": "2025-10-01",
+      "end_date": "2026-09-30",
+      "evidence_source": "Monthly COUNT(*) grouped by date_trunc('month', created_at)",
+      "calculation_method": "Sum of 12 complete months: 13985+16982+13509+16702+14845+12331+10323+9694+10873+10232+9686+10868",
+      "evidence_level": "DERIVED"
+    },
+    {
+      "name": "mean_monthly_lead_volume",
+      "value": 12503,
+      "unit": "leads/month",
+      "start_date": "2025-10-01",
+      "end_date": "2026-09-30",
+      "calculation_method": "150030 / 12",
+      "evidence_level": "DERIVED"
+    },
+    {
+      "name": "mean_daily_lead_volume",
+      "value": 332,
+      "unit": "leads/day",
+      "start_date": "2026-07-14",
+      "end_date": "2026-10-12",
+      "evidence_source": "avg of daily COUNT(*) over 91 days",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "name": "peak_daily_lead_volume",
+      "value": 572,
+      "unit": "leads/day",
+      "start_date": "2026-07-14",
+      "end_date": "2026-10-12",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "name": "distinct_lead_sources_90d",
+      "value": 23,
+      "unit": "sources",
+      "evidence_level": "VERIFIED",
+      "qualification": "Up from 2 hardcoded sources before Sept 2026"
+    },
+    {
+      "name": "distinct_lead_types_90d",
+      "value": 40,
+      "unit": "types",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "name": "duplicate_collapse_rate",
+      "value": 21.3,
+      "unit": "percent",
+      "start_date": "2026-09-12",
+      "end_date": "2026-10-12",
+      "evidence_source": "Canonical-session CTE executed against production, 30-day window",
+      "calculation_method": "10587 raw rows -> 8327 canonical sessions; (10587-8327)/10587 = 21.3%",
+      "evidence_level": "VERIFIED",
+      "qualification": "Single 30-day window; rate varies by period and source mix."
+    },
+    {
+      "name": "auth_users_provisioned",
+      "value": 9,
+      "unit": "accounts",
+      "start_date": "2026-09-28",
+      "end_date": "2026-10-12",
+      "evidence_source": "auth_users aggregate",
+      "evidence_level": "VERIFIED",
+      "qualification": "3 admin active, 5 user active, 1 invited pending. All on a single corporate email domain."
+    },
+    {
+      "name": "distinct_users_logged_in",
+      "value": 8,
+      "unit": "users",
+      "evidence_source": "COUNT(DISTINCT actor_email) WHERE action='auth.login'",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "name": "successful_logins",
+      "value": 26,
+      "unit": "logins",
+      "start_date": "2026-09-28",
+      "end_date": "2026-10-11",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "name": "unauthorised_attempts_denied",
+      "value": 9,
+      "unit": "events",
+      "evidence_source": "audit_logs WHERE action='auth.denied'",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "name": "invites_issued_accepted_revoked",
+      "value": "10 / 7 / 2",
+      "unit": "invites",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "name": "invite_acceptance_rate",
+      "value": 70,
+      "unit": "percent",
+      "calculation_method": "7 accepted / 10 issued",
+      "evidence_level": "DERIVED"
+    },
+    {
+      "name": "audit_events_recorded",
+      "value": 55,
+      "unit": "events",
+      "evidence_source": "audit_logs; 6 distinct action types",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "name": "reference_data_served",
+      "value": "86 api_keys / 6 companies / 106 noetica_campaigns",
+      "evidence_level": "VERIFIED"
+    }
+  ],
+  "verified_claims": [
+    "Built and shipped an internal reporting platform providing 8 internal staff with filtered real-time access to a 642,348-row, 1.2GB production dataset",
+    "Canonical lead-session algorithm collapsing near-duplicate submissions by 21.3% without discarding data",
+    "Google SSO + RBAC system in daily production use: 9 accounts, 26 logins, 10 invites, 9 denied attempts, 55 audit events",
+    "Re-architected dashboard/export/pagination from client-side to backend SQL",
+    "Expanded reporting from 2 hardcoded sources to 23 distinct sources and 40 lead types",
+    "Real-time updates via Socket.IO with zero schema footprint on a shared production table",
+    "Established production-safety engineering standard for a non-owned database",
+    "Owned both repositories end-to-end: 51/52 backend and 39/56 frontend commits over 8 months",
+    "Diagnosed and fixed a client-side cache-restoration race causing a ~10 req/s reload loop"
+  ],
+  "derived_claims": [
+    "150,030 leads in the 12 months to September 2026 (~12,500/month)",
+    "70% invite acceptance rate",
+    "9 denied vs 26 successful logins confirms authorisation is actively enforcing, not passing through"
+  ],
+  "inferred_claims": [
+    "User base is internal operations/marketing staff (no customer-facing surface exists in the codebase)",
+    "Reporting replaced ad-hoc direct database access (no predecessor tooling found in repo)"
+  ],
+  "business_impact": {
+    "verified": [
+      "Self-service access to a 642k-row dataset for 8 internal staff",
+      "21.3% reduction in duplicate rows surfaced across all views without data loss",
+      "Controlled auditable access replacing a single shared static API key",
+      "Reporting coverage expanded from 2 to 23 data sources"
+    ],
+    "strongly_supported": [
+      "Reduced manual effort answering ad-hoc lead data questions",
+      "Faster time-to-answer for lead-performance questions"
+    ],
+    "unknown_do_not_claim": [
+      "Staff hours saved", "Cost savings", "Revenue impact", "Before/after latency or performance benchmarks"
+    ]
+  },
+  "engineering_challenges": [
+    {
+      "title": "Re-engineering an inherited client-side data layer (largest technical improvement)",
+      "inherited_from": "Data layer created by gpt-engineer-app[bot] (AI scaffold, Feb 2026), modified by teammate Mati-Sh; client-side XLSX export authored by Mati-Shaikh (Jul 2026)",
+      "difficulty": "fetchAllLeadsForRange ran a sequential while-loop fetching 1,000 rows per request, filtered them client-side by date, accumulated the entire result set in browser memory, and fed six useMemo aggregation passes plus three full-array filter scans. Export consumed the same fully-materialised array. Critically, the loop contained 'if (currentPage > 50) break;' - a 50,000-row ceiling that silently truncated any range beyond ~4 months at the verified rate of ~12,500 leads/month, producing partial dashboard figures presented as complete.",
+      "solution": "Moved aggregation into backend SQL behind GET /internal-leads/dashboard-summary returning computed summary values; moved export to a backend endpoint generating CSV server-side in 2,000-row batches; switched the table to cursor pagination requesting an exact total only on page 1 with a 30s count cache.",
+      "before_after": {
+        "http_requests_one_month_dashboard": { "before": "~13 sequential", "after": "1" },
+        "rows_transferred_to_browser": { "before": "~12,500 full lead records", "after": "0 (summary values only)" },
+        "aggregation_location": { "before": "Browser JS: 6 passes + 3 full-array scans", "after": "PostgreSQL" },
+        "maximum_correct_range": { "before": "~50,000 rows then silent truncation", "after": "No ceiling" },
+        "export_memory_footprint": { "before": "Entire dataset in browser", "after": "2,000-row server-side batches" }
+      },
+      "evidence_level": "VERIFIED (architecture and the 50-page cap) / DERIVED (request and row counts)",
+      "qualification": "Request/row counts are arithmetic from the verified code path (1,000 rows per request) and verified production volumes. No wall-clock latency baseline was captured before the change."
+    },
+    {
+      "title": "Building on a production database owned by another system",
+      "difficulty": "Any schema change, index, trigger or write risked disrupting a live telephony/dialer system. Standard ORM tooling actively pushes toward migrations and schema reconciliation.",
+      "solution": "Documented read-only posture; local Docker Postgres for all schema work; with-local-db.sh wrapper forcing DATABASE_URL to local for the duration of migration commands; production->local sampling script with read-only enforced at application and Postgres-session level plus hostname guards; auth tables applied to production via reviewed create-only SQL rather than a migration tool."
+    },
+    {
+      "title": "Duplicate lead submissions without data loss",
+      "difficulty": "Filtering duplicate=true loses the richer payload; grouping by customer would erase genuine repeat enquiries months apart.",
+      "solution": "SQL gap-and-islands sessionization: normalise mobile/email identity, LAG() to compute gaps, running SUM over >30-minute gaps to form session boundaries, then dual ROW_NUMBER ranking within each session (data richness for the display row, operational completeness for metadata), merged into one canonical row. Same CTE powers list, detail, dashboard and export."
+    },
+    {
+      "title": "Cross-origin session auth without cookie complexity",
+      "difficulty": "Frontend and backend on different hostnames; cookie sessions would need SameSite=None, domain alignment and CORS credentials.",
+      "solution": "Session JWT returned via URL fragment (never reaches servers or logs), Bearer header thereafter; httpOnly cookies retained only for the same-origin OAuth state/CSRF handshake. Guard re-reads user from DB every request so revocation is immediate."
+    },
+    {
+      "title": "Stale client cache masking correct backend behaviour",
+      "difficulty": "One misconfiguration (PersistQueryClientProvider + refetchOnMount:false) produced three unrelated-looking production bugs: a ~10 req/s reload loop, a count stuck at zero, and a previous user's identity persisting after account switch.",
+      "solution": "Incorporate useIsRestoring() into loading state; re-enable refetchOnMount so stale data self-heals; key the identity query by the token itself so two users cannot share a cache entry."
+    },
+    {
+      "title": "Search matching real user behaviour",
+      "difficulty": "Prefix matching failed for partial mobile numbers and for full names pasted from a column that joins two database fields.",
+      "solution": "Substring matching with +44 handling; multi-word searches require each word to match across first_name/surname; 400ms debounce across four tables, deliberately excluding the audit log."
+    }
+  ],
+  "decisions": [
+    { "decision": "Build reporting as a separate application rather than extending the revenue-critical .NET ingestion service", "reasoning": "Reporting is high-churn; coupling would mean frequently redeploying the system that captures and dials leads", "tradeoff": "Two codebases, no shared domain model, read-only reporting, duplicated data access in a second language", "result": "~8 months / 108 commits of reporting iteration with zero reporting-driven deploys to ingestion", "evidence_level": "STRONGLY SUPPORTED" },
+    { "decision": "Backend raw-SQL aggregation", "reasoning": "Inherited client-side layer fetched up to 50 pages into the browser and silently truncated past 50,000 rows", "tradeoff": "Harder to test; less client flexibility", "result": "Reporting scales with dataset; silent truncation eliminated" },
+    { "decision": "Cursor pagination with offset fallback", "reasoning": "Cursors cannot express arbitrary sort columns", "tradeoff": "Two code paths; name sorts silently use offset", "result": "Fast deep pagination on common cases" },
+    { "decision": "30s count cache, include_total only on page 1", "reasoning": "Filtered COUNT(*) over 642k rows is expensive", "tradeoff": "Total can lag up to 30s", "result": "Documented accepted limitation" },
+    { "decision": "App-side polling instead of LISTEN/NOTIFY", "reasoning": "Triggers would alter a non-owned table", "tradeoff": "Up to 10s latency; periodic query", "result": "Real-time UX with zero schema footprint" },
+    { "decision": "JWT in URL fragment", "reasoning": "Different hostnames; fragments never reach servers", "tradeoff": "localStorage is XSS-exposed", "result": "Avoided cross-site cookie complexity; mitigated by per-request DB check" },
+    { "decision": "Google SSO + app-owned authorisation tables", "reasoning": "Google proves identity; app decides access", "tradeoff": "New production tables required", "result": "Immediate revocation and full audit trail" },
+    { "decision": "Manual reviewed SQL for production auth tables", "reasoning": "Migration tooling could touch shared tables", "tradeoff": "Manual step, no migration history", "result": "Zero risk to the dialer system" }
+  ],
+  "problems_solved": [
+    { "title": "OAuth invalid_state on every production sign-in", "cause": "CSRF state cookie set on *.azurewebsites.net while GOOGLE_CALLBACK_URL pointed at the custom domain; two hostnames means the cookie never returns", "fix": "Pointed frontend production API/WS base at the same custom domain", "evidence": "commit 30e75a8; 26 logins since" },
+    { "title": "Auth feature deployed but tables absent", "cause": "No automatic migration step exists by design, to protect the shared leads table", "fix": "Reviewed create-only SQL applied manually after read-only confirmation the tables did not exist", "evidence": "prisma/manual-sql/auth_tables.sql; 9 users since" },
+    { "title": "Clean merge silently deleted a colleague's shipped feature", "cause": "One branch deleted client-side Excel export while another added it; a deletion versus an addition produces no textual conflict", "fix": "Stopped before pushing, reconstructed both sides, escalated as a product decision rather than choosing unilaterally", "evidence": "export-excel.ts absent post-merge; PR #12 history" }
+  ],
+  "lessons": [
+    "refetchOnMount:false means never refetch on mount, stale or not - not 'skip when fresh'. The library default already implements the intended behaviour.",
+    "Investigate duplicates before deleting them; the flagged rows held the richer payload.",
+    "'No merge conflicts' is not 'no conflict' - review what a merge did, not its exit code.",
+    "Make dangerous operations structurally impossible rather than documented as discouraged.",
+    "An error message naming a cause ('session expired') is a hypothesis, not a diagnosis.",
+    "Capture baseline metrics before optimising, or the improvement is unprovable afterwards."
+  ],
+  "cv_bullets": {
+    "high_confidence_quantified": [
+      "Built an internal lead-reporting platform (NestJS, React, PostgreSQL, Azure) serving filtered real-time analytics over a 642,000-row, 1.2GB production dataset averaging ~12,500 new leads/month",
+      "Re-engineered an inherited client-side data layer into backend SQL endpoints, cutting a one-month dashboard view from ~13 sequential HTTP requests and ~12,500 records held in browser memory to a single request returning computed values",
+      "Eliminated a silent 50,000-row truncation defect in executive reporting, where any date range beyond ~4 months had been aggregating roughly a third of the available data and presenting it as complete",
+      "Designed a SQL window-function deduplication algorithm that collapsed near-duplicate lead submissions by 21.3% (10,587 to 8,327 rows over 30 days) while preserving every underlying record",
+      "Shipped a Google SSO and role-based authorisation system with invites, bulk CSV onboarding and audit logging, adopted by 9 internal users with 26 logins and 9 unauthorised attempts denied in its first two weeks",
+      "Expanded reporting coverage from 2 hardcoded data sources to 23, adding server-side source, company and campaign filtering across 40 lead types",
+      "Authored 51 of 52 backend and 39 of 56 frontend commits across an 8-month build, owning architecture, deployment and production operation"
+    ],
+    "high_confidence_non_quantified": [
+      "Architected lead reporting as a separate full-stack application rather than extending a revenue-critical lead-ingestion service, isolating high-churn reporting changes from the system that captures and dials inbound leads",
+      "Took ownership of a data layer originating from an AI scaffold and extended by a teammate, re-engineering it across the client/server boundary including replacing a colleague's client-side Excel export with a backend-generated CSV export processed in 2,000-row batches",
+      "Contributed PII redaction in request logging, API-key authentication, and a Noetica dialer enrolment service to the upstream .NET ingestion API, working across C#/.NET alongside TypeScript/Node",
+      "Implemented real-time dashboard updates over WebSockets with zero schema footprint on a production table shared with an external telephony system, polling instead of installing database triggers",
+      "Established a production-safety engineering standard for a non-owned database, including tooling that makes running a migration against production structurally impossible",
+      "Diagnosed and resolved a production authentication reload loop caused by a query-cache restoration race, plus two related stale-cache defects including cross-user identity leakage",
+      "Debugged an OAuth invalid_state failure traced to a cookie-scope mismatch between two hostnames in the sign-in redirect chain"
+    ],
+    "requires_confirmation": [
+      "Any claim about staff hours saved, cost reduction or decision-making speed",
+      "Any before/after performance or latency figure",
+      "Total leads ever processed by the business (the table predates the project)"
+    ]
+  },
+  "interview_stories": [
+    { "story": "Inherited data layer re-engineering", "best_for": "Performance, code review, seniority", "point": "The slowness was the symptom; silent truncation was the real defect", "strongest": true },
+    { "story": "Separate service vs extending the critical ingestion API", "best_for": "Architecture, risk judgement", "point": "Confine volatile work away from the revenue path" },
+    { "story": "Canonical lead sessions", "best_for": "Complex problem solving, data modelling", "point": "The obvious fix destroys data; investigate before filtering" },
+    { "story": "OAuth invalid_state cookie scope", "best_for": "Production debugging", "point": "The error message named the wrong cause" },
+    { "story": "Merge deleted a colleague's feature", "best_for": "Collaboration and judgement", "point": "Escalated a product decision rather than deciding unilaterally" },
+    { "story": "Read-only posture on a shared database", "best_for": "Ownership and risk management", "point": "Making the unsafe path impossible beats documenting it" },
+    { "story": "Reload loop and cache races", "best_for": "Debugging under ambiguity", "point": "Distinguishing a live loop from cumulative log noise" },
+    { "story": "Tables missing after deploy", "best_for": "Deployment and operations", "point": "Deliberately un-automated steps can be the correct decision" }
+  ],
+  "content_ideas": [
+    { "title": "Your duplicates might be your best data", "topic": "Gap-and-islands sessionization in PostgreSQL", "anonymise": "Company and source names", "omit": "Production SQL verbatim" },
+    { "title": "refetchOnMount: false doesn't mean what you think", "topic": "One TanStack Query misconfiguration, three production bugs", "public_safe": true },
+    { "title": "Building on a database you don't own", "topic": "Read-only tenancy patterns on shared production infrastructure", "omit": "Hostnames and schema specifics" },
+    { "title": "Google SSO authenticates; your database authorises", "topic": "Why re-reading the user on every request beats trusting token claims", "public_safe": true },
+    { "title": "It said the session expired. Nothing had expired.", "topic": "OAuth state failures from cookie scope across hostnames", "public_safe": true }
+  ],
+  "public_safe_claims": [
+    "Engineering patterns described generically ('an insurance brokerage', 'a shared production table')",
+    "The deduplication technique (gap-and-islands sessionization is a well-known public pattern)",
+    "TanStack Query cache lessons in full",
+    "OAuth cookie-scope lesson in full",
+    "Technology stack",
+    "Percentage metrics (21.3% collapse, 70% invite acceptance) without absolute counts or employer name"
+  ],
+  "private_only_information": [
+    "Production hostnames and custom domains",
+    "leads table schema specifics and the external dialer's column names",
+    "Internal company/source identifiers (source IN (1,47), company prefixes)",
+    "Absolute user counts tied to a named employer",
+    "Exact production row counts attributed to a named company",
+    "UCP internal mail service and its API shape",
+    "Audit-log action taxonomy",
+    "Verbatim canonical-session SQL"
+  ],
+  "evidence_gaps": [
+    { "item": "Pre-project baseline for answering lead questions", "why": "Would convert 'built a reporting tool' into a quantified efficiency claim", "where": "Team recollection; predecessor spreadsheets", "question": "How did we answer lead-performance questions before this existed?" },
+    { "item": "Dashboard load time before/after backend re-architecture", "why": "Would turn the architectural argument into a hard performance number - the single most valuable missing metric", "where": "Azure App Service / Static Web Apps metrics around 2026-09-27; any saved browser performance trace", "question": "Can I pull API response-time or page-load metrics either side of the September release?" },
+    { "item": "Whether anyone acted on a truncated (>4-month) dashboard figure before Sept 2026", "why": "Would escalate the truncation fix from 'defect removed' to 'incorrect reporting corrected'", "where": "Stakeholder recollection; saved reports or screenshots predating the fix", "question": "Did anyone pull a quarterly or annual lead figure from the dashboard before late September?" },
+    { "item": "Written record of the separate-service decision", "why": "Would upgrade the founding architectural decision from STRONGLY SUPPORTED to VERIFIED", "where": "Slack/Teams history, tickets or meeting notes from ~Feb 2026", "question": "Is there a ticket or thread where we agreed not to put reporting in the .NET API?" },
+    { "item": "Intended total user audience vs 9 provisioned", "why": "Distinguishes full rollout from pilot", "where": "Management / rollout plan", "question": "Is 9 users the full intended audience or phase one?" },
+    { "item": "Exact production go-live date of first version", "why": "Currently inferred from commit dates", "where": "Azure deployment history; first production login", "question": "When was this first used by staff for real work?" },
+    { "item": "Usage depth (most-used filters, export frequency)", "why": "Demonstrates adoption beyond login counts", "where": "Not currently instrumented", "question": "Action: add lightweight usage logging" },
+    { "item": "Full-table annual aggregates", "why": "Annual totals timed out at 60s", "where": "Requires maintenance window or longer timeout", "question": "Action: re-run during low-traffic hours" },
+    { "item": "Whether canonical-session change altered reported KPIs", "why": "Stakeholder-visible impact of the dedup work", "where": "Compare dashboard totals either side of 2026-09-29", "question": "Did reported lead counts shift when dedup shipped, and was that communicated?" }
+  ],
+  "measurement_limitations": [
+    "642,348 row count is a pg_stat_user_tables planner estimate; exact COUNT(*) timed out at 60s",
+    "Annual aggregates could not be completed (full-table scan exceeded statement timeout); 13 months of monthly data obtained instead",
+    "21.3% collapse rate reflects one 30-day window and varies with source mix",
+    "Auth adoption figures cover approximately two weeks only"
+  ]
+}

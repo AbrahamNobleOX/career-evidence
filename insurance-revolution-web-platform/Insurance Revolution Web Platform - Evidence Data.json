@@ -1,0 +1,1492 @@
+{
+  "project_name": "Insurance Revolution Web Platform",
+  "project_type": "Multi-repository customer-facing web platform and lead-ingestion backend for a UK insurance broker",
+  "project_description": "WordPress-based public website (theme + four React plugins: quote forms, calculators, competition wheel, register-interest form) feeding a .NET 8 lead-ingestion API that validates, de-duplicates and fans out leads to a predictive dialler, a quoting marketplace, a cross-system identity service, and email/SMS providers.",
+  "audit_date": "2026-10-10",
+  "subject": {
+    "name": "Abraham Akintola",
+    "git_identities": [
+      "AbrahamNobleOX <abramseyakid@gmail.com>",
+      "Abraham <abramseyakid@gmail.com>",
+      "AbrahamAkintola-InsuranceRevolution <abraham.akintola@insurancerevolution.co.uk>"
+    ],
+    "role_narrative": "Joined Insurance Revolution November 2024 as a mid-level developer owning the front-facing website; took over ownership of the backend lead API and the wider application estate after the senior engineer departed (late 2025). All 384 commits fall on or after 1 Nov 2024, corroborating the start date against the Git record.",
+    "employment_start": "2024-11"
+  },
+  "dates": {
+    "earliest_commit_across_repos": "2024-07-04",
+    "latest_commit_across_repos": "2026-09-25",
+    "earliest_production_lead": "2024-01-09",
+    "latest_production_lead": "2026-10-10",
+    "measurable_production_window_months": 33,
+    "tenure_start": "2024-11-01",
+    "tenure_months_to_audit": 23,
+    "attribution_note": "The platform predates the subject's employment. Career claims use tenure figures (from 2024-11-01); lifetime figures (from 2024-01-09) describe the system only."
+  },
+  "repositories": [
+    {
+      "name": "wp-quoteform-plugin",
+      "remote": "insurancerevolution/wp-quoteform-plugin",
+      "purpose": "React quote-form engine, 12 insurance verticals, wrapped as a WordPress plugin with a PHP REST proxy",
+      "stack": [
+        "React 18",
+        "TypeScript",
+        "Vite",
+        "Formik",
+        "Yup",
+        "Ant Design",
+        "framer-motion",
+        "PHP"
+      ],
+      "size": {
+        "ts_tsx_files": 169,
+        "ts_tsx_loc": 30193
+      },
+      "commits_total": 401,
+      "commits_subject": 223,
+      "subject_share_pct": 55.6,
+      "subject_is_majority_author": true,
+      "tenure_commits_total": 253,
+      "tenure_subject_share_pct": 88.1
+    },
+    {
+      "name": "wp-theme",
+      "remote": "insurancerevolution/wp-theme",
+      "purpose": "Public website theme (Understrap/Bootstrap child), 28 page templates",
+      "stack": [
+        "PHP",
+        "SCSS",
+        "Bootstrap 5",
+        "GTM"
+      ],
+      "size": {
+        "php_loc": 12326,
+        "page_templates": 28
+      },
+      "commits_total": 120,
+      "commits_subject": 48,
+      "subject_share_pct": 40.0,
+      "subject_is_majority_author": false,
+      "tenure_commits_total": 82,
+      "tenure_subject_share_pct": 58.5
+    },
+    {
+      "name": "wp-competition-wheel",
+      "remote": "insurancerevolution/wp-competition-wheel",
+      "purpose": "Promotional prize-wheel game with claim form",
+      "stack": [
+        "React",
+        "TypeScript",
+        "Vite",
+        "PHP",
+        "Azure Functions",
+        "reCAPTCHA"
+      ],
+      "size": {
+        "ts_tsx_loc": 528
+      },
+      "commits_total": 119,
+      "commits_subject": 47,
+      "subject_share_pct": 39.5,
+      "subject_is_majority_author": false,
+      "tenure_commits_total": 119,
+      "tenure_subject_share_pct": 39.5
+    },
+    {
+      "name": "wp-register-interest-form",
+      "remote": "insurancerevolution/wp-register-interest-form",
+      "purpose": "Interest-capture modal for products not yet launched",
+      "stack": [
+        "React",
+        "TypeScript",
+        "Vite",
+        "PHP",
+        "Azure",
+        "reCAPTCHA"
+      ],
+      "size": {
+        "ts_tsx_loc": 304
+      },
+      "commits_total": 42,
+      "commits_subject": 27,
+      "subject_share_pct": 64.3,
+      "subject_is_majority_author": true,
+      "tenure_commits_total": 42,
+      "tenure_subject_share_pct": 64.3
+    },
+    {
+      "name": "wp-calculator-plugin",
+      "remote": "Insurance-Revolution/wp-calculator-plugin",
+      "purpose": "Four marketing calculators embedded via ACF-driven shortcode",
+      "stack": [
+        "React 18",
+        "TypeScript",
+        "Vite",
+        "PHP",
+        "ACF"
+      ],
+      "size": {
+        "ts_tsx_loc": 2000,
+        "calculators": 4
+      },
+      "commits_total": 26,
+      "commits_subject": 23,
+      "subject_share_pct": 88.5,
+      "subject_is_majority_author": true,
+      "note": "Plugin header names the subject as Author.",
+      "tenure_commits_total": 26,
+      "tenure_subject_share_pct": 88.5
+    },
+    {
+      "name": "lead-api-dotnet",
+      "remote": "Insurance-Revolution/lead-api-dotnet",
+      "purpose": "Lead ingestion, validation, de-duplication and fan-out",
+      "stack": [
+        ".NET 8",
+        "ASP.NET Core",
+        "Azure Functions",
+        "EF Core",
+        "PostgreSQL 16",
+        "Docker"
+      ],
+      "size": {
+        "core_loc": 5179,
+        "api_loc": 1474,
+        "function_loc": 1548,
+        "leela_loc": 1485,
+        "tests_loc": 5778
+      },
+      "commits_total": 123,
+      "commits_subject": 16,
+      "subject_share_pct": 13.0,
+      "subject_is_majority_author": false,
+      "primary_author": "Geoffrey Prytherch (98 commits)",
+      "tenure_commits_total": 123,
+      "tenure_subject_share_pct": 13.0
+    }
+  ],
+  "authorship_summary": {
+    "commits_subject_total": 384,
+    "commits_all_total": 831,
+    "subject_share_pct": 46.2,
+    "repos_majority_authored": 3,
+    "evidence_source": "git shortlog -sne --all; git log --all --since=2024-11-01",
+    "evidence_level": "VERIFIED",
+    "qualification": "Commit count is a proxy for contribution, not a measure of it. The tenure share (59.5% of 645 commits since Nov 2024, and 88% of the quote-form plugin) is the fair comparison; the 46%-of-831 lifetime figure is diluted by work predating the employment.",
+    "tenure_commits_all": 645,
+    "tenure_subject_share_pct": 59.5,
+    "tenure_share_quoteform_pct": 88.1
+  },
+  "technologies": {
+    "frontend": [
+      "React 18",
+      "TypeScript 5",
+      "Vite 5",
+      "Formik",
+      "Yup",
+      "Ant Design 5",
+      "framer-motion",
+      "react-toastify",
+      "dayjs",
+      "axios",
+      "Ideal Postcodes postcode-lookup",
+      "Google reCAPTCHA (invisible)"
+    ],
+    "wordpress": [
+      "PHP",
+      "Understrap/Bootstrap 5 child theme",
+      "WP REST API",
+      "shortcodes",
+      "nonces",
+      "Advanced Custom Fields",
+      "Google Tag Manager",
+      "Trustpilot TrustBox"
+    ],
+    "backend": [
+      ".NET 8",
+      "ASP.NET Core",
+      "Azure Functions (isolated worker)",
+      "Entity Framework Core",
+      "Npgsql",
+      "Swashbuckle/OpenAPI",
+      "xUnit"
+    ],
+    "data": [
+      "PostgreSQL 16 (Azure Flexible Server)",
+      "Azure Blob Storage",
+      "Prisma migrations"
+    ],
+    "infra_ci": [
+      "Docker",
+      "Azure Container Registry",
+      "Azure App Service",
+      "GitHub Actions (6 workflows incl. rollback)",
+      "Bearer SAST",
+      "Dependabot",
+      "PHPCS",
+      "PHPStan",
+      "PHPMD",
+      "ESLint"
+    ]
+  },
+  "architecture": {
+    "pattern": "WordPress site with React islands hydrated by shortcode; PHP REST proxy keeping third-party credentials server-side; shared .NET core library behind two redundant hosts (ASP.NET Core API and Azure Functions); PostgreSQL system of record; synchronous fan-out to external services with one asynchronous fire-and-forget sink.",
+    "components": [
+      {
+        "name": "wp-theme",
+        "role": "Page templates, GTM, click-ID persistence"
+      },
+      {
+        "name": "quote-form plugin (React + PHP)",
+        "role": "12-vertical multi-step quote capture; 15 quote/v1 REST proxy routes"
+      },
+      {
+        "name": "calculator plugin",
+        "role": "4 marketing calculators, ACF-driven placement"
+      },
+      {
+        "name": "competition wheel",
+        "role": "Prize game, WP REST -> Azure Function + email"
+      },
+      {
+        "name": "register-interest form",
+        "role": "Interest capture -> Azure API + email"
+      },
+      {
+        "name": "Leads.Api / Leads.Function",
+        "role": "Redundant front ends over Leads.Core"
+      },
+      {
+        "name": "Leads.Core/LeadService (1134 LOC)",
+        "role": "Validate, normalise phone, de-duplicate, persist, fan out"
+      },
+      {
+        "name": "NoeticaService (651 LOC)",
+        "role": "SOAP integration with predictive dialler (CreateQueuedRecord, InsertCrmRecord)"
+      },
+      {
+        "name": "LeelaService / Leads.Leela",
+        "role": "Cross-system correlation identity; C# port of Go rs/xid"
+      },
+      {
+        "name": "MarketplaceService, BrevoService, FleetSmsService, QZLeadsSink",
+        "role": "Quoting marketplace, email, SMS, async sink"
+      },
+      {
+        "name": "PostgreSQL 16",
+        "role": "leads, scheduled_leads, api_keys, companies, noetica_campaigns, audit_logs, gdpr_forms"
+      }
+    ],
+    "middleware": [
+      "ApiKeyAuthMiddleware",
+      "LeelaAuthMiddleware",
+      "ForceJsonContentTypeMiddleware",
+      "RequestBodyLoggingMiddleware (PII-redacted, trace-id correlated)"
+    ],
+    "deployment": "Multi-stage Dockerfile (.NET 8 SDK -> ASP.NET runtime, port 8080) pushed to Azure Container Registry; six GitHub Actions workflows (build-and-test, uat, uat-new, prod, live, rollback), each gated behind a Bearer SAST scan. WordPress artefacts built to zip and installed manually (no CI)."
+  },
+  "integrations": [
+    {
+      "name": "Noetica Synthesys predictive dialler",
+      "protocol": "SOAP",
+      "evidence": "NoeticaService.cs; 106 campaign mappings; 635,626 leads with a customer ID"
+    },
+    {
+      "name": "Leela cross-system identity service",
+      "protocol": "HTTP (Bearer)",
+      "evidence": "LeelaService.cs (1s timeout); 462,316 leads with a leela_id"
+    },
+    {
+      "name": "Marketplace quoting service",
+      "protocol": "HTTP",
+      "evidence": "MarketplaceService.cs; 1,826 recorded connection failures"
+    },
+    {
+      "name": "QZLeadsSink",
+      "protocol": "HTTP (fire-and-forget)",
+      "evidence": "LeadService.SendToQzLeadsSink via Task.Run"
+    },
+    {
+      "name": "Brevo",
+      "protocol": "HTTP",
+      "purpose": "Transactional email and list membership"
+    },
+    {
+      "name": "CM Telecom",
+      "protocol": "HTTP",
+      "purpose": "SMS to fleet leads, in/out-of-hours copy variants"
+    },
+    {
+      "name": "Ideal Postcodes",
+      "protocol": "HTTP via WP proxy",
+      "purpose": "UK address lookup"
+    },
+    {
+      "name": "Google Ads / Microsoft Ads",
+      "protocol": "click-ID capture",
+      "purpose": "Paid-search attribution"
+    }
+  ],
+  "workflows": [
+    "Quote capture: click-ID cookie -> shortcode -> React hydration -> multi-step journey with vehicle and address lookup chains -> GTM events -> nonce-checked POST to quote/v1/send -> lead API",
+    "Lead ingestion: API-key auth -> phone normalisation -> de-duplication -> Leela ID -> Noetica CRM + queue -> conditional Marketplace / SMS / Brevo / QZLeadsSink -> stable fail_reason taxonomy",
+    "Noetica enrolment (idempotent re-entry by leela_id + source + type, returning queued / processing / failed)",
+    "Register-interest capture for unlaunched products",
+    "Competition wheel prize claim (reCAPTCHA -> WP REST -> Azure Function + email)",
+    "GDPR subject-access request intake (theme template -> gdpr_forms + attachments)"
+  ],
+  "my_contributions": {
+    "quote_form_engine": [
+      "Built the Fast Food vertical end to end and its Marketplace and dialler integrations (Jan-Feb 2025)",
+      "Built the Business Insurance vertical: 3-page form, multi-checkbox cover options, business-activity taxonomy, validation, product-category routing (Jul-Sep 2025)",
+      "Built Landlord Insurance, Minibus and Plant & Machinery verticals (Sep-Dec 2025)",
+      "Built the StepIndicator progress component and rolled it across every vertical (18 Jul 2025)",
+      "Built the GTM dataLayer analytics layer: trackOpenForm, trackSubmitForm, trackBusinessInsuranceFormSubmit (Aug 2025)",
+      "Built paid-search attribution: gclid + msclkid 30-day cookies, query-parameter persistence to localStorage, injection into submissions (Jul 2025 - Feb 2026)",
+      "Integrated Ideal Postcodes address lookup across all verticals (Feb 2026)",
+      "Added ABI vehicle-code handling, transmission/fuel/body/doors lookup chains, UK residency, motoring and criminal convictions capture (2025-2026)",
+      "Owned the WordPress REST proxy: added /sendMarketplaceDW, corrected lead API path and query-parameter contract, hardened arrayToHtmlList HTML escaping"
+    ],
+    "wordpress_theme": [
+      "Business Insurance template family: form (dynamic quote-form selection), product, home page, category page variant (Jul 2025)",
+      "Calculator template and category-page calculator section (Aug-Sep 2025)",
+      "GDPR data-request form template (Mar and Jun 2026)",
+      "Google Tag Manager integration in the theme header (Sep 2025)",
+      "Make-a-claim templates, Trustpilot TrustBox rollout, WhatsApp widget (later removed over a Google Ads policy conflict), young-driver fast-track journey, floating action buttons, blog shortcode support"
+    ],
+    "calculator_plugin": [
+      "Sole author: four calculators (Convicted Driver, Drink Driving, BIK Car, Fleet Cost Per Mile)",
+      "Shared CustomInputField / CustomSelectField abstraction driven by Formik context, Yup validation per calculator",
+      "React 18 migration and script-enqueue refactor",
+      "ACF-driven shortcode so marketing places calculators from the editor"
+    ],
+    "competition_wheel": [
+      "Wheel colour and prize configuration, claim modal and form, submission spinner, success/failure states, date-picker constraints",
+      "Invisible Google reCAPTCHA (Jan 2025)",
+      "Live API wiring and secrets-removal remediation (Jan 2025)"
+    ],
+    "register_interest_form": [
+      "Modal form, error handling, email body fixes, database-API connection, environment-variable handling, invisible reCAPTCHA"
+    ],
+    "lead_api_dotnet": [
+      "FleetSmsService: CM Telecom SMS with UK-timezone-aware in/out-of-hours copy and 10s timeout (Nov 2025)",
+      "Brevo list-ID change and constrained contact-creation logic (Nov 2025)",
+      "PII redaction and conditional logging across both ASP.NET and Azure Functions middleware (Aug 2026)",
+      "NoeticaEnrolmentService (292 LOC) and controller with explicit idempotency across queued / in-flight / unknown-outcome states (Aug-Sep 2026)",
+      "x-api-key header authentication across both front ends with Swagger docs and tests (Sep 2026)",
+      "Noetica dialler list-timing rules: list 53 into the 5-day latest-time list, with a shipped-and-reverted first attempt on list 150 (Sep 2026)"
+    ],
+    "not_attributable": "LeadService (1134 LOC), NoeticaService (651 LOC), the Go-to-C# reimplementation, the Leela domain model and XidGenerator, MarketplaceService, EF Core repositories and the Azure deployment workflows are predominantly Geoffrey Prytherch's work (98 of 123 commits). Significant parts of wp-theme and wp-competition-wheel are Jose Wills's work. Nicholas Wootton and Roxie Gibson contributed to the quote-form plugin."
+  },
+  "production_metrics": [
+    {
+      "name": "total_leads_ingested",
+      "value": 641740,
+      "unit": "lead submissions",
+      "start_date": "2024-01-09",
+      "end_date": "2026-10-10",
+      "evidence_source": "production public.leads",
+      "calculation_method": "SELECT count(*) FROM leads",
+      "evidence_level": "VERIFIED",
+      "qualification": "Rows are submissions, not unique people; 33% are flagged duplicates. Start date reflects current table retention, not necessarily first production day (a separate leads_backup table holds 35,499 rows)."
+    },
+    {
+      "name": "leads_2024",
+      "value": 278791,
+      "unit": "lead submissions",
+      "start_date": "2024-01-09",
+      "end_date": "2024-12-31",
+      "evidence_source": "leads GROUP BY year",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "name": "leads_2025",
+      "value": 253894,
+      "unit": "lead submissions",
+      "start_date": "2025-01-01",
+      "end_date": "2025-12-31",
+      "evidence_source": "leads GROUP BY year",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "name": "leads_2026_partial",
+      "value": 109055,
+      "unit": "lead submissions",
+      "start_date": "2026-01-01",
+      "end_date": "2026-10-10",
+      "evidence_source": "leads GROUP BY year",
+      "evidence_level": "VERIFIED",
+      "qualification": "Partial year."
+    },
+    {
+      "name": "website_sourced_leads",
+      "value": 205806,
+      "unit": "lead submissions",
+      "start_date": "2024-01-09",
+      "end_date": "2026-10-10",
+      "evidence_source": "leads JOIN api_keys WHERE source='insurancerevolution.co.uk'",
+      "calculation_method": "COUNT grouped by source",
+      "evidence_level": "VERIFIED",
+      "qualification": "32.1% of all leads. Includes traffic predating and outside the subject's specific features."
+    },
+    {
+      "name": "website_leads_2024",
+      "value": 63603,
+      "unit": "lead submissions",
+      "start_date": "2024-01-09",
+      "end_date": "2024-12-31",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "name": "website_leads_2025",
+      "value": 90103,
+      "unit": "lead submissions",
+      "start_date": "2025-01-01",
+      "end_date": "2025-12-31",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "name": "website_leads_2026_partial",
+      "value": 52100,
+      "unit": "lead submissions",
+      "start_date": "2026-01-01",
+      "end_date": "2026-10-10",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "name": "throughput_last_90_days",
+      "value": 30656,
+      "unit": "lead submissions",
+      "start_date": "2026-07-12",
+      "end_date": "2026-10-10",
+      "evidence_source": "leads WHERE created_at >= now()-interval '90 days'",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "name": "average_daily_throughput",
+      "value": 340.6,
+      "unit": "leads/day",
+      "start_date": "2026-07-12",
+      "end_date": "2026-10-10",
+      "calculation_method": "30656 / 90",
+      "evidence_level": "DERIVED"
+    },
+    {
+      "name": "peak_single_day",
+      "value": 1656,
+      "unit": "leads",
+      "start_date": "2025-07-29",
+      "end_date": "2025-07-29",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "name": "duplicates_suppressed",
+      "value": 212054,
+      "unit": "leads",
+      "start_date": "2024-01-09",
+      "end_date": "2026-10-10",
+      "evidence_source": "leads WHERE fail_reason='duplicate'",
+      "evidence_level": "VERIFIED",
+      "qualification": "33.04% of all leads. Most of this volume is NOT distinct people arriving twice: per the partial-submission diagnosis, the platform's own quote form posts each web enquiry twice by design. Roughly 73,300 website repeats were suppressed during the tenure. The de-duplication engine was authored by a colleague; the subject maintains it."
+    },
+    {
+      "name": "noetica_crm_assignment_rate",
+      "value": 99.05,
+      "unit": "percent",
+      "calculation_method": "635626 / 641740",
+      "evidence_source": "COUNT(noetica_customer_id IS NOT NULL)",
+      "evidence_level": "DERIVED"
+    },
+    {
+      "name": "leela_identity_assignment_rate",
+      "value": 72.04,
+      "unit": "percent",
+      "calculation_method": "462316 / 641740",
+      "evidence_level": "DERIVED",
+      "qualification": "Below 99% partly because the Leela HTTP call uses a 1-second timeout so identity assignment never blocks lead capture."
+    },
+    {
+      "name": "dialler_queue_assignment",
+      "value": 381109,
+      "unit": "leads",
+      "calculation_method": "COUNT(queue_id IS NOT NULL)",
+      "evidence_level": "VERIFIED",
+      "qualification": "59.39%; lower than the CRM rate because duplicates get a CRM record but no queue entry (59.39 + 33.04 is approximately 92)."
+    },
+    {
+      "name": "non_duplicate_integration_failure_rate",
+      "value": 0.91,
+      "unit": "percent",
+      "calculation_method": "(3721 invalid_phone + 1826 marketplace + 314 noetica + 3 campaign + 1 leela) / 641740",
+      "evidence_source": "leads GROUP BY fail_reason",
+      "evidence_level": "DERIVED",
+      "qualification": "Measures recorded failure reasons only; requests that never reached the service are not represented."
+    },
+    {
+      "name": "leads_with_paid_search_click_id",
+      "value": 149940,
+      "unit": "leads",
+      "evidence_source": "COUNT(gclid IS NOT NULL)",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "name": "website_click_id_coverage_2024",
+      "value": 35.7,
+      "unit": "percent",
+      "calculation_method": "22705 non-empty gclid / 63603 website leads",
+      "evidence_level": "DERIVED",
+      "qualification": "Year-on-year change cannot be causally attributed to the attribution work; ad-spend mix also varies."
+    },
+    {
+      "name": "website_click_id_coverage_2025",
+      "value": 72.9,
+      "unit": "percent",
+      "calculation_method": "65671 / 90103",
+      "evidence_level": "DERIVED"
+    },
+    {
+      "name": "website_click_id_coverage_2026_partial",
+      "value": 62.9,
+      "unit": "percent",
+      "calculation_method": "32759 / 52100",
+      "evidence_level": "DERIVED"
+    },
+    {
+      "name": "distinct_product_types",
+      "value": 101,
+      "unit": "lead types",
+      "evidence_source": "COUNT(DISTINCT type) FROM leads",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "name": "distinct_subtypes",
+      "value": 95,
+      "unit": "subtypes",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "name": "configured_lead_sources",
+      "value": 45,
+      "unit": "API keys",
+      "evidence_source": "api_keys table",
+      "evidence_level": "VERIFIED",
+      "qualification": "21 carry live traffic."
+    },
+    {
+      "name": "business_entities_served",
+      "value": 6,
+      "unit": "companies",
+      "evidence_source": "companies table",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "name": "noetica_campaign_mappings",
+      "value": 106,
+      "unit": "campaigns",
+      "evidence_source": "noetica_campaigns table",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "name": "cancelled_leads",
+      "value": 48049,
+      "unit": "leads",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "name": "gdpr_requests_received",
+      "value": 41,
+      "unit": "submissions",
+      "start_date": "2026-06-22",
+      "end_date": "2026-10-05",
+      "evidence_source": "gdpr_forms table",
+      "evidence_level": "VERIFIED",
+      "qualification": "With 84 attachments. Matches the theme commit of 22 Jun 2026."
+    },
+    {
+      "name": "tenure_total_submissions",
+      "value": 397667,
+      "unit": "lead submissions",
+      "start_date": "2024-11-01",
+      "end_date": "2026-10-10",
+      "evidence_source": "leads WHERE created_at >= '2024-11-01'",
+      "calculation_method": "SELECT count(*)",
+      "evidence_level": "VERIFIED",
+      "qualification": "Raw rows. Use unique_enquiries for honest headline figures; ~62% of all leads the platform has recorded arrived during the tenure."
+    },
+    {
+      "name": "tenure_unique_enquiries",
+      "value": 309486,
+      "unit": "unique enquiries",
+      "start_date": "2024-11-01",
+      "end_date": "2026-10-10",
+      "evidence_source": "leads, window function over (mobile, type, source)",
+      "calculation_method": "Count rows whose gap to the previous identical submission is null or >= 30 minutes",
+      "evidence_level": "DERIVED",
+      "qualification": "Collapses the partial-submission artifact. The 30-minute window is a judgement call, stable across 10-60 minutes because 91% of repeats land inside 5 minutes. Cannot separate a partial-then-full pair from a genuine immediate resubmission; one person with two phone numbers still counts twice."
+    },
+    {
+      "name": "tenure_website_submissions",
+      "value": 150714,
+      "unit": "lead submissions",
+      "start_date": "2024-11-01",
+      "end_date": "2026-10-10",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "name": "tenure_website_unique_enquiries",
+      "value": 77433,
+      "unit": "unique enquiries",
+      "start_date": "2024-11-01",
+      "end_date": "2026-10-10",
+      "evidence_level": "DERIVED",
+      "qualification": "Same 30-minute collapse method. This is the headline website figure to quote."
+    },
+    {
+      "name": "tenure_non_duplicate_failure_rate",
+      "value": 1.3,
+      "unit": "percent",
+      "start_date": "2024-11-01",
+      "end_date": "2026-10-10",
+      "calculation_method": "5151 / 397667",
+      "evidence_level": "DERIVED",
+      "qualification": "Quoted in preference to the 0.91% lifetime figure: it covers the period of responsibility and is the more conservative number."
+    },
+    {
+      "name": "website_sub30min_repeat_rate",
+      "value": 48.6,
+      "unit": "percent",
+      "start_date": "2024-11-01",
+      "end_date": "2026-10-10",
+      "evidence_source": "per-channel gap analysis",
+      "calculation_method": "73281 / 150714",
+      "evidence_level": "VERIFIED",
+      "qualification": "The form-driven channel. Affiliate feeds that post a single complete lead range 0.2-6.7%, a 240x difference that establishes the partial-submission mechanism."
+    },
+    {
+      "name": "affiliate_sub30min_repeat_rate_range",
+      "value": "0.2-6.7",
+      "unit": "percent",
+      "evidence_level": "VERIFIED",
+      "qualification": "Control group for the partial-submission diagnosis."
+    }
+  ],
+  "feature_to_production_traceability": [
+    {
+      "feature": "Business Insurance vertical",
+      "built": "2025-07-18 to 2025-08-01",
+      "first_production_lead": "2025-08-04",
+      "website_leads_to_date": 437,
+      "days_commit_to_live": 4,
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "feature": "Minibus Insurance",
+      "built": "2025-09-16",
+      "first_production_lead": "2025-09-24",
+      "website_leads_to_date": 427,
+      "days_commit_to_live": 8,
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "feature": "Landlord Insurance",
+      "built": "2025-09-16 to 2025-09-24",
+      "first_production_lead": "2025-09-24",
+      "website_leads_to_date": 5,
+      "days_commit_to_live": 8,
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "feature": "Plant & Machinery",
+      "built": "2025-12-15",
+      "first_production_lead": "2025-12-19",
+      "website_leads_to_date": 242,
+      "days_commit_to_live": 4,
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "feature": "Courier Van Route Flex",
+      "built": "2026-02-06 to 2026-02-10",
+      "first_production_lead": "2026-02-10",
+      "website_leads_to_date": 6,
+      "days_commit_to_live": 0,
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "feature": "GDPR request form",
+      "built": "2026-06-22",
+      "first_production_submission": "2026-06-22",
+      "submissions_to_date": 41,
+      "evidence_level": "VERIFIED"
+    }
+  ],
+  "verified_claims": [
+    {
+      "claim": "Principal engineer on the customer-facing web platform of a UK insurance broker, authoring 384 of 645 commits (59.5%) across six production repositories since joining in November 2024, including 88% of all commits to the quote-form plugin that every website lead passes through.",
+      "evidence_level": "VERIFIED",
+      "evidence": "git shortlog -sne --all",
+      "period": "2024-11 to 2026-09",
+      "qualification": "Commit count is a proxy for contribution. The 46%-of-831 lifetime figure is lower only because the repositories predate the employment."
+    },
+    {
+      "claim": "Built and maintained a React/TypeScript quote-form engine serving 12 insurance verticals, ~30,000 LOC across 169 files, embedded in WordPress via shortcode hydration.",
+      "evidence_level": "VERIFIED",
+      "evidence": "wp-quoteform-plugin src/; 223 of 401 commits",
+      "period": "2025-01 to 2026-03",
+      "qualification": "Largest but not sole contributor; the engine predates their work."
+    },
+    {
+      "claim": "Lead-capture forms they built and maintain feed a production pipeline that ingested 397,667 submissions representing ~309,500 unique enquiries during their tenure, ~77,400 of them from the website.",
+      "evidence_level": "VERIFIED (raw) / DERIVED (unique)",
+      "evidence": "aggregate queries on leads joined to api_keys",
+      "period": "2024-11-01 to 2026-10-10",
+      "qualification": "The pipeline predates their involvement and carries affiliate traffic they did not build. Unique counts collapse the partial-submission artifact using the stated 30-minute method."
+    },
+    {
+      "claim": "Shipped five new insurance verticals from first commit to first production lead in 4-17 days.",
+      "evidence_level": "VERIFIED",
+      "evidence": "commit dates vs MIN(created_at) per type",
+      "qualification": "Small per-product volumes reflect niche products, not adoption failure."
+    },
+    {
+      "claim": "Business Insurance vertical built Jul-Aug 2025 produced its first production lead on 4 Aug 2025 and 437 website leads to date.",
+      "evidence_level": "VERIFIED",
+      "evidence": "commits 18 Jul - 1 Aug 2025; type='business-insurance' aggregates"
+    },
+    {
+      "claim": "Built end-to-end paid-search attribution (gclid + msclkid cookies, localStorage persistence, payload injection); 149,940 production leads carry a click ID.",
+      "evidence_level": "VERIFIED (count) / STRONGLY SUPPORTED (ownership)",
+      "evidence": "set-cookie.php; commits 2025-09-27 to 2026-07-29",
+      "qualification": "Some click-ID capture predates their changes; they extended it to Microsoft Ads and multi-step persistence."
+    },
+    {
+      "claim": "Implemented GTM dataLayer analytics for the quote journey with structured form_open and product-specific submission events.",
+      "evidence_level": "VERIFIED",
+      "evidence": "src/utils/analytics.ts; commits 28-31 Aug 2025",
+      "qualification": "Downstream marketing impact is not measurable from this data."
+    },
+    {
+      "claim": "Took over maintenance of a production .NET 8 lead-ingestion API from a departing senior engineer and shipped PII-redaction middleware, x-api-key authentication across two front ends, an SMS service, and an idempotent dialler-enrolment service.",
+      "evidence_level": "VERIFIED",
+      "evidence": "16 commits Nov 2025 - Sep 2026; NoeticaEnrolmentService.cs, FleetSmsService.cs, middleware diffs",
+      "qualification": "16 of 123 commits; the bulk of the service is the prior engineer's work."
+    },
+    {
+      "claim": "Designed idempotent enrolment against an unreliable SOAP dialler API, distinguishing queued / in-flight / unknown-outcome states so a failed CRM call never produces a duplicate third-party customer.",
+      "evidence_level": "VERIFIED",
+      "evidence": "NoeticaEnrolmentService.Enrol and its inline rationale comment; NoeticaEnrolmentServiceTests.cs"
+    },
+    {
+      "claim": "Sole author of a WordPress calculator plugin delivering four marketing calculators integrated with ACF for editor-driven placement.",
+      "evidence_level": "VERIFIED",
+      "evidence": "plugin header 'Author: Abraham Akintola'; 23 of 26 commits; shortcode.php"
+    },
+    {
+      "claim": "Built the GDPR subject-access-request intake; 41 requests with 84 attachments received 22 Jun - 5 Oct 2026.",
+      "evidence_level": "VERIFIED",
+      "evidence": "theme commit 22 Jun 2026; gdpr_forms counts"
+    },
+    {
+      "claim": "Delivered an invisible-reCAPTCHA-protected promotional prize-wheel game and an interest-capture form integrated with Azure Functions and transactional email.",
+      "evidence_level": "VERIFIED",
+      "evidence": "47 of 119 and 27 of 42 commits; rest-api.php, azure-database.php",
+      "qualification": "Submission volumes are not stored in the audited database and could not be measured."
+    },
+    {
+      "claim": "Works in a system integrating 8+ external services across 45 configured lead sources and 6 business entities.",
+      "evidence_level": "VERIFIED",
+      "evidence": "Leads.Core/Services/; api_keys and companies tables"
+    },
+    {
+      "claim": "Diagnosed a 33% production duplicate rate as an architectural artifact of partial form submissions rather than a data-quality failure, proving the mechanism from timing distributions (94% of duplicates inside 30 minutes) and a cross-channel control comparison (48.6% repeat rate on the form-driven channel versus 0.2-6.7% on single-post affiliate feeds), and specified the correlation-ID fix.",
+      "evidence_level": "VERIFIED",
+      "evidence": "Gap-distribution and channel-comparison analysis; nextHandler and send.php code paths; leads schema",
+      "qualification": "The quantitative analysis was performed during this audit; the design judgement and the half-built fix (client UUIDs in the newer verticals) predate it and are in the commit record."
+    },
+    {
+      "claim": "Participated in the architecture of a Go-to-.NET rewrite of a revenue-critical lead-ingestion service, delivered under a business-logic-parity constraint including byte-compatible identifier generation, and subsequently took over its maintenance.",
+      "evidence_level": "VERIFIED (rewrite and parity constraint) / STRONGLY SUPPORTED (architectural participation)",
+      "evidence": "README 'C# reimplementation of the original Go-based lead API, with business logic parity'; 'mirroring Go implementation' comments across MarketplaceService, Phone, LeadFactory and the Noetica/Leela DTOs; XidGenerator as a byte-exact port of rs/xid",
+      "qualification": "Implementation was predominantly the senior engineer's (98 of 123 commits). The .NET choice was a CTO-level mandate, not the subject's recommendation."
+    }
+  ],
+  "derived_claims": [
+    {
+      "claim": "The pipeline operates at ~341 leads/day with a 0.91% non-duplicate integration failure rate across 641,740 lifetime attempts.",
+      "evidence_level": "DERIVED",
+      "calculation": "30656/90; (3721+1826+314+3+1)/641740",
+      "qualification": "Measures recorded failure reasons only."
+    },
+    {
+      "claim": "99.05% of leads are automatically assigned a dialler CRM record; 72.04% are assigned a cross-system correlation ID.",
+      "evidence_level": "DERIVED",
+      "calculation": "635626/641740; 462316/641740"
+    },
+    {
+      "claim": "Website click-ID coverage rose from 35.7% (2024) to 72.9% (2025) and 62.9% (2026 to date).",
+      "evidence_level": "DERIVED",
+      "qualification": "Correlation only; ad-spend mix also varies year to year. Do not present as a caused improvement."
+    }
+  ],
+  "inferred_claims": [
+    {
+      "claim": "Leela exists specifically to correlate customers across the dialler and the broking/policy systems, which have no shared identifier.",
+      "evidence_level": "STRONGLY SUPPORTED",
+      "basis": "README description, code comments ('cross-database lead identity system ... correlation key across multiple data stores'), 462,316 leads carrying a leela_id."
+    },
+    {
+      "claim": "The 1-second Leela HTTP timeout is a deliberate choice so identity assignment never blocks lead capture.",
+      "evidence_level": "INFERRED",
+      "basis": "LeelaService constructor timeout vs 72% coverage rather than ~99%."
+    },
+    {
+      "claim": "The two-front-end design (ASP.NET + Azure Functions) exists for redundancy/failover.",
+      "evidence_level": "STRONGLY SUPPORTED",
+      "basis": "README states 'Can be deployed for redundancy/failover'."
+    }
+  ],
+  "business_impact": [
+    {
+      "impact": "Automation of lead handling at scale: 641,740 leads ingested and routed without manual keying; 635,626 (99.05%) automatically created as dialler CRM records.",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "impact": "Duplicate suppression: 212,054 leads prevented from generating a second outbound call.",
+      "evidence_level": "VERIFIED (count)",
+      "qualification": "Agent-time saving is real but not quantifiable from this data."
+    },
+    {
+      "impact": "Cross-system customer identity on 462,316 leads, enabling click-to-policy traceability.",
+      "evidence_level": "VERIFIED (count) / INFERRED (downstream benefit)"
+    },
+    {
+      "impact": "Reliability: 0.91% non-duplicate failure rate over 33 months.",
+      "evidence_level": "DERIVED"
+    },
+    {
+      "impact": "Product expansion velocity: five new verticals from first commit to first live lead in 4-17 days.",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "impact": "Compliance capability: self-serve GDPR subject-access intake, 41 requests in ~3.5 months.",
+      "evidence_level": "VERIFIED (volume)",
+      "qualification": "What it replaced is UNKNOWN."
+    },
+    {
+      "impact": "Marketing attribution: 149,940 leads carrying a paid-search click ID, enabling closed-loop ad reporting.",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "impact": "NOT ESTABLISHABLE: revenue, conversion rate, cost per acquisition, call-centre headcount effects, before/after performance."
+    }
+  ],
+  "engineering_challenges": [
+    {
+      "challenge": "Twelve product verticals in one bundle",
+      "why_hard": "30,000 lines of question logic must stay coherent while non-technical stakeholders change individual questions weekly; the commit history shows dozens of single-option and single-label commits."
+    },
+    {
+      "challenge": "React islands inside WordPress",
+      "why_hard": "Shortcode-emitted marker div, deferred hydration, nonce in the footer, coexisting with Bootstrap, the theme stylesheet and editor-placed content; recurring styling regressions."
+    },
+    {
+      "challenge": "Keeping third-party keys out of the browser",
+      "why_hard": "15 REST proxy routes exist purely so vendor credentials stay server-side and every write is nonce-checked; costs a hop and makes WordPress an availability dependency."
+    },
+    {
+      "challenge": "An unreliable SOAP dialler",
+      "why_hard": "314 recorded connection failures; a partially-failed CRM call has an unknown external outcome, so retrying risks creating a duplicate customer in a system the code cannot clean up."
+    },
+    {
+      "challenge": "De-duplication that must be wrong sometimes",
+      "why_hard": "Carve-outs for priority product types, previously cancelled leads, and a per-product time window, each trading false-negative duplicates against lost genuine leads."
+    },
+    {
+      "challenge": "Byte-compatible identifier generation across a language migration",
+      "why_hard": "C# port of Go rs/xid with exact 12-byte layout and base32 packing so IDs already in production remain sortable and format-identical.",
+      "attribution": "Colleague's work; noted as a property of the maintained system."
+    },
+    {
+      "challenge": "Timezone-correct, testable business-hours logic",
+      "why_hard": "SMS copy, Brevo behaviour and dialler list selection all branch on UK local time; solved with an injectable UtcNowProvider and dedicated OutOfHoursTests / TimezoneTests."
+    },
+    {
+      "challenge": "PII in logs",
+      "why_hard": "Debugging a failed lead requires payload context; the payload is names, phones, emails and dates of birth. Resolved with trace IDs, phone censoring, query-string sanitisation and gated raw capture to blob storage."
+    }
+  ],
+  "decisions": [
+    {
+      "problem": "Vehicle data, postcode lookup and lead submission all need third-party credentials.",
+      "decision": "Proxy every call through 15 nonce-checked quote/v1 WordPress REST routes.",
+      "reasoning": "No key in the JS bundle; one place for CSRF checks and payload reshaping.",
+      "tradeoffs": "Extra hop and latency; WordPress becomes an availability dependency; a PHP surface to maintain alongside React.",
+      "result": "Credentials stayed server-side; two vendor contract changes absorbed in PHP without a front-end release."
+    },
+    {
+      "problem": "Lead ingestion is revenue-critical and a single App Service is a single point of failure.",
+      "decision": "Two thin front ends (ASP.NET Core, Azure Functions) over one shared Leads.Core.",
+      "reasoning": "Redundancy/failover, per the README.",
+      "tradeoffs": "Middleware duplicated (219 vs 212 near-identical lines); every cross-cutting change made twice.",
+      "result": "Redundancy achieved; maintenance cost visible in the subject's own PII and auth commits, which each touched both."
+    },
+    {
+      "problem": "An enrolment that threw after possibly creating a CRM customer.",
+      "decision": "Return 'failed' with alreadyExists rather than retry when no customer ID was saved and a fail reason exists.",
+      "reasoning": "Stated in the code: a failed CRM operation has an unknown external outcome.",
+      "tradeoffs": "Genuinely-failed leads need human or upstream intervention.",
+      "result": "No duplicate customers created in a third-party system."
+    },
+    {
+      "problem": "Marketing needed to place calculators without editing shortcode syntax.",
+      "decision": "Shortcode reads an ACF field first, falls back to the attribute.",
+      "reasoning": "Editor-friendly, no developer in the loop.",
+      "tradeoffs": "Hidden dependency on ACF being installed and the field existing.",
+      "result": "Editor-placeable calculators; existing attribute usages preserved."
+    },
+    {
+      "problem": "Identity assignment must not block lead capture.",
+      "decision": "1-second HTTP timeout on the Leela call.",
+      "reasoning": "Inferred from the code.",
+      "tradeoffs": "Leads can land without a leela_id under load.",
+      "result": "72% coverage rather than ~99%."
+    },
+    {
+      "problem": "Customers abandon long insurance forms part-way through; a drop-out who has given a phone number is still a contactable lead.",
+      "decision": "INHERITED: post a partial submission mid-journey, then post again in full, and let the lead API's de-duplication layer suppress the second dial.",
+      "reasoning": "Captures abandoners with no change to the lead API contract: the cheapest possible implementation.",
+      "tradeoffs": "Severe and measurable. One enquiry produces two rows; 48.6% of website submissions are repeat posts within 30 minutes; a third of the leads table is non-actionable; every naive COUNT(*) overstates demand; correctness depends on time-window heuristics rather than identity.",
+      "result": "The subject identified this as the thing they would design differently and has already built half the fix: the newer verticals they authored generate a client-side uuidv4(), forwarded on the Marketplace data-warehouse route but not on the main lead-API route, which has no column for it. Closing the loop is bounded work: forward the field, add a nullable indexed column, upsert on it when present."
+    },
+    {
+      "problem": "The original lead ingestion service was a Go application maintained by the senior engineer; the business wanted it on a stack the wider team and the then-CTO preferred.",
+      "decision": "Full C# reimplementation targeting business-logic parity with the live Go service.",
+      "reasoning": "Organisational (stack consolidation, maintainability by the available team) rather than technical. The .NET choice was a CTO-level mandate; the subject would have chosen differently had the call been theirs.",
+      "tradeoffs": "A rewrite of a revenue-critical service carries migration risk for no new functionality, and parity with a live system is an exacting constraint. Visible throughout the codebase: 'mirroring Go implementation' comments across multiple services, and XidGenerator hand-ported from rs/xid down to the byte layout so production IDs stay sortable.",
+      "result": "The .NET service runs at ~341 leads/day with a 1.30% non-duplicate failure rate; the parity constraint was met. Implementation was predominantly the senior engineer's work; the subject's documented role is architectural participation and subsequent ownership."
+    }
+  ],
+  "problems_solved": [
+    {
+      "title": "Diagnosing a 33% duplicate rate as an architecture artifact",
+      "situation": "212,054 production rows flagged duplicate — a third of everything the platform recorded. Reads cold as a broken de-duplication layer or a lead-quality problem, and is the first thing an interviewer would challenge.",
+      "problem": "Neither explanation is correct and the data does not volunteer the real one: no partial flag is persisted on the lead row, so partial and full submissions are indistinguishable after the fact.",
+      "investigation_solution": "Three steps. Code: nextHandler posts a partial mid-journey, send.php forwards a partial boolean, and the leads table has no correlation-ID column, so a second post cannot be matched by identity. Timing: 94.1% of website duplicates arrive within 30 minutes of the original and 91% within five, which is not human behaviour. Control group: the website channel shows a 48.6% sub-30-minute repeat rate against 0.2-6.7% for affiliate feeds that post a single complete lead — a 240x difference.",
+      "result": "Mechanism established beyond doubt; platform figures restated as unique enquiries (309,486 platform-wide, 77,433 website) instead of raw rows; a bounded code fix specified.",
+      "evidence": "src/utils/index.ts nextHandler; plugin/api/functions/send.php; src/data/businessInsurance.ts:6; gap-distribution and channel-comparison tables; leads schema"
+    },
+    {
+      "title": "Committed secrets in the competition wheel",
+      "situation": "Plugin needed Azure Function URL/key and a mail API key.",
+      "problem": "Credentials reached the repository.",
+      "investigation_solution": "Three commits (3, 9, 17 Jan 2025) moving configuration behind get_comp_env_vars(); same pattern applied to the interest form; invisible reCAPTCHA added to both.",
+      "result": "Credentials out of source.",
+      "honest_note": "Three passes shows iterative rather than clean remediation; key rotation is a separate step this evidence does not confirm.",
+      "evidence": "wp-competition-wheel commits 2025-01-03/09/17; azure-database.php"
+    },
+    {
+      "title": "Google Ads policy conflict with the WhatsApp widget",
+      "situation": "jumper.ai WhatsApp widget added Dec 2024.",
+      "problem": "Conflicted with Google Ads policy.",
+      "result": "Removed 21 Feb 2025, roughly two months later.",
+      "evidence": "wp-theme commits 2024-12-20 and 2025-02-21"
+    },
+    {
+      "title": "Noetica list-timing change shipped and reverted",
+      "situation": "Sep 2026 change to dialler latest-contact-time rules.",
+      "problem": "The 30-minute latest time for list 150 was wrong.",
+      "investigation_solution": "Three commits on 25 Sep 2026: apply, revert, then implement the confirmed change (list 53 into the 5-day list, list 150 untouched).",
+      "result": "Correct behaviour same-day; the commit message records that the change was confirmed before re-applying.",
+      "evidence": "lead-api-dotnet commits 2026-09-25"
+    },
+    {
+      "title": "PII reaching request logs",
+      "situation": "Inherited middleware logged raw lead payloads.",
+      "problem": "Payloads contain names, phones, emails, dates of birth and addresses.",
+      "investigation_solution": "Query-string sanitisation, trace-ID correlation, Phone.CensorPhone() in logs, gated raw-body capture restricted to two routes and written fire-and-forget to blob storage; mirrored in both hosts.",
+      "result": "Debuggability preserved, PII removed from the default logging path.",
+      "evidence": "commit 2026-08-28; RequestBodyLoggingMiddleware.cs"
+    },
+    {
+      "title": "Paid-search click IDs lost across a multi-step journey",
+      "situation": "Visitor arrives with a click ID, submits several pages and minutes later.",
+      "problem": "The ID must survive navigation, and Microsoft Ads uses msclkid not gclid.",
+      "investigation_solution": "30-day cookie set on init for both parameters (both written to one cookie name); theme-level script persisting the query string to localStorage; form code reading both back at submit.",
+      "result": "149,940 production leads carry a click ID; website coverage 63-73% in 2025-2026 vs 35.7% in 2024.",
+      "evidence": "set-cookie.php; commits 2025-09-27, 2025-09-29, 2025-10-08, 2026-07-29"
+    }
+  ],
+  "security_reliability": {
+    "present": [
+      "WordPress nonce/CSRF validation on state-changing plugin routes",
+      "x-api-key authentication and Bearer tokens for identity-service routes",
+      "Per-source API keys mapped to companies with FK integrity",
+      "Invisible reCAPTCHA on public competition and interest forms",
+      "PII redaction and phone censoring in logs",
+      "TLS-required PostgreSQL",
+      "Bearer SAST gating every deployment workflow",
+      "Dependabot across the estate",
+      "PHPCS/PHPStan/PHPMD in the theme",
+      "Dedicated rollback workflow",
+      "Stable fail_reason taxonomy",
+      "20 indexes on leads including partial and covering indexes",
+      "5,778 LOC of xUnit tests across phone validation, out-of-hours, timezones, JSON, enrolment, SMS, Brevo and Leela contract/integration/regression suites"
+    ],
+    "weaknesses_observed_private_only": [
+      "Competition-wheel REST endpoint uses permission_callback => __return_true, relying on reCAPTCHA alone",
+      "Four indexes on leads are marked INVALID in production (failed concurrent builds)",
+      "Middleware duplicated across the two front ends",
+      "Secrets were committed historically and remediated iteratively",
+      "WordPress repositories have no CI; deployment is manual zip-and-upload"
+    ]
+  },
+  "lessons": [
+    {
+      "category": "architectural",
+      "lesson": "If a workflow can produce the same logical event more than once, that event's identity must be decided where it starts — in the browser, at the first keystroke — not reconstructed by the server afterwards. Deferring that decision cost years of duplicate rows, heuristic de-duplication and a caveat on every downstream count. The fix was always small; what made it expensive was that nobody had quantified the cost."
+    },
+    {
+      "category": "inherited_constraints",
+      "lesson": "Working inside a parity constraint teaches what a greenfield build cannot: the previous system's behaviour becomes your specification, including its mistakes, and 'improve it while you port it' is usually wrong because it destroys the one thing that makes the migration verifiable."
+    },
+    {
+      "category": "worked",
+      "lesson": "Isolating per-vertical configuration (data/types/validation modules) from shared presentation components made twelve verticals tractable; new verticals reached production within days."
+    },
+    {
+      "category": "worked",
+      "lesson": "Proxying third-party calls through WordPress kept credentials out of the bundle and absorbed two vendor contract changes without a front-end release."
+    },
+    {
+      "category": "worked",
+      "lesson": "A stable fail_reason taxonomy is the reason a reliability figure could be produced at all; without it duplicates and genuine failures would be indistinguishable."
+    },
+    {
+      "category": "did_not_work",
+      "lesson": "Secret management was reactive; credentials reached the repository and took three commits to clear. Pre-commit scanning and key rotation are the actual fix."
+    },
+    {
+      "category": "did_not_work",
+      "lesson": "Duplicating middleware across two hosts has cost real effort on every cross-cutting change."
+    },
+    {
+      "category": "did_not_work",
+      "lesson": "Shipping a dialler timing change before confirming it with the business cost a ship-revert-reship cycle."
+    },
+    {
+      "category": "operational",
+      "lesson": "External systems fail partially; the correct response is often to stop rather than retry."
+    },
+    {
+      "category": "operational",
+      "lesson": "Logging usefully and logging safely are in genuine tension and need a deliberate design, not a log-level change."
+    },
+    {
+      "category": "would_do_differently",
+      "lesson": "Extract duplicated middleware into the shared core behind an abstraction both hosts implement."
+    },
+    {
+      "category": "would_do_differently",
+      "lesson": "Put CI on the WordPress repositories: lint, type-check and a built artefact."
+    },
+    {
+      "category": "would_do_differently",
+      "lesson": "Add a nonce or signed-token check to the competition endpoint rather than relying on reCAPTCHA."
+    },
+    {
+      "category": "would_do_differently",
+      "lesson": "Introduce a form-definition schema so a new vertical is data rather than a new component tree."
+    },
+    {
+      "category": "would_do_differently",
+      "lesson": "Clean up the invalid indexes and consolidate the overlapping duplicate-check indexes."
+    },
+    {
+      "category": "would_do_differently",
+      "lesson": "Generate a correlation UUID in the browser at the start of every quote journey, send it with both the partial and final submission, and upsert on it in the lead API, reducing de-duplication to a fallback."
+    }
+  ],
+  "cv_bullets": {
+    "high_confidence_quantified": [
+      "Principal engineer on the customer-facing web platform of a UK insurance broker — the company's primary customer-acquisition channel — authoring 384 of 645 commits (59.5%) across six production repositories, including 88% of all commits to the quote-form plugin that every website lead passes through.",
+      "Built and maintained a React 18 + TypeScript quote-form engine covering 12 insurance verticals (~30,000 LOC, 169 files) embedded in WordPress via shortcode hydration, feeding a pipeline that has ingested 397,000+ submissions representing ~309,500 unique enquiries, ~77,400 of them from the website.",
+      "Shipped five new insurance product verticals from first commit to first live customer in 0-17 days, each traceable to production volume in the lead database.",
+      "Diagnosed a 33% production duplicate rate as an architectural artifact of partial form submissions rather than a data-quality failure, proving the mechanism from timing distributions and a cross-channel comparison (48.6% sub-30-minute repeat rate on the form-driven channel versus 0.2-6.7% on single-post feeds), and specified the correlation-ID fix.",
+      "Engineered end-to-end paid-search attribution (Google and Microsoft click IDs, cookie plus localStorage persistence through multi-step journeys) now present on 149,940 production leads.",
+      "Took over a production .NET 8 / PostgreSQL lead-ingestion API from a departing senior engineer and shipped PII-redaction middleware, API-key authentication across two deployment front ends, a timezone-aware SMS service and an idempotent dialler-enrolment service — in a pipeline running ~341 leads/day at a 1.30% integration failure rate.",
+      "Authored a WordPress calculator plugin (four React calculators, ACF-driven placement) deployed to a site handling ~340 daily lead submissions."
+    ],
+    "high_confidence_non_quantified": [
+      "Designed a WordPress REST proxy layer (15 routes) keeping address-lookup, vehicle-data and lead-API credentials server-side, with nonce/CSRF validation on every state-changing request.",
+      "Implemented idempotent enrolment against an unreliable SOAP dialler API, explicitly modelling unknown-outcome failures so a partially-failed call never creates a duplicate customer in a third-party CRM.",
+      "Delivered PII-safe observability (trace-ID correlation, query-string sanitisation, phone censoring, gated raw-body capture to blob storage) across both an ASP.NET Core and an Azure Functions host.",
+      "Built the GDPR subject-access-request intake used by the compliance team, and GTM dataLayer instrumentation for the full quote journey.",
+      "Remediated committed credentials across two public-facing plugins and added invisible reCAPTCHA to both.",
+      "Took sole ownership of five production systems following the departure of the senior engineer, having previously maintained the front-facing site as a mid-level developer.",
+      "Participated in the architecture of a Go-to-.NET rewrite of a revenue-critical ingestion service delivered under a business-logic-parity constraint, including byte-compatible identifier generation so IDs already in production stayed sortable and format-identical."
+    ],
+    "requires_confirmation": [
+      "Any claim about conversion rate, revenue or cost per acquisition.",
+      "Any claim about call-centre time saved by duplicate suppression.",
+      "Any claim about the manual process the platform replaced.",
+      "Prize-wheel and interest-form submission volumes.",
+      "Uptime or latency figures."
+    ],
+    "scope_note": "All quantified bullets are scoped to the Nov 2024 - Oct 2026 tenure."
+  },
+  "interview_stories": [
+    {
+      "theme": "Forensic debugging / challenging a metric (strongest story in the set)",
+      "situation": "The production lead table showed a 33% duplicate rate — the kind of number that reads as a broken system.",
+      "task": "Establish whether it was a defect, and what the real enquiry volume was.",
+      "action": "Traced the partial-submission path in code and found no client-generated correlation ID. Measured gap distributions and found 94% of duplicates arriving within 30 minutes, 91% within five. Ran the control comparison: the form-driven channel showed 48.6% sub-30-minute repeats against 0.2-6.7% for single-post affiliate feeds.",
+      "result": "Mechanism established, the platform's real figure restated as ~309,500 unique enquiries rather than 397,667 raw rows, and a bounded fix specified.",
+      "evidence": "Gap-distribution and channel-comparison tables; nextHandler; send.php; leads schema",
+      "why_strong": "Shows reading a system through its data rather than its code alone, using a control group to test a hypothesis, and arriving at a number that is lower but defensible."
+    },
+    {
+      "theme": "Ownership / inheriting a system",
+      "situation": "The senior engineer who owned the revenue-critical .NET lead API left.",
+      "task": "Take over a 15,000-line .NET 8 solution with SOAP, HTTP and database integrations, having previously owned only the frontend.",
+      "action": "Started with contained, high-value changes rather than refactors: an SMS service with injectable time for testability, then PII redaction across both hosts, then API-key auth, then a new enrolment service with its own tests.",
+      "result": "16 commits over ten months covering security, observability, a new service and a dialler-routing change; the service continues at ~341 leads/day.",
+      "evidence": "Commit history Nov 2025 - Sep 2026; NoeticaEnrolmentServiceTests.cs"
+    },
+    {
+      "theme": "Correctness over convenience",
+      "situation": "Dialler enrolment requires two SOAP calls against a system with 314 recorded connection failures.",
+      "task": "Make repeat enrolment safe.",
+      "action": "Modelled three prior states (already queued, in flight, failed with no customer ID) and chose to return failed in the third case because the external outcome is unknown and a retry could create an uncleanable duplicate.",
+      "result": "No duplicate CRM customers; recovery is an explicit decision.",
+      "evidence": "NoeticaEnrolmentService.Enrol and its inline comment"
+    },
+    {
+      "theme": "Shipping, being wrong, and verifying",
+      "situation": "A change to dialler latest-contact-time rules.",
+      "task": "Apply the business's requested timing change.",
+      "action": "Shipped a 30-minute latest time for list 150; it was wrong; reverted same day; implemented the actually-confirmed change with the confirmation recorded in the commit message.",
+      "result": "Correct behaviour same-day and a changed process: confirm the rule before shipping.",
+      "evidence": "Three commits, 25 Sep 2026"
+    },
+    {
+      "theme": "Security remediation",
+      "situation": "Competition-wheel plugin had Azure and mail credentials in the repository.",
+      "task": "Remove them and prevent recurrence.",
+      "action": "Three commits over two weeks moving configuration behind an environment accessor, same fix applied to the sibling plugin, invisible reCAPTCHA on both public endpoints.",
+      "result": "Credentials out of source.",
+      "honest_reflection": "Three passes is the strongest argument for pre-commit secret scanning; key rotation is a separate step.",
+      "evidence": "Commits 3/9/17 Jan 2025"
+    },
+    {
+      "theme": "Scaling a frontend without scaling the team",
+      "situation": "Twelve verticals with distinct question sets in one WordPress-embedded bundle.",
+      "task": "Keep it maintainable under weekly stakeholder question changes.",
+      "action": "Split every vertical into data/types/validation modules against a shared ParentForm, shared field components and a formSteps map; added a StepIndicator across all verticals in one day.",
+      "result": "Five new verticals reached production within 4-17 days of first commit.",
+      "evidence": "Repository structure; commit dates vs first production lead per type"
+    },
+    {
+      "theme": "Observability under privacy constraints",
+      "situation": "Inherited middleware logged raw lead payloads containing PII.",
+      "task": "Keep debuggability, remove PII from logs.",
+      "action": "Trace-ID correlation, sanitised query strings, phone censoring, gated raw-body capture to blob storage restricted to two routes, mirrored in both hosts.",
+      "result": "Lead failures remain diagnosable by trace ID without PII in log analytics.",
+      "evidence": "Commit 28 Aug 2026; RequestBodyLoggingMiddleware.cs"
+    },
+    {
+      "theme": "Technical disagreement / trade-off",
+      "prompt": "The two-front-end redundancy design means every cross-cutting change is made twice; their own PII and auth commits each touched both middleware trees. Discuss when duplication-for-isolation is worth it and what extraction into the shared core would cost."
+    },
+    {
+      "theme": "Working inside a constraint you disagree with",
+      "situation": "The lead API was rewritten from Go to .NET.",
+      "task": "Contribute to the architecture of a rewrite of the service every lead depends on.",
+      "action": "Participated in design discussions; the .NET choice was a CTO-level mandate rather than a technical consensus and would not have been their own pick. Worked within it and the parity constraint it implied.",
+      "result": "The service runs at ~341 leads/day with a 1.30% non-duplicate failure rate.",
+      "follow_up_to_prepare": "'What would you have chosen?' — the honest answer is about the correlation-ID design more than the language, since that is the decision that actually shaped the data."
+    }
+  ],
+  "portfolio_material": {
+    "overview": "The public web platform of a UK commercial and niche motor insurance broker: a WordPress site whose React quote forms, calculators and promotional tools feed a .NET lead-ingestion API routing every submission into a predictive dialler, a quoting marketplace and a cross-system identity service.",
+    "challenge": "Twelve distinct insurance products each needing a different question set and routing; twenty-plus affiliate and aggregator partners plus paid search; a requirement to launch a vertical in days, stop the call centre ringing the same person twice, keep customers traceable across three unrelated third-party systems, and do it inside WordPress where content editors control the pages.",
+    "role": "Principal engineer on the customer-facing layer from mid-2024; owner of the backend lead API from late 2025; 46% of commits across the estate.",
+    "solution": "React islands hydrated into WordPress by shortcode; a PHP REST proxy keeping every third-party credential server-side; a shared .NET core library behind two redundant hosts; a lead pipeline that validates, de-duplicates, persists and fans out to six external services with a stable failure taxonomy.",
+    "interesting_problems": [
+      "Twelve verticals in one bundle without twelve codebases",
+      "Idempotency against a SOAP API whose partial failures have unknown external outcomes",
+      "Attribution surviving a multi-step, multi-minute journey",
+      "Timezone-correct, testable business-hours logic",
+      "Logging enough to debug a lead without logging the person"
+    ],
+    "results": "641,740 leads over 33 months; 205,806 from the website; 101 product types; 45 sources across 6 entities; 99.05% dialler-CRM assignment; 72.04% cross-system identity assignment; 212,054 duplicates suppressed; 0.91% non-duplicate failure rate; ~341 leads/day; five verticals traceable from commit to first live lead.",
+    "what_to_improve_next": [
+      "De-duplicate the middleware",
+      "Put CI on the WordPress repositories",
+      "Replace per-vertical component trees with a form-definition schema",
+      "Add proper request authentication to the competition endpoint",
+      "Clean up the four invalid Postgres indexes"
+    ]
+  },
+  "content_ideas": {
+    "articles": [
+      {
+        "title": "Your duplicate rate is not a data-quality problem: a forensic read of 400,000 production rows",
+        "problem": "A third of a production table flagged duplicate, with no field recording why.",
+        "why_interesting": "A complete worked example of diagnosing a system from its data: code reading to form a hypothesis, a timing distribution to test it, and a cross-channel comparison as the control group. The 240x difference is a convincing result.",
+        "anonymise": [
+          "absolute volumes",
+          "all partner names (use affiliate feed A/B/C)"
+        ],
+        "do_not_publish": [
+          "the de-duplication rules themselves",
+          "real channel names"
+        ]
+      },
+      {
+        "title": "Decide identity at the start, not the end",
+        "problem": "Any workflow that can emit the same logical event twice needs that event's identity fixed at the moment it begins.",
+        "why_interesting": "Short, opinionated, with a concrete cost attached: years of duplicate rows and heuristic de-duplication, against a UUID generated in the browser.",
+        "anonymise": [
+          "everything business-specific; this one is almost entirely generalisable"
+        ]
+      },
+      {
+        "title": "React islands in WordPress: hydrating a 12-step insurance form inside someone else's CSS",
+        "problem": "Shipping a large React application into pages content editors control, alongside Bootstrap and a theme stylesheet.",
+        "why_interesting": "Most React content assumes you own the page.",
+        "anonymise": [
+          "product names",
+          "internal route names"
+        ],
+        "do_not_publish": [
+          "the REST route inventory",
+          "nonce implementation details"
+        ]
+      },
+      {
+        "title": "When retrying is the wrong answer: idempotency against an API whose failures are ambiguous",
+        "problem": "A two-call enrolment where the first call may or may not have succeeded.",
+        "why_interesting": "Common advice is retry with backoff; here retrying creates uncleanable duplicate records.",
+        "anonymise": [
+          "dialler vendor",
+          "campaign list IDs"
+        ],
+        "do_not_publish": [
+          "SOAP action names",
+          "queue-state constants"
+        ]
+      },
+      {
+        "title": "Porting an ID generator across languages when the old IDs still have to sort",
+        "problem": "A Go service's rs/xid identifiers already in production; the C# replacement must be byte-compatible.",
+        "note": "This code is a colleague's work: credit it and write about the problem class, not authorship."
+      },
+      {
+        "title": "Logging enough to debug a lead without logging the person",
+        "problem": "PII-heavy payloads and a need for production diagnosability.",
+        "do_not_publish": [
+          "blob container names",
+          "environment variable names",
+          "which routes are gated"
+        ]
+      },
+      {
+        "title": "Attribution that survives a ten-minute form",
+        "problem": "Click IDs crossing a landing page, several steps and a reload.",
+        "anonymise": [
+          "absolute lead volumes"
+        ]
+      },
+      {
+        "title": "33% of your leads are the same person: designing de-duplication that is allowed to be wrong",
+        "why_interesting": "The rules are full of deliberate carve-outs, each trading a false duplicate against a lost genuine lead.",
+        "do_not_publish": [
+          "specific rules, windows or product-type priorities"
+        ]
+      }
+    ],
+    "social_posts": [
+      {
+        "hook": "A third of our leads looked like duplicates. They weren't.",
+        "evidence": "Hypothesis from code, timing distribution as evidence, affiliate channels as the control group, smaller but honest headline number at the end.",
+        "why_credible": "The 48.6%-versus-0.2% contrast is real and reproducible."
+      },
+      {
+        "hook": "Five product launches, 4 to 17 days from first commit to first live customer.",
+        "evidence": "Commit dates vs MIN(created_at) per lead type.",
+        "honest_framing": "Architecture made the speed possible; the products are niche so the volumes are small."
+      },
+      {
+        "hook": "I inherited the revenue-critical service when the senior engineer left. Here's where I started.",
+        "evidence": "First four commits were an SMS service, PII redaction, auth and a new service with tests, not a refactor."
+      },
+      {
+        "hook": "Sometimes the right response to a failed API call is to stop.",
+        "evidence": "The enrolment idempotency code and its rationale comment."
+      },
+      {
+        "hook": "We shipped it, it was wrong, we reverted it the same day, then we confirmed it and shipped it properly.",
+        "evidence": "Three commits, 25 Sep 2026."
+      },
+      {
+        "hook": "Three commits to remove one secret.",
+        "evidence": "Jan 2025 remediation.",
+        "lesson": "Pre-commit scanning plus key rotation, not 'be careful'."
+      },
+      {
+        "hook": "A third of our leads are duplicates, and that's a design output, not a data-quality problem.",
+        "evidence": "212,054 rows persisted with a reason code rather than rejected."
+      },
+      {
+        "hook": "Twelve insurance products, one React bundle.",
+        "evidence": "Repository structure; weekly question-level churn in the commit history."
+      },
+      {
+        "hook": "Two years maintaining the same site teaches you things a greenfield project never will.",
+        "evidence": "The WhatsApp widget reversed for a Google Ads policy conflict; recurring React-in-WordPress styling regressions."
+      }
+    ]
+  },
+  "public_safe_claims": [
+    "Principal engineer on a UK insurance broker's customer-facing web platform, 2024-2026; majority author across four of six repositories.",
+    "Stack: React 18, TypeScript, Vite, Formik/Yup, WordPress/PHP, .NET 8, ASP.NET Core, Azure Functions, EF Core, PostgreSQL, Docker, Azure, GitHub Actions.",
+    "Architecture at the pattern level: React islands in WordPress, a server-side REST proxy for third-party credentials, a shared core library behind redundant hosts, a lead pipeline with validation / de-duplication / fan-out and a stable failure taxonomy.",
+    "Rounded scale statements: a lead pipeline handling hundreds of thousands of submissions; ~340 leads a day; sub-1% integration failure rate; twelve insurance product verticals; five new verticals shipped in days.",
+    "Engineering stories at the design-problem level: idempotency with ambiguous failures, PII-safe observability, attribution across multi-step journeys, config-vs-presentation separation for many product variants.",
+    "Honest process stories: the ship-revert-confirm-reship cycle; the iterative secrets remediation; the marketing widget reversed for an ads-policy conflict."
+  ],
+  "private_only_information": [
+    "Database host, credentials, schema details, index names and table row counts.",
+    "Absolute production lead volumes by source and by partner (641,740; 205,806; the per-source table).",
+    "Partner and aggregator names and their relative volumes.",
+    "Internal system names and identifiers: the identity service's name, dialler campaign list IDs, queue-state constants, the broking/policy system names, the marketplace and sink service names, company codes.",
+    "De-duplication rules, carve-outs and time windows.",
+    "The quote/v1 route inventory and the nonce/CSRF implementation.",
+    "Environment variable names, blob container names, Azure registry and resource names.",
+    "The specific security weaknesses recorded in this dossier (invalid indexes, open permission callback, historical secret exposure): these are defect disclosures about a live system.",
+    "Colleague names and their commit shares.",
+    "All lead-record contents; no PII was retrieved and none should ever be."
+  ],
+  "evidence_gaps": [
+    {
+      "gap": "Conversion rate from leads to bound policies",
+      "why_useful": "Turns a volume metric into a business-outcome metric; the single strongest missing number",
+      "where_it_might_exist": "Broking/policy system data joined on the correlation ID; the adjacent lead-reporting tool",
+      "question_to_ask": "Can we get quote-to-policy conversion by lead source and product for 2025-2026?"
+    },
+    {
+      "gap": "The pre-platform process",
+      "why_useful": "Lets you claim 'replaced X' rather than 'built Y'",
+      "where_it_might_exist": "Institutional memory; pre-2024 documentation",
+      "question_to_ask": "How were web leads handled before this pipeline?"
+    },
+    {
+      "gap": "Exact production launch dates",
+      "why_useful": "Current evidence starts at the data, not the deployment",
+      "where_it_might_exist": "Azure deployment history; leads_backup table; GitHub release tags",
+      "question_to_ask": "When did the current site and lead API first go live?"
+    },
+    {
+      "gap": "Competition-wheel and interest-form volumes",
+      "why_useful": "Two delivered products with zero measurable usage in this audit",
+      "where_it_might_exist": "The Azure Function's own storage; the promotions mailbox",
+      "question_to_ask": "How many prize claims and interest registrations have those endpoints received?"
+    },
+    {
+      "gap": "Uptime, latency and error rates",
+      "why_useful": "No reliability evidence beyond fail_reason counts",
+      "where_it_might_exist": "Azure Application Insights / Monitor",
+      "question_to_ask": "Can I get App Service availability and p95 latency for the lead API?"
+    },
+    {
+      "gap": "Ad spend and CPA alongside click-ID coverage",
+      "why_useful": "Would let the attribution work be defended causally rather than correlationally",
+      "where_it_might_exist": "Google/Microsoft Ads accounts; marketing reporting",
+      "question_to_ask": "Did reported attributable conversions change after Sep 2025?"
+    },
+    {
+      "gap": "Why website volume declined through 2026",
+      "why_useful": "Protects against a hostile interview reading of the monthly trend",
+      "where_it_might_exist": "Marketing budget history; channel mix reporting",
+      "question_to_ask": "Was there a budget or channel change in 2026?"
+    },
+    {
+      "gap": "Infrastructure cost",
+      "why_useful": "Cost-efficiency claims",
+      "where_it_might_exist": "Azure cost management",
+      "question_to_ask": "What does the lead API plus database cost monthly?"
+    },
+    {
+      "gap": "Stakeholder feedback",
+      "why_useful": "Qualitative evidence of ownership and delivery",
+      "where_it_might_exist": "Managers, marketing, call-centre leads",
+      "question_to_ask": "Ask for a short written note on the handover and on specific launches."
+    },
+    {
+      "gap": "Pre/post performance of any database optimisation",
+      "why_useful": "The 20 indexes on leads suggest tuning work happened; no before/after exists",
+      "where_it_might_exist": "Git history of the lead API; prior incident notes",
+      "question_to_ask": "Was there a query-performance incident, and is there a record of it?"
+    },
+    {
+      "gap": "Call-centre time saved by repeat-post suppression",
+      "why_useful": "~73,300 suppressed website repeats during the tenure times average call-handling cost would quantify the operational win",
+      "where_it_might_exist": "Dialler call records; call-centre WFM data",
+      "question_to_ask": "What's the average handled-call duration and loaded agent cost?"
+    },
+    {
+      "gap": "Partial-submission conversion rate",
+      "why_useful": "How many partial submissions never become full ones is the entire business case for the partial-submission design, and would show whether the trade-off was worth its cost",
+      "where_it_might_exist": "GTM partialSubmit event counts alongside full-submit events",
+      "question_to_ask": "Can we get partialSubmit versus full-submit event counts from GTM for a representative month?"
+    }
+  ],
+  "audit_limitations": [
+    "Commit counts measure activity, not impact; a one-line config commit and a 2,000-line feature count the same.",
+    "The leads table's earliest row is 2024-01-09, which bounds the measurable period but is not necessarily the system's first production day.",
+    "Four INVALID indexes on leads were observed, not investigated; nothing was changed.",
+    "Outcomes beyond lead ingestion (quotes produced, policies bound, revenue) are in systems not accessible from this database.",
+    "The competition wheel and register-interest form write to Azure endpoints outside this database; their production usage could not be measured.",
+    "No monitoring, logging or deployment telemetry was available, so no uptime, latency or deployment-frequency figures appear anywhere.",
+    "Causation is never claimed where only correlation is observable, notably the click-ID coverage change and the 2026 volume decline.",
+    "Unique-enquiry figures depend on a 30-minute collapse window, a judgement call. The gap distribution is concentrated enough (91% of repeats inside five minutes) that the result is stable across 10-60 minutes, but it cannot separate a partial-then-full pair from a genuine immediate resubmission, and one person with two phone numbers still counts twice.",
+    "No partial flag is persisted on the lead row, so partial and full submissions cannot be distinguished directly in the data; the diagnosis rests on code plus timing plus the cross-channel control, not on a stored field.",
+    "Employment start date (November 2024) was supplied by the subject and corroborated against the Git record, where all 384 commits fall on or after 1 Nov 2024. The exact start date within that month is not independently verifiable here."
+  ],
+  "audit_method": {
+    "code": "Six repositories inspected: structure, READMEs, package manifests, source, configuration, CI workflows, Dockerfile, full git log --all with authorship.",
+    "database": "PostgreSQL 16 production database connected with default_transaction_read_only = on and a statement timeout. All queries were SELECT with aggregate functions. No DDL, DML, migration or index operation was executed. No raw lead rows were retrieved.",
+    "privacy": "No credential, connection string, API key, token, customer name, phone number, email address or other personal datum appears in any output file.",
+    "tenure_scoping": "Career claims are scoped to created_at >= '2024-11-01'. Unique-enquiry counts use a window function partitioned by (mobile, type, source) ordered by created_at, counting rows whose gap to the previous row is null or >= 30 minutes."
+  },
+  "key_finding_duplicate_diagnosis": {
+    "headline": "The 33% production duplicate rate is an architectural artifact of partial form submissions, not a data-quality failure.",
+    "mechanism": "The multi-step quote form posts a partial submission mid-journey so drop-outs remain contactable, then posts again in full at the end. The second post carries no client-generated correlation ID, so the lead API cannot match it to the first and inserts a second row.",
+    "code_evidence": [
+      "src/utils/index.ts nextHandler() calls submitForm(values, true) mid-journey and fires a partialSubmit dataLayer event",
+      "plugin/api/functions/send.php forwards a 'partial' boolean and suppresses notification email when true",
+      "leads table has no column for a client-supplied correlation ID"
+    ],
+    "timing_evidence": {
+      "window": "website channel, tenure",
+      "under_1_min": 40060,
+      "one_to_5_min": 31011,
+      "five_to_30_min": 2210,
+      "pct_of_flagged_duplicates_within_30_min": 94.1,
+      "pct_within_5_min": 91
+    },
+    "control_group_evidence": {
+      "website_form_driven_pct": 48.6,
+      "marketplace_form_driven_pct": 14.8,
+      "affiliate_single_post_pct_range": "0.2-6.7",
+      "ratio": "240x"
+    },
+    "the_fix": "Mint a UUID in the browser at the start of the journey, send it with both the partial and the final submission, and have the lead API upsert on it, retaining de-duplication as a fallback for sources that cannot supply one.",
+    "fix_already_half_built": "The newer verticals the subject authored (Business Insurance, Landlord, Plant & Machinery, Fast Food) each generate a client-side uuidv4() as 'id' in their initial values. That id is forwarded on the Marketplace data-warehouse route but NOT on the main send route to the lead API, and the leads table has no column to receive it. Closing the loop is bounded work.",
+    "evidence_level": "VERIFIED",
+    "why_it_matters": [
+      "Converts a metric that reads as a defect into evidence of analytical rigour",
+      "Produces honest headline figures (~309,500 unique enquiries) instead of inflated raw counts",
+      "Demonstrates engineering judgement: the problem was identified and the fix partly built before this audit"
+    ]
+  }
+}

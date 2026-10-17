@@ -1,0 +1,1264 @@
+{
+  "schema_version": "1.0",
+  "audit_date": "2026-10-08",
+  "subject": "Abraham Akintola",
+  "project_name": "Unified Communications Platform (UCP)",
+  "project_type": "Internal enterprise platform — governed multi-channel outbound communications",
+  "project_description": "Internal platform for a UK insurance broker that centralises governed outbound customer communication across Email, SMS and WhatsApp. Built because communications were scattered with no central visibility: no one could see which customers had been contacted or whether messages arrived, failures notified nobody, and staff re-triggered sends by hand. Replaced TWO legacy systems - a Google Apps Script orchestration estate and iros-mail, a .NET 8 Azure Functions mail microservice. Provides campaign definition, approval workflow, audience sourcing, queue-backed execution, multi-provider delivery, delivery reconciliation, suppression, per-customer communication history, operational reporting, full audit trail, and a backwards-compatible API so other internal systems send through the platform rather than around it.",
+  "sector": "Insurance broking (UK, FCA/GDPR/PECR-aligned)",
+  "dates": {
+    "first_commit": "2026-04-22",
+    "latest_commit": "2026-10-08",
+    "first_audit_event_in_production": "2026-04-30",
+    "first_user_session": "2026-04-29",
+    "first_external_api_email": "2026-05-11",
+    "first_campaign_message_dispatched": "2026-06-26",
+    "first_preset_flow_run": "2026-06-25",
+    "development_span_months_to_audit": 5.5,
+    "production_launch_date": {
+      "value": null,
+      "evidence_level": "UNKNOWN",
+      "note": "First campaign send is 2026-06-26, but whether cutover was staged is not established."
+    }
+  },
+  "technologies": {
+    "backend": [
+      "NestJS 11",
+      "TypeScript",
+      "Prisma 7",
+      "PostgreSQL 18",
+      "class-validator",
+      "Swagger/OpenAPI",
+      "Luxon",
+      "Jest"
+    ],
+    "frontend": [
+      "React 18",
+      "Vite",
+      "TypeScript",
+      "TailwindCSS",
+      "shadcn/ui",
+      "Radix UI",
+      "TanStack Query",
+      "React Router",
+      "Vitest",
+      "Testing Library"
+    ],
+    "infrastructure": [
+      "Azure Web App (container)",
+      "Azure Container Registry",
+      "Azure Static Web Apps",
+      "Azure Service Bus",
+      "Azure Blob Storage",
+      "GitHub Actions",
+      "Docker"
+    ],
+    "providers": [
+      "Brevo (email + webhooks)",
+      "SMTP",
+      "CM.com SMS",
+      "CM.com WhatsApp",
+      "Console (test adapter)",
+      "RMail-related reconciliation"
+    ],
+    "documentation": [
+      "MkDocs (--strict)"
+    ]
+  },
+  "architecture": {
+    "style": "Modular monolith with explicit control-plane / execution-plane separation",
+    "backend_modules": 19,
+    "module_names": [
+      "auth",
+      "users",
+      "campaigns",
+      "templates",
+      "approvals (within campaigns/templates)",
+      "suppressions",
+      "audit",
+      "dashboard",
+      "execution",
+      "scheduling",
+      "preset-flows",
+      "transactional-mail",
+      "notifications",
+      "monitor",
+      "email",
+      "messaging",
+      "exports",
+      "health",
+      "prisma"
+    ],
+    "rest_endpoints": 155,
+    "controllers": 25,
+    "services": 65,
+    "data_models": 34,
+    "migrations": 66,
+    "unique_constraints": 11,
+    "key_patterns": [
+      "Control plane (mutable config) separated from execution plane (immutable sent evidence)",
+      "Execution runs freeze channel bindings, template versions, approval state and audience metadata",
+      "Per-recipient records store rendered subject/body and variable values at send time",
+      "Queue handoff via Azure Service Bus; no send occurs in a request lifecycle",
+      "Provider adapters behind a common interface",
+      "Idempotency enforced by composite database unique constraints",
+      "Provider webhook reconciliation kept deliberately distinct from internal execution state"
+    ],
+    "auth": "Invite-only Google Identity Services / OIDC, server-side token verification, Workspace-domain enforced, SessionAuthGuard + RolesGuard, roles StandardUser/Manager/Admin, no local passwords"
+  },
+  "integrations": [
+    {
+      "name": "Brevo",
+      "purpose": "Email delivery and delivery-event webhooks",
+      "production_messages": 35765
+    },
+    {
+      "name": "SMTP",
+      "purpose": "Email delivery via configured senders",
+      "production_messages": 28290
+    },
+    {
+      "name": "CM.com SMS",
+      "purpose": "SMS delivery",
+      "production_messages": 20891
+    },
+    {
+      "name": "CM.com WhatsApp",
+      "purpose": "WhatsApp delivery",
+      "production_messages": 121
+    },
+    {
+      "name": "Console",
+      "purpose": "Non-sending test adapter",
+      "production_messages": 552
+    },
+    {
+      "name": "Preset SQL source database",
+      "purpose": "Polled external audience source",
+      "note": "13 distinct flow keys"
+    },
+    {
+      "name": "External Service Comms API",
+      "purpose": "Inbound API for other internal systems (/mail, /sms, /whatsapp)",
+      "clients": 22
+    },
+    {
+      "name": "UCP Monitor API",
+      "purpose": "ucp-execution-summary endpoint for an external dashboard, bounded to 3 calendar days"
+    },
+    {
+      "name": "RTA7 / RMail worker API",
+      "purpose": "Legacy reconciliation integration"
+    }
+  ],
+  "workflows": [
+    "Campaign lifecycle: Draft -> submit for review (named Admin reviewer) -> approve/reject/withdraw -> live",
+    "Template versioning with independent per-version approval",
+    "Audience sourcing via CSV upload or polled preset SQL flow with per-day dedupe",
+    "Execution: freeze approved state into a run -> create durable per-recipient records -> enqueue -> processor invokes provider adapter",
+    "Delivery reconciliation from provider webhooks into execution events",
+    "Channel-aware suppression and eligibility evaluated before send",
+    "Scheduled dispatch with unique (schedule, slot) guarantee",
+    "External Service Comms: API-key authenticated transactional sending with threading and per-client rate limits",
+    "Daily, operational and weekly audit/notification reporting"
+  ],
+  "my_contributions": {
+    "summary": "Authorship of record and architectural ownership across backend, frontend direction, and documentation.",
+    "evidence_level": "VERIFIED",
+    "repositories": [
+      {
+        "repo": "ucp-backend",
+        "commits_subject": 221,
+        "commits_total": 228,
+        "other_contributors": [
+          {
+            "name": "zayan_DevOps",
+            "commits": 7,
+            "src_lines": "+7/-2"
+          }
+        ],
+        "src_lines_subject": "+77448/-10115"
+      },
+      {
+        "repo": "ucp-frontend-lovable",
+        "commits_subject": 149,
+        "commits_total": 390,
+        "bot_commits": 238,
+        "bot_window": "2026-04-22 to 2026-04-28",
+        "bot_commits_co_authored_by_subject": 231,
+        "src_lines_subject": "+37712/-10248",
+        "src_lines_bot": "+10866/-3220"
+      },
+      {
+        "repo": "ucp-documentation",
+        "commits_subject": 17,
+        "commits_total": 17
+      },
+      {
+        "repo": "ucp-frontend (legacy)",
+        "commits_subject": 12,
+        "commits_total": 12
+      }
+    ],
+    "commit_cadence_backend_by_month": {
+      "2026-04": 25,
+      "2026-05": 36,
+      "2026-06": 76,
+      "2026-07": 52,
+      "2026-08": 17,
+      "2026-09": 21,
+      "2026-10": 1
+    },
+    "ai_assistance_disclosure": {
+      "evidence_level": "VERIFIED",
+      "detail": "Frontend scaffolded by Lovable gpt-engineer-app[bot] 22-28 Apr 2026; 231 of 238 bot commits list the subject as co-author, indicating he directed them. AGENTS.md is a detailed coding-agent instruction file, so agents were used on the backend; backend commits carry no co-author trailers so the hand-written/AI split there is UNKNOWN. Defensible framing is architectural ownership and direction, not unaided keystroke authorship."
+    },
+    "cannot_be_established": [
+      "Azure infrastructure provisioning",
+      "Decision to adopt Lovable",
+      "Business requirements-gathering and stakeholder management",
+      "Original authorship of CI workflow files"
+    ]
+  },
+  "codebase_metrics": {
+    "backend_source_files": 354,
+    "backend_source_lines": 62750,
+    "frontend_source_files": 190,
+    "frontend_source_lines": 39289,
+    "backend_unit_test_cases": 84,
+    "backend_e2e_test_cases": 9,
+    "backend_spec_files": 9,
+    "largest_file": {
+      "path": "src/execution/services/campaign-execution.service.ts",
+      "lines": 10463,
+      "note": "Known architectural debt; four responsibilities in one file"
+    }
+  },
+  "production_metrics": [
+    {
+      "name": "campaign_messages_dispatched",
+      "value": 85482,
+      "unit": "messages",
+      "start_date": "2026-06-26",
+      "end_date": "2026-10-08",
+      "evidence_source": "CampaignExecutionRecipient where sentAt is not null",
+      "calculation_method": "count(*) filter on non-null sentAt",
+      "evidence_level": "VERIFIED",
+      "qualification": "Message attempts, not unique customers. One audience row can produce both an Email and an SMS."
+    },
+    {
+      "name": "channel_split",
+      "value": {
+        "Email": 64055,
+        "Sms": 21443,
+        "WhatsApp": 121
+      },
+      "unit": "recipient rows",
+      "start_date": "2026-06-26",
+      "end_date": "2026-10-08",
+      "evidence_source": "CampaignExecutionRecipient grouped by channel",
+      "calculation_method": "group by channel (all rows, including 54 not yet sent)",
+      "evidence_level": "VERIFIED",
+      "qualification": "Total rows including Prepared/Cancelled; differs slightly from dispatched count."
+    },
+    {
+      "name": "email_failure_bounce_rate",
+      "value": 1.066,
+      "unit": "percent",
+      "start_date": "2026-06-26",
+      "end_date": "2026-10-08",
+      "evidence_source": "CampaignExecutionRecipient status in ('Failed','Bounced')",
+      "calculation_method": "683 / 64055 * 100",
+      "evidence_level": "DERIVED",
+      "qualification": "Terminal status at query time; late webhooks could shift marginally."
+    },
+    {
+      "name": "sms_failure_rate",
+      "value": 0.233,
+      "unit": "percent",
+      "start_date": "2026-06-26",
+      "end_date": "2026-10-08",
+      "evidence_source": "CampaignExecutionRecipient",
+      "calculation_method": "50 / 21443 * 100",
+      "evidence_level": "DERIVED",
+      "qualification": "As above."
+    },
+    {
+      "name": "active_sending_days",
+      "value": 105,
+      "unit": "days",
+      "start_date": "2026-06-26",
+      "end_date": "2026-10-08",
+      "evidence_source": "count(distinct sentAt::date)",
+      "calculation_method": "distinct date count",
+      "evidence_level": "VERIFIED",
+      "qualification": null
+    },
+    {
+      "name": "average_messages_per_active_day",
+      "value": 814.1,
+      "unit": "messages/day",
+      "start_date": "2026-06-26",
+      "end_date": "2026-10-08",
+      "evidence_source": "CampaignExecutionRecipient",
+      "calculation_method": "85482 / 105",
+      "evidence_level": "DERIVED",
+      "qualification": "Per active sending day, not per calendar day."
+    },
+    {
+      "name": "peak_single_day_volume",
+      "value": 1598,
+      "unit": "messages",
+      "start_date": "2026-07-09",
+      "end_date": "2026-07-09",
+      "evidence_source": "CampaignExecutionRecipient grouped by sentAt::date",
+      "calculation_method": "max of daily counts",
+      "evidence_level": "VERIFIED",
+      "qualification": null
+    },
+    {
+      "name": "monthly_dispatched_by_channel",
+      "value": {
+        "2026-06": {
+          "Email": 1531,
+          "Sms": 553
+        },
+        "2026-07": {
+          "Email": 18598,
+          "Sms": 6013
+        },
+        "2026-08": {
+          "Email": 19013,
+          "Sms": 5838,
+          "WhatsApp": 93
+        },
+        "2026-09": {
+          "Email": 19530,
+          "Sms": 6997,
+          "WhatsApp": 28
+        },
+        "2026-10": {
+          "Email": 5317,
+          "Sms": 1971
+        }
+      },
+      "unit": "messages",
+      "start_date": "2026-06-26",
+      "end_date": "2026-10-08",
+      "evidence_source": "CampaignExecutionRecipient",
+      "calculation_method": "group by to_char(sentAt,'YYYY-MM'), channel",
+      "evidence_level": "VERIFIED",
+      "qualification": "2026-10 is a partial month (8 days)."
+    },
+    {
+      "name": "execution_runs",
+      "value": 5261,
+      "unit": "runs",
+      "start_date": null,
+      "end_date": "2026-10-08",
+      "evidence_source": "CampaignExecutionRun",
+      "calculation_method": "count(*); Completed 4940, CompletedWithFailures 317, Cancelled 4; all mode=Live",
+      "evidence_level": "VERIFIED",
+      "qualification": null
+    },
+    {
+      "name": "runs_fully_clean_percent",
+      "value": 93.9,
+      "unit": "percent",
+      "start_date": null,
+      "end_date": "2026-10-08",
+      "evidence_source": "CampaignExecutionRun",
+      "calculation_method": "4940 / 5261 * 100",
+      "evidence_level": "DERIVED",
+      "qualification": "CompletedWithFailures means the run finished with some recipient-level failures, not that the run failed."
+    },
+    {
+      "name": "automated_trigger_percent",
+      "value": 99.4,
+      "unit": "percent",
+      "start_date": null,
+      "end_date": "2026-10-08",
+      "evidence_source": "CampaignExecutionRun triggerSource",
+      "calculation_method": "(PresetFlowPolling 4219 + Scheduled 1011 + Retry 9) / 5261 * 100",
+      "evidence_level": "DERIVED",
+      "qualification": "Measures trigger origin only. Campaign approval remains a manual human step by design."
+    },
+    {
+      "name": "preset_flow_polling_runs",
+      "value": 149321,
+      "unit": "runs",
+      "start_date": "2026-06-25",
+      "end_date": "2026-10-08",
+      "evidence_source": "PresetFlowRun",
+      "calculation_method": "count(*); 13 distinct presetFlowKey values",
+      "evidence_level": "VERIFIED",
+      "qualification": null
+    },
+    {
+      "name": "preset_flow_success_rate",
+      "value": 99.83,
+      "unit": "percent",
+      "start_date": "2026-06-25",
+      "end_date": "2026-10-08",
+      "evidence_source": "PresetFlowRun status",
+      "calculation_method": "149065 / 149321 * 100",
+      "evidence_level": "DERIVED",
+      "qualification": "Uses PresetFlowRun (authoritative run record). The AuditLog action preset_flow_sync_failed shows 21,608 events at a different granularity; see evidence_gaps."
+    },
+    {
+      "name": "schedule_dispatch_idempotency",
+      "value": {
+        "dispatches": 1146,
+        "distinct_slots": 1146,
+        "duplicates": 0
+      },
+      "unit": "dispatches",
+      "start_date": null,
+      "end_date": "2026-10-08",
+      "evidence_source": "CampaignScheduleDispatch",
+      "calculation_method": "count(*) compared with count(distinct (scheduleId, scheduledFor))",
+      "evidence_level": "VERIFIED",
+      "qualification": "Demonstrates absence of schedule-path duplicates specifically, not all possible duplicate classes."
+    },
+    {
+      "name": "recipients_retried",
+      "value": 747,
+      "unit": "recipients",
+      "start_date": null,
+      "end_date": "2026-10-08",
+      "evidence_source": "CampaignExecutionRecipient retriedFromRecipientId",
+      "calculation_method": "count where not null; max attemptCount = 2",
+      "evidence_level": "VERIFIED",
+      "qualification": null
+    },
+    {
+      "name": "external_api_emails",
+      "value": 18113,
+      "unit": "emails",
+      "start_date": "2026-05-11",
+      "end_date": "2026-10-08",
+      "evidence_source": "TransactionalEmail",
+      "calculation_method": "count(*); Sent 11271, Delivered 5238, Skipped 1263, Failed 341",
+      "evidence_level": "VERIFIED",
+      "qualification": null
+    },
+    {
+      "name": "external_api_clients",
+      "value": 22,
+      "unit": "registered clients",
+      "start_date": "2026-05-11",
+      "end_date": "2026-10-08",
+      "evidence_source": "TransactionalMailClient (all Active)",
+      "calculation_method": "count(*); traffic recorded against 20 distinct clientId values; busiest 7345, mean 862.5",
+      "evidence_level": "VERIFIED",
+      "qualification": "Registered clients, of which 20 have recorded traffic."
+    },
+    {
+      "name": "external_api_monthly_growth",
+      "value": {
+        "2026-05": 47,
+        "2026-06": 1077,
+        "2026-07": 1931,
+        "2026-08": 6016,
+        "2026-09": 7075,
+        "2026-10": 1967
+      },
+      "unit": "emails",
+      "start_date": "2026-05-11",
+      "end_date": "2026-10-08",
+      "evidence_source": "TransactionalEmail",
+      "calculation_method": "group by month of createdAt",
+      "evidence_level": "VERIFIED",
+      "qualification": "2026-10 is a partial month (8 days)."
+    },
+    {
+      "name": "audit_events",
+      "value": 364430,
+      "unit": "events",
+      "start_date": "2026-04-30",
+      "end_date": "2026-10-08",
+      "evidence_source": "AuditLog",
+      "calculation_method": "count(*); 59 distinct action types; 7 distinct actorUserId values",
+      "evidence_level": "VERIFIED",
+      "qualification": "Most events are system-actor rather than user-actor."
+    },
+    {
+      "name": "approval_workflow_activity",
+      "value": {
+        "campaign_submitted": 128,
+        "campaign_approved": 124,
+        "campaign_rejected": 1,
+        "campaign_review_withdrawn": 3,
+        "template_version_submitted": 92,
+        "template_version_approved": 82,
+        "template_version_rejected": 2
+      },
+      "unit": "events",
+      "start_date": "2026-04-30",
+      "end_date": "2026-10-08",
+      "evidence_source": "AuditLog filtered on approval action types",
+      "calculation_method": "group by action",
+      "evidence_level": "VERIFIED",
+      "qualification": null
+    },
+    {
+      "name": "provider_delivery_events",
+      "value": 212492,
+      "unit": "events",
+      "start_date": null,
+      "end_date": "2026-10-08",
+      "evidence_source": "CampaignExecutionEvent",
+      "calculation_method": "count(*); provider_request_accepted 85483, delivered 36566, opened 26581, unique_opened 17306, click 7796, soft_bounce 355, blocked 273, deferred 223, provider_send_failed 82",
+      "evidence_level": "VERIFIED",
+      "qualification": null
+    },
+    {
+      "name": "message_snapshots",
+      "value": 917,
+      "unit": "snapshots",
+      "start_date": "2026-08-07",
+      "end_date": "2026-10-08",
+      "evidence_source": "MessageSnapshot",
+      "calculation_method": "count(*)",
+      "evidence_level": "VERIFIED",
+      "qualification": "Snapshot table populated from 2026-08-07; earlier reproducibility is carried by execution recipient records."
+    },
+    {
+      "name": "internal_users",
+      "value": {
+        "total": 17,
+        "Admin": 7,
+        "Manager": 6,
+        "StandardUser": 4,
+        "all_active": true,
+        "sessions": 352,
+        "distinct_users_signed_in": 17
+      },
+      "unit": "users",
+      "start_date": "2026-04-29",
+      "end_date": "2026-10-08",
+      "evidence_source": "User, UserSession",
+      "calculation_method": "group by role/status; distinct userId in sessions",
+      "evidence_level": "VERIFIED",
+      "qualification": "Internal staff accounts only."
+    },
+    {
+      "name": "content_inventory",
+      "value": {
+        "campaigns": 16,
+        "campaigns_approved": 15,
+        "templates": 33,
+        "template_versions": 145,
+        "highest_version_number": 13,
+        "templates_by_channel": {
+          "Email": 27,
+          "Sms": 5,
+          "WhatsApp": 1
+        },
+        "schedules": 14,
+        "schedules_active": 13,
+        "email_senders": 18,
+        "messaging_senders": 4
+      },
+      "unit": "records",
+      "start_date": null,
+      "end_date": "2026-10-08",
+      "evidence_source": "Campaign, Template, TemplateVersion, CampaignSchedule, EmailSender, CmChannelSender",
+      "calculation_method": "count / group by",
+      "evidence_level": "VERIFIED",
+      "qualification": null
+    },
+    {
+      "name": "preset_flow_dedupe_coverage",
+      "value": {
+        "source_items": 73415,
+        "distinct_dedupe_keys": 52520,
+        "processing_days": 106,
+        "campaigns": 14,
+        "keys_recurring_across_days": 4968
+      },
+      "unit": "records",
+      "start_date": "2026-06-25",
+      "end_date": "2026-10-08",
+      "evidence_source": "PresetFlowSourceItem",
+      "calculation_method": "counts and distinct counts",
+      "evidence_level": "VERIFIED",
+      "qualification": "Demonstrates that repeat contact across days is legitimate and that message counts must not be read as unique customers."
+    }
+  ],
+  "verified_claims": [
+    {
+      "claim": "Built and operate a governed multi-channel communications platform that has dispatched 85,482 campaign messages across Email, SMS and WhatsApp in production.",
+      "evidence_level": "VERIFIED",
+      "period": "2026-06-26 to 2026-10-08",
+      "qualification": "Message attempts, not unique customers."
+    },
+    {
+      "claim": "Designed database-enforced idempotency producing zero duplicate schedule dispatches across 1,146 dispatches.",
+      "evidence_level": "VERIFIED",
+      "period": "to 2026-10-08",
+      "qualification": "Covers schedule-path duplicates specifically."
+    },
+    {
+      "claim": "Built a near-real-time SQL polling pipeline executing 149,321 sync runs across 13 flows.",
+      "evidence_level": "VERIFIED",
+      "period": "2026-06-25 to 2026-10-08",
+      "qualification": null
+    },
+    {
+      "claim": "Implemented a compliance audit trail capturing 364,430 events across 59 action types.",
+      "evidence_level": "VERIFIED",
+      "period": "2026-04-30 to 2026-10-08",
+      "qualification": null
+    },
+    {
+      "claim": "Built an authenticated API platform adopted by 22 internal client applications carrying 18,113 emails.",
+      "evidence_level": "VERIFIED",
+      "period": "2026-05-11 to 2026-10-08",
+      "qualification": "20 of 22 clients have recorded traffic."
+    },
+    {
+      "claim": "Authored 221 of 228 backend commits (+77,448 source lines) over a continuous six-month delivery.",
+      "evidence_level": "VERIFIED",
+      "period": "2026-04-22 to 2026-10-08",
+      "qualification": "AI coding assistance was used; this is authorship-of-record and architectural ownership."
+    },
+    {
+      "claim": "Designed a provider abstraction running five adapters simultaneously in production.",
+      "evidence_level": "VERIFIED",
+      "period": "to 2026-10-08",
+      "qualification": null
+    },
+    {
+      "claim": "Delivered a NestJS backend of 155 REST endpoints across 19 modules over 34 data models and 66 migrations, with OpenAPI documentation.",
+      "evidence_level": "VERIFIED",
+      "period": "to 2026-10-08",
+      "qualification": null
+    },
+    {
+      "claim": "Built and maintained a published technical documentation site as a same-task deliverable alongside code.",
+      "evidence_level": "VERIFIED",
+      "period": "2026-09-08 to 2026-10-08",
+      "qualification": null
+    },
+    {
+      "claim": "Diagnosed and fixed a locale date-parsing defect that silently transposed day and month in customer-facing insurance communications, shipped with a named regression test.",
+      "evidence_level": "VERIFIED",
+      "period": "2026-08-18",
+      "qualification": "Commit 22d52e0."
+    },
+    {
+      "claim": "Replaced two legacy production systems with one platform: a Google Apps Script orchestration estate (11 flows reimplemented) and a .NET 8 Azure Functions mail microservice (contract absorbed).",
+      "evidence_level": "VERIFIED",
+      "period": "2026-04-22 to 2026-10-08",
+      "qualification": "8 further legacy functions have no implementation in checked-in source and remain an open discovery track; cutover is substantially but not provably complete."
+    },
+    {
+      "claim": "Designed a backwards-compatible API contract that let 22 existing internal client systems migrate by repointing rather than rewriting, growing 47 to 7,075 emails monthly in four months.",
+      "evidence_level": "VERIFIED",
+      "period": "2026-05-11 to 2026-10-08",
+      "qualification": "Growth reflects migration onto the platform, not new business volume."
+    },
+    {
+      "claim": "Delivered a unified per-customer communication history (UNION ALL across campaign and external-service sends) - a capability neither replaced system provided.",
+      "evidence_level": "VERIFIED",
+      "period": "to 2026-10-08",
+      "qualification": "That it was the specific executive ask is TESTIMONY; the capability itself is verified in service SQL and UI."
+    },
+    {
+      "claim": "Replaced a failure path that notified nobody - the legacy handler was an unimplemented '//todo send email' stub - with recorded failure state, retry lineage, distinct partial-failure run status and emailed operational summaries.",
+      "evidence_level": "VERIFIED",
+      "period": "to 2026-10-08",
+      "qualification": "Describes a capability gap closed, not a measured reduction in failure rate."
+    },
+    {
+      "claim": "Commended on this project by the CEO and CTO on several occasions.",
+      "evidence_level": "TESTIMONY",
+      "period": "unknown",
+      "qualification": "Subject's account only. Do not put in writing as fact until a dated written source exists."
+    }
+  ],
+  "derived_claims": [
+    {
+      "claim": "Email channel operates at a 1.07% combined failure-and-bounce rate; SMS at 0.23%.",
+      "evidence_level": "DERIVED",
+      "calculation": "683/64055 and 50/21443",
+      "qualification": "Terminal status at query time."
+    },
+    {
+      "claim": "99.4% of 5,261 execution runs were system-triggered rather than manually initiated.",
+      "evidence_level": "DERIVED",
+      "calculation": "5230/5261",
+      "qualification": "Trigger origin only; approval remains manual by design."
+    },
+    {
+      "claim": "Automated source polling runs at 99.83% success.",
+      "evidence_level": "DERIVED",
+      "calculation": "149065/149321",
+      "qualification": "Uses PresetFlowRun; a divergent audit-log metric exists."
+    },
+    {
+      "claim": "Sustained average of 814 messages per active sending day with a 1,598-message peak.",
+      "evidence_level": "DERIVED",
+      "calculation": "85482/105",
+      "qualification": "Per active sending day, not per calendar day."
+    }
+  ],
+  "inferred_claims": [
+    {
+      "claim": "The platform materially reduces manual effort versus the legacy Google Apps Script process.",
+      "evidence_level": "INFERRED",
+      "basis": "99.4% automated triggering and replacement of named legacy processes",
+      "qualification": "No legacy baseline exists; do not quantify."
+    },
+    {
+      "claim": "The system is the primary channel for the broker's recurring outbound customer communication.",
+      "evidence_level": "STRONGLY_SUPPORTED",
+      "basis": "Volume, 17 staff users, 15 approved campaigns, legacy cutover plan",
+      "qualification": "Whether legacy scripts still run in parallel is UNKNOWN."
+    }
+  ],
+  "business_impact": {
+    "established": [
+      "Consolidation - the originating goal - measurably happening: 22 internal client systems now send through the platform, growing 47 to 7,075 emails monthly, on top of 85,482 campaign messages",
+      "Visibility where there was none: per-customer communication history, dashboard, searchable/exportable message log, 364,430-event audit trail, against a legacy estate with no interface at all",
+      "Failure now visible rather than silent: 683 failed/bounced emails and 50 failed SMS as queryable state, CompletedWithFailures as a distinct run outcome, 747 retries with recorded lineage, emailed operational summaries",
+      "Automation of recurring outbound operations: 99.4% of runs auto-triggered, addressing manual re-triggering directly",
+      "Governed approval actively exercised: 220 submissions, 206 approvals, 3 rejections, 3 withdrawals - no approval gate existed before",
+      "Two legacy systems replaced: 11 Apps Script flows reimplemented; iros-mail contract absorbed",
+      "Executive reporting delivered: daily summary, operational report with export, weekly audit reporting"
+    ],
+    "not_established": [
+      "Staff hours saved",
+      "Cost savings",
+      "Revenue impact",
+      "Quantified error-rate reduction versus legacy",
+      "Number of customers previously missed",
+      "Uptime/SLA"
+    ],
+    "why_quantified_before_after_is_impossible": "The legacy estate recorded no send-level outcome data: Apps Scripts logged failures only to console via an unimplemented notifier and persisted only per-process 'row picked up' markers. There is no artefact from which legacy volume, failure rate, or missed-customer counts could be reconstructed. The qualitative, code-corroborated before/after is the ceiling of what is claimable."
+  },
+  "engineering_challenges": [
+    {
+      "name": "Snapshot reproducibility under mutable configuration",
+      "why_hard": "Campaigns and templates stay editable, but a message sent last month must remain reproducible exactly as rendered; every downstream view must read the snapshot rather than the live entity."
+    },
+    {
+      "name": "Idempotency across four independent trigger paths",
+      "why_hard": "Continuous polling, at-least-once queue delivery, overlapping schedules and retries make duplicate sends the default failure mode; solved structurally with composite unique constraints rather than application checks."
+    },
+    {
+      "name": "Distributed state across systems that disagree",
+      "why_hard": "212,492 provider webhook events arrive out of order against 85,482 sends; the design deliberately preserves the distinction between internal execution state and external provider evidence rather than collapsing them."
+    },
+    {
+      "name": "Unreliable external dependencies",
+      "why_hard": "An external source database is polled ~149k times with stale-lock recovery for crashed pollers; provider failures captured with dedicated error context."
+    },
+    {
+      "name": "Provider abstraction proven in production",
+      "why_hard": "Five adapters run concurrently with per-sender and per-campaign routing, not a single-vendor wrapper."
+    },
+    {
+      "name": "Domain complexity",
+      "why_hard": "34 models, 66 migrations, 155 routes, channel-aware suppression, throttle windows, blackout periods, template variable validation, per-client rate limits."
+    }
+  ],
+  "decisions": [
+    {
+      "problem": "Mutable campaign config versus immutable sent-message evidence",
+      "decision": "Separate control plane from execution plane; freeze runs from approved state",
+      "reasoning": "Regulatory reproducibility requirement",
+      "tradeoffs": "Significant data duplication and more complex queries",
+      "result": "Every send reproducible; full audit chain in production"
+    },
+    {
+      "problem": "HTTP request lifecycle cannot own delivery of thousands of messages",
+      "decision": "Queue-backed execution via Azure Service Bus",
+      "reasoning": "Stated non-negotiable boundary in project guidance",
+      "tradeoffs": "At-least-once semantics force idempotency work; larger operational surface",
+      "result": "1,598-message peak day handled; 4 cancellations across 5,261 runs"
+    },
+    {
+      "problem": "Service decomposition for a solo-maintained system",
+      "decision": "Modular monolith, 19 modules, one deployable",
+      "reasoning": "Deployable and operable by one engineer while preserving boundaries",
+      "tradeoffs": "One service reached 10,463 lines — real maintainability cost",
+      "result": "Boundaries exist for later extraction; the large file is known debt"
+    },
+    {
+      "problem": "Preventing duplicate customer contact",
+      "decision": "Enforce invariants in the database, not the application",
+      "reasoning": "Structural guarantee survives new code paths",
+      "tradeoffs": "A batch containing internal duplicates aborted whole syncs until handled",
+      "result": "Zero duplicate dispatches across 1,146 schedule slots"
+    },
+    {
+      "problem": "Speed of UI delivery without ceding ownership of business logic",
+      "decision": "Use Lovable for UI scaffolding only, governed by AGENTS.md",
+      "reasoning": "Explicit rule that AI never owns business logic or auth",
+      "tradeoffs": "Generated code required substantial subsequent rework (-10,248 lines)",
+      "result": "Bot activity ceased after one week; all later work hand-directed"
+    },
+    {
+      "problem": "The strategic goal - every company communication through one platform - fails if each calling system must be rewritten to adopt it. Adoption friction, not capability, was the binding constraint.",
+      "decision": "Reimplement the legacy iros-mail HTTP contract verbatim inside UCP (POST /api/mail, bearer-key auth, identical field names) while discarding its EJS/local-microservice internals; extend the pattern to /api/sms and /api/whatsapp.",
+      "reasoning": "Callers repoint a base URL instead of rewriting an integration, so consolidation proceeds incrementally rather than as a coordinated cutover.",
+      "tradeoffs": "Legacy field shapes (mjml, processAt, attachment) are carried into a new system's public contract and constrain it for as long as those clients exist - long-term design debt accepted for migration velocity.",
+      "result": "22 registered clients, 18,113 emails, monthly volume 47 -> 7,075 in four months. The decision that converted a stated strategic goal into measured adoption."
+    }
+  ],
+  "problems_solved": [
+    {
+      "title": "UK date format silently flipping in customer communications",
+      "situation": "Legacy preset flows map source dates into customer-facing insurance emails",
+      "problem": "new Date() applied US MM/dd to dd/MM/yyyy strings, so 5 August became 8 May; wrong only for day values <= 12, invisible most of the month",
+      "investigation": "Traced to a private toLegacyDateString helper duplicated in the variable mapper",
+      "solution": "Explicit Luxon parsing in a shared legacy-flow.helpers.ts plus a regression test named for the failure mode",
+      "result": "Commit 22d52e0, 2026-08-18: 146 insertions, 30 deletions, 3 files, 98 lines of test",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "title": "Duplicate source keys crashing the sync",
+      "situation": "Preset SQL flows pull batches from an external source database",
+      "problem": "A batch containing two rows with the same dedupe key aborted the entire sync via the unique constraint",
+      "investigation": "Reproduced with a duplicate outstanding-payment batch",
+      "solution": "Duplicate-tolerant handling in syncSourceItems with a regression test",
+      "result": "Commit 2026-06-14; production now 149,065 successes against 256 failures",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "title": "Circular foreign keys blocking database restore",
+      "situation": "Prod-to-local sync for development",
+      "problem": "Template.currentVersionId, User.departmentId and two Department self-references form cycles defeating ordered restore",
+      "solution": "Sync script drops those four constraints before restore and restores them after",
+      "result": "Commit 2026-09-12",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "title": "Permission model corrected: withdraw-review",
+      "situation": "Campaign approval workflow",
+      "problem": "canWithdrawCampaignReview granted the action to any Admin, so the assigned reviewer could retract the submitter's own review request",
+      "solution": "Narrowed to draft owner plus collaborators; reviewers approve or reject instead",
+      "result": "Permission check and error message corrected",
+      "evidence_level": "VERIFIED"
+    }
+  ],
+  "lessons": [
+    "Pushing invariants into database constraints produced a silently correct result 1,146 times",
+    "Freezing execution state early made reconciliation and audit straightforward rather than archaeological",
+    "Writing an agent-instruction file before heavy AI tooling use kept generated code inside intended boundaries",
+    "Treating documentation as a same-task deliverable kept it current",
+    "A 10,463-line service should have been split earlier along its four real responsibilities",
+    "Test coverage should grow with the domain rather than clustering only around known-subtle areas",
+    "Ban new Date(string) on business input by lint rule, not by convention",
+    "Two logging paths recording the same event at different granularities will eventually be read as contradicting each other; metric definitions need the same care as schema",
+    "The highest-leverage decision was not a feature: preserving the legacy HTTP contract verbatim meant other teams could adopt by changing a URL. Consolidation goals fail on adoption friction long before they fail on capability.",
+    "The legacy estate could not be measured because it never recorded outcomes - which makes its own replacement impossible to quantify. Systems should record what they did from day one; the absence is only discovered when it is too late to backfill."
+  ],
+  "cv_bullets": {
+    "high_confidence_quantified": [
+      "Designed and built a governed multi-channel communications platform (NestJS, PostgreSQL, Azure Service Bus) that has dispatched 85,482 production messages across Email, SMS and WhatsApp at a 1.07% email failure/bounce rate, replacing Google Apps Script-driven orchestration for a UK insurance broker.",
+      "Engineered a queue-backed execution plane with database-enforced idempotency, achieving zero duplicate dispatches across 1,146 scheduled sends and 99.83% success across 149,321 automated source-polling runs.",
+      "Automated recurring outbound operations so that 99.4% of 5,261 execution runs are system-triggered, while preserving mandatory human approval before any campaign goes live.",
+      "Built a compliance-grade audit and reproducibility layer recording 364,430 events across 59 action types, with immutable per-message snapshots enabling any communication to be reproduced exactly as sent.",
+      "Consolidated company-wide outbound communication by designing a backwards-compatible API that let 22 internal client systems migrate onto the platform by repointing rather than rewriting, carrying 18,113 emails and growing from 47 to 7,075 monthly in four months.",
+      "Authored 221 of 228 backend commits (+77,448 lines) across a 155-endpoint, 19-module NestJS service over 34 data models and 66 migrations.",
+      "Replaced two legacy production systems - a Google Apps Script orchestration estate (11 business flows reimplemented) and a .NET 8 Azure Functions mail microservice - with a single governed platform."
+    ],
+    "high_confidence_non_quantified": [
+      "Architected a control-plane/execution-plane separation that keeps campaign configuration mutable while guaranteeing sent messages remain reproducible exactly as rendered.",
+      "Designed a provider-adapter abstraction running five integrations concurrently (Brevo, SMTP, CM.com SMS, CM.com WhatsApp, Console), allowing vendor substitution without touching domain logic.",
+      "Implemented invite-only Google OIDC authentication with Workspace-domain enforcement and backend-enforced RBAC, with authorisation never delegated to the UI.",
+      "Built channel-aware suppression and eligibility evaluated before send, supporting FCA/GDPR/PECR-aligned operation.",
+      "Established and maintained a published documentation site as a same-task delivery requirement rather than a trailing chore.",
+      "Diagnosed and fixed a UK/US date-parsing defect that silently transposed day and month in customer-facing communications, shipping it with a named regression test.",
+      "Delivered a unified per-customer communication history spanning campaign and API-originated messages, giving the business its first single view of what any individual customer had been sent.",
+      "Replaced a silent-failure model - where the legacy failure handler was an unimplemented stub and failed sends were discovered only by noticing a customer had not been contacted - with recorded failure state, retry lineage and emailed operational summaries."
+    ],
+    "requires_confirmation": [
+      "Any claim of hours saved, cost reduction or error-rate improvement versus the legacy system (no baseline exists)",
+      "Any uptime or SLA figure (no monitoring data available)",
+      "Any unique-customer-reached figure (deliberately not computed to avoid personal data)",
+      "Team-size or leadership framing (only one other contributor appears, with 7 commits)"
+    ]
+  },
+  "interview_stories": [
+    {
+      "theme": "Correctness under invisibility",
+      "title": "The dd/MM bug that was only wrong twelve days a month",
+      "situation": "Preset flows map source dates into customer-facing insurance emails",
+      "task": "Dates were occasionally wrong with no error raised anywhere",
+      "action": "Traced to new Date() applying US month-day order; replaced with explicit Luxon parsing in a shared helper and added a regression test named for the failure mode",
+      "result": "Commit 22d52e0; 98 of 146 added lines were test code",
+      "evidence": "Commit diff and test"
+    },
+    {
+      "theme": "Designing for failure you cannot prevent",
+      "title": "Idempotency as a schema property",
+      "situation": "Continuous poller, at-least-once queue delivery, overlapping schedules",
+      "task": "Guarantee no customer is messaged twice",
+      "action": "Moved the invariant into composite unique constraints rather than application checks; then fixed the fallout when a batch containing internal duplicates aborted whole syncs",
+      "result": "1,146 dispatches across 1,146 distinct slots; 149,065/149,321 syncs succeed",
+      "evidence": "Schema constraints and production counts"
+    },
+    {
+      "theme": "Compliance as architecture",
+      "title": "Making governance structural rather than procedural",
+      "situation": "FCA/GDPR/PECR-aligned outbound communications",
+      "task": "Prove what was sent, to whom, and approved by whom",
+      "action": "Backend-enforced approval, immutable execution snapshots, 59 audited action types, channel-aware pre-send suppression",
+      "result": "364,430 audit events; 206 recorded approvals; every message reproducible",
+      "evidence": "Schema, audit table, product-scope documentation"
+    },
+    {
+      "theme": "Intellectual honesty with metrics",
+      "title": "Choosing the less flattering number",
+      "situation": "Two code paths logged sync failure at different granularities, producing 21,608 versus 256",
+      "task": "Report reliability honestly",
+      "action": "Established which record is authoritative, reported the run table, documented the discrepancy",
+      "result": "A defensible 99.83% rather than an unexamined figure",
+      "evidence": "Audit log versus PresetFlowRun counts"
+    },
+    {
+      "theme": "AI tooling and ownership",
+      "title": "Using AI assistance without ceding architecture",
+      "situation": "Lovable and coding agents used in a regulated codebase",
+      "task": "Move fast without AI owning business logic or auth",
+      "action": "Wrote AGENTS.md defining workspace boundaries, architectural direction, auth rules and validation gates before heavy use",
+      "result": "Bot commits cease after week one; all later frontend work hand-directed",
+      "evidence": "AGENTS.md and commit authorship timeline"
+    },
+    {
+      "theme": "Security and permission design",
+      "title": "The reviewer who could withdraw your submission",
+      "situation": "Campaign approval workflow",
+      "task": "Permission check asked 'are you an Admin?' rather than 'are you the requesting side?'",
+      "action": "Narrowed the permission to the draft team",
+      "result": "Reviewers now act only by approving or rejecting",
+      "evidence": "Service permission method and its corrected error message"
+    },
+    {
+      "theme": "Replacing what cannot be measured",
+      "title": "Justifying a rebuild with no baseline",
+      "situation": "Communications ran through Apps Scripts and a mail microservice with no central record of what reached whom; executives wanted one monitored place",
+      "task": "Justify and design a replacement without a baseline to argue from",
+      "action": "Read the legacy source for the failure mechanism rather than relying on anecdote - found the failure notifier was an unimplemented '//todo send email' stub and only per-process row markers were persisted; designed UCP so the missing capabilities were structural",
+      "result": "22 client systems migrated onto the platform; every message now attributable to a customer and a run",
+      "evidence": "Legacy source; production counts"
+    },
+    {
+      "theme": "Adoption as an engineering problem",
+      "title": "Migration velocity as a design constraint",
+      "situation": "Consolidation fails if every calling system must be rewritten",
+      "task": "Get other teams onto the platform without a coordinated cutover",
+      "action": "Reimplemented the legacy iros-mail HTTP contract verbatim while discarding its internals, so callers repoint a URL",
+      "result": "22 clients, 47 to 7,075 emails monthly; trade-off of legacy field shapes in a new public API accepted knowingly",
+      "evidence": "Compatibility doc; monthly counts"
+    }
+  ],
+  "portfolio_material": {
+    "context": "A UK insurance broker ran recurring customer communications — renewal invites, cancellation chases, outstanding-payment reminders, RTA7 notices — through Google Apps Scripts over spreadsheets, with no approval gate, audit trail, reproducibility or channel-aware suppression.",
+    "role": "Principal engineer: data model, API, execution architecture, provider integrations, frontend direction, documentation, AI-tooling governance. Authorship of record on 221/228 backend commits.",
+    "solution": "Modular NestJS monolith split into control plane and execution plane, PostgreSQL via Prisma, Azure Service Bus queue handoff, five provider adapters behind one interface, React/Vite operations UI.",
+    "interesting_problems": [
+      "Snapshot reproducibility against mutable configuration",
+      "Idempotency across four trigger paths",
+      "Reconciling out-of-order provider webhooks while deliberately keeping them distinct from internal state",
+      "A silent locale date-parsing defect in customer-facing mail"
+    ],
+    "results_headline": "85,482 campaign messages, 18,113 API emails, 364,430 audit events, 99.83% polling success, zero duplicate scheduled dispatches, 99.4% automated triggering, across roughly five and a half months of production.",
+    "what_i_would_improve": [
+      "Split the 10,463-line execution service along its four responsibilities",
+      "Grow test coverage with the domain",
+      "Ban new Date(string) on business input by lint rule",
+      "Reconcile the two divergent sync-failure metrics"
+    ]
+  },
+  "content_ideas": [
+    {
+      "platform": "article",
+      "title": "new Date() is not your friend: the bug that was only wrong for twelve days a month",
+      "core_problem": "Locale-ambiguous date parsing in business input",
+      "anonymise": [
+        "broker identity",
+        "customer data",
+        "process names"
+      ],
+      "do_not_publish": [
+        "source queries",
+        "schema"
+      ]
+    },
+    {
+      "platform": "article",
+      "title": "Put your invariants in the database",
+      "core_problem": "Composite unique constraints as duplicate prevention versus application checks",
+      "anonymise": [
+        "key composition"
+      ],
+      "do_not_publish": [
+        "real business identifiers"
+      ]
+    },
+    {
+      "platform": "article",
+      "title": "Snapshot everything: designing for reproducibility in regulated messaging",
+      "core_problem": "Control/execution plane split and immutable rendered content",
+      "anonymise": [
+        "sector specifics"
+      ],
+      "do_not_publish": [
+        "audit action taxonomy"
+      ]
+    },
+    {
+      "platform": "article",
+      "title": "Two logs, one event, two numbers: metric definition as a design problem",
+      "core_problem": "Divergent granularity in event logging"
+    },
+    {
+      "platform": "article",
+      "title": "Governing AI coding tools in a regulated codebase",
+      "core_problem": "What an agent-instruction file should contain",
+      "do_not_publish": [
+        "AGENTS.md verbatim"
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "title": "Shipping reliability you can prove",
+      "basis": "1,146 dispatches across 1,146 distinct slots, zero duplicates"
+    },
+    {
+      "platform": "linkedin",
+      "title": "Choosing the less impressive number",
+      "basis": "Why the reliability figure is 99.83% and not something prettier"
+    },
+    {
+      "platform": "linkedin",
+      "title": "Six months, one backend, 155 endpoints",
+      "basis": "Build-log retrospective on scoping a modular monolith solo"
+    },
+    {
+      "platform": "linkedin",
+      "title": "Honest AI-assisted engineering",
+      "basis": "What was scaffolded, what was directed, where the boundary was drawn"
+    },
+    {
+      "platform": "linkedin",
+      "title": "The 10,463-line file I would split",
+      "basis": "Owning known architectural debt publicly"
+    },
+    {
+      "platform": "article",
+      "title": "'//todo send email': the comment that explains years of lost messages",
+      "core_problem": "Silent failure in a regulated workflow",
+      "anonymise": [
+        "broker",
+        "process names"
+      ],
+      "do_not_publish": [
+        "legacy source beyond the two short functions",
+        "business identifiers"
+      ]
+    },
+    {
+      "platform": "article",
+      "title": "Strangling two legacy systems at once",
+      "core_problem": "Replacing an orchestration layer and the microservice beneath it; preserving the old HTTP contract verbatim to drive adoption",
+      "do_not_publish": [
+        "field list as mapped to internal systems",
+        "client identities"
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "title": "'//todo send email'",
+      "basis": "One screenshot of a real legacy failure handler that notified nobody"
+    },
+    {
+      "platform": "linkedin",
+      "title": "Adoption is an engineering problem",
+      "basis": "Keeping the old API contract verbatim did more for consolidation than any feature"
+    },
+    {
+      "platform": "linkedin",
+      "title": "What to do when there's no baseline",
+      "basis": "Replacing a system that measured nothing; arguing capability delta instead of percentages"
+    }
+  ],
+  "public_safe_claims": [
+    "Aggregate volume, reliability and automation percentages (contain no identifying detail)",
+    "Architectural patterns: control/execution plane split, queue-backed execution, provider abstraction, database-enforced idempotency",
+    "Technology stack",
+    "Engineering problems and solutions stated as patterns",
+    "Lessons learned",
+    "CV bullets provided the client is unnamed and the sector described generically"
+  ],
+  "private_only_information": [
+    "Client/broker identity and domain",
+    ".env contents, credentials, connection strings, API keys, webhook secrets",
+    "Database host names and Azure resource names",
+    "Preset flow keys and legacy process names (os_payments_new, rta7_*, dreq_*)",
+    "SQL source queries",
+    "Internal user names, counts and role distribution",
+    "Customer data of any kind",
+    "Per-client API traffic attribution",
+    "Audit action taxonomy and precise schema details",
+    "AGENTS.md verbatim",
+    "Legacy table names (wp_*)",
+    "Identities of the 22 integrating systems",
+    "The legacy API field list as it maps to internal callers",
+    "CEO/CTO identities in connection with the commendation"
+  ],
+  "evidence_gaps": [
+    {
+      "gap": "Written record of CEO/CTO commendation",
+      "why_useful": "Converts the strongest stakeholder-impact evidence from testimony into something citable",
+      "where_it_might_exist": "Email, Slack, performance review, board or project update deck",
+      "question_to_ask": "Could you put that in writing? - or save the original message with its date"
+    },
+    {
+      "gap": "iros-mail historical email volume",
+      "why_useful": "The one legacy figure that might still exist, since that service did persist records",
+      "where_it_might_exist": "MongoDB store behind the legacy service, if still live",
+      "question_to_ask": "Is the old iros-mail database still available to query?"
+    },
+    {
+      "gap": "Uptime / availability",
+      "why_useful": "Standard reliability claim",
+      "where_it_might_exist": "Azure Web App metrics; Application Insights",
+      "question_to_ask": "Is availability monitored, and what does it show?"
+    },
+    {
+      "gap": "Production launch date (first real send versus staged cutover)",
+      "why_useful": "Accurate production lifespan",
+      "where_it_might_exist": "Release notes; cutover plan; stakeholder memory",
+      "question_to_ask": "When did UCP become the system of record?"
+    },
+    {
+      "gap": "Infrastructure cost",
+      "why_useful": "Enables a cost-efficiency claim",
+      "where_it_might_exist": "Azure billing",
+      "question_to_ask": "What does UCP cost monthly to run?"
+    },
+    {
+      "gap": "Sync-failure metric reconciliation",
+      "why_useful": "Two numbers for one concept weakens both",
+      "where_it_might_exist": "Code paths emitting preset_flow_sync_failed",
+      "question_to_ask": "Internal: reconcile the definitions"
+    },
+    {
+      "gap": "Latency / time-to-delivery",
+      "why_useful": "Performance claim",
+      "where_it_might_exist": "Derivable from queuedAt to sentAt",
+      "question_to_ask": "Compute in a later pass"
+    },
+    {
+      "gap": "Whether legacy systems still run in parallel",
+      "why_useful": "Distinguishes 'replaced' from 'replacing'",
+      "where_it_might_exist": "Ops; the 8 discovery-only functions in the cutover plan",
+      "question_to_ask": "Are any Apps Scripts or iros-mail endpoints still live?"
+    },
+    {
+      "gap": "Customer-lookup usage",
+      "why_useful": "Would show the flagship executive feature is actually used",
+      "where_it_might_exist": "Application/request logs, if retained",
+      "question_to_ask": "Is there request logging that would show dashboard usage?"
+    }
+  ],
+  "methodology": {
+    "production_access": "Read-only. psql session with PGOPTIONS='-c default_transaction_read_only=on -c statement_timeout=120000'.",
+    "guard_verification": "An attempted CREATE TABLE returned 'ERROR: cannot execute CREATE TABLE in a read-only transaction' before any analysis query was run.",
+    "writes_performed": "None. No INSERT, UPDATE, DELETE, DDL, or migration was executed.",
+    "personal_data": "No row-level personal data retrieved, displayed or stored. All figures are aggregates. One planned query reading error-message text was abandoned when blocked; an aggregate-only alternative was used.",
+    "credentials": "Read from .env inside a script and never printed to output.",
+    "code_changes": "None. No application code was modified during this audit."
+  },
+  "revised_date": "2026-10-10",
+  "revision_note": "Revised with subject-provided origin context, corroborated against legacy source. Two findings the first pass missed: old-iros-mail is a replaced production system (not reference material), and the External Service Comms API is a verbatim reimplementation of its contract, which explains measured client migration.",
+  "origin_and_stakeholder_context": {
+    "evidence_level": "TESTIMONY, substantially corroborated in legacy source",
+    "problem_statement": [
+      "Communications scattered across systems with no central visibility",
+      "No way to see which customers had been contacted or whether messages arrived",
+      "Processes broke; messages silently lost; staff re-triggered emails manually",
+      "No reporting or communication statistics for executives",
+      "C-level (CEO/CTO) demand for consolidation into one monitored place"
+    ],
+    "corroborated_in_code": [
+      {
+        "claim": "Failures notified nobody",
+        "evidence": "notifyExecutionFailed in old-google-scripts/iros-process-one/functions.gs is an unimplemented stub containing '//todo send email' and a console.error; runAll catches per-function errors and continues",
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "claim": "No send-level record of what went to whom",
+        "evidence": "Zero occurrences of SpreadsheetApp/appendRow/getRange/setValue across the Apps Script estate; only ten per-process wp_* marker tables storing created/ref/polno/reason/raw-row-JSON",
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "claim": "No interface existed",
+        "evidence": "iros-mail exposes API-key HTTP endpoints only; Apps Scripts have no UI surface",
+        "evidence_level": "VERIFIED"
+      }
+    ],
+    "important_nuance": "It is NOT true that the legacy estate stored nothing - per-process markers existed and iros-mail kept its own EmailRecord store in MongoDB. The accurate, narrower claim is that there was no unified, queryable, cross-channel record of what was sent to a given customer, and no interface to ask the question.",
+    "requirements_to_capability": [
+      {
+        "requirement": "All company communications in one place",
+        "capability": "5 provider adapters, 3 channels behind one approval/suppression model; 22 external clients routed through the platform API",
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "requirement": "Visibility and monitoring of what is going out",
+        "capability": "Dashboard overview, campaign message search/export, 364,430-event audit log, ucp-execution-summary monitor API",
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "requirement": "Look up a customer and see every communication sent to them",
+        "capability": "GET /customer-communications - UNION ALL across CampaignExecutionRecipient and TransactionalEmail, with dedicated UI page",
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "requirement": "Reporting and communication statistics for executives",
+        "capability": "Daily summary, operational report (HTML + export), weekly audit report services",
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "requirement": "Other internal systems must send through this service",
+        "capability": "POST /api/mail preserves the legacy iros-mail contract verbatim",
+        "evidence_level": "VERIFIED"
+      }
+    ],
+    "stakeholder_recognition": {
+      "claim": "Commended on this project by the CEO and CTO on several occasions",
+      "evidence_level": "TESTIMONY",
+      "qualification": "Uncorroborated. Usable in interview as 'I'm told...'; do not put in writing as fact until a dated written source exists."
+    }
+  },
+  "legacy_systems_replaced": [
+    {
+      "name": "Google Apps Script estate (iros-process-one, iros-process-two)",
+      "role": "Business process orchestration",
+      "technology": "Google Apps Script, time-driven triggers (runEveryMinute/Hour/Day), JDBC to MySQL",
+      "size": "2,691 lines of .gs",
+      "replacement_status": "11 flows reimplemented as UCP preset-flow adapters: dreq_inception, dreq, canc_acknow, canc_chase, os_payments_new, renew_acknowledge, renew_nocontact, ad_hoc_docs, rta7_emails, rta7_rmail, renew_invite",
+      "open_items": "8 functions referenced by legacy code.gs have no implementation in checked-in source (createStatusReport, createIrevStatusReport, createPremierStatusReport, sendErrorsEmail, sendCancErrorsEmail, processUkisMid, updateErrorsData, updateCancErrorsData) and are tracked as a separate discovery track",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "name": "iros-mail",
+      "role": "Email rendering and sending microservice",
+      "technology": ".NET 8 isolated Azure Functions, EJS + MJML rendering, MongoDB email records, Azure Blob template/image storage, SMTP via MailKit, scheduled-send and failed-email-reschedule workers",
+      "replacement_status": "HTTP contract absorbed into UCP as POST /api/mail with identical bearer-key auth and field names, while discarding the EJS/local-microservice architecture",
+      "evidence_level": "VERIFIED"
+    }
+  ],
+  "evidence_gaps_resolved_in_revision": [
+    "Origin and stakeholder requirements (subject testimony, substantially corroborated in legacy code)",
+    "Legacy cutover status (11 flows migrated; 8 discovery-only items whose source is absent)",
+    "Legacy baseline RECLASSIFIED: structurally unobtainable rather than merely unlocated - stop looking for the number"
+  ]
+}

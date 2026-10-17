@@ -1,0 +1,1209 @@
+{
+  "project_name": "iRev SSP Portal",
+  "repository": "Insurance-Revolution/nexus-renew",
+  "local_checkout_name": "ssp-portal-frontend",
+  "audit_date": "2026-10-10",
+  "audit_scope": "Frontend repository only. Backend REST API and legacy data store are separate services not present in this checkout. All production evidence obtained via read-only HTTP GET requests; no database credentials were available or used; no write operations performed.",
+  "project_type": "Internal B2B single-page web application (read-only CRM / legacy archive browser) for insurance broking",
+  "project_description": "A React/TypeScript portal built as the destination system for data extracted from a third-party platform the company was leaving. Gives insurance-broking staff authenticated browser access to ~25 years of client, policy, event, transaction and versioned underwriting-risk records, plus references to documents on a Windows file share. Includes a Firebase-based user administration subsystem.",
+  "owner_organisation": {
+    "value": "Insurance Revolution / BG Insurance",
+    "evidence": "GitHub org Insurance-Revolution; Firebase project id bg-ssp; og:image hosted on bginsurance.co.uk",
+    "classification": "private"
+  },
+  "dates": {
+    "first_commit": "2025-09-18",
+    "last_commit": "2025-11-21",
+    "active_development_weeks": 9,
+    "production_launch_date": "UNKNOWN (exact date). Reported in production use for over a year as of Oct 2026.",
+    "still_in_use": "REPORTED in production use for over a year (Abraham, first-hand); partially corroborated - backend API returned live data on 2026-10-10, ~11 months after the final commit",
+    "no_frontend_commits_since": "2025-11-21"
+  },
+  "technologies": {
+    "frontend": [
+      "React 18.3",
+      "TypeScript 5.8",
+      "Vite 5.4 (react-swc)",
+      "Tailwind CSS 3.4",
+      "shadcn/ui",
+      "Radix UI",
+      "React Router 6.30",
+      "TanStack React Query 5.83 (mounted; fetching mostly hand-rolled useEffect)",
+      "React Hook Form",
+      "Zod",
+      "Recharts",
+      "date-fns",
+      "lucide-react",
+      "sonner",
+      "dnd-kit"
+    ],
+    "auth_and_platform": [
+      "Firebase 12.4 Auth (email/password)",
+      "Firebase Firestore (named database 'ssp-portal-users')",
+      "Firebase Hosting (europe-west1)"
+    ],
+    "backend_consumed": [
+      "REST API on Google Cloud Run",
+      "Fastify (inferred from FST_ERR_VALIDATION error codes)",
+      "page size capped at 100"
+    ],
+    "tooling": [
+      "ESLint 9",
+      "typescript-eslint",
+      "Bun lockfile + npm lockfile",
+      "npm run deploy = vite build && firebase deploy --only hosting"
+    ],
+    "absent": [
+      "automated tests",
+      "CI/CD pipeline",
+      "error tracking / monitoring SDK",
+      "state management library"
+    ]
+  },
+  "architecture": {
+    "pattern": "Single-page application with two independent planes: Firebase for identity/user lifecycle, Cloud Run REST API for broking data. Planes are not coupled in the frontend.",
+    "routes": [
+      "/ (SignIn, public)",
+      "/forgot-password (public)",
+      "/dashboard (clients)",
+      "/clients/:id",
+      "/policies",
+      "/policies/:id",
+      "/manage-users"
+    ],
+    "api_endpoints_consumed": [
+      "/api/clients",
+      "/api/clients/{id}",
+      "/api/policies",
+      "/api/policies/{id}",
+      "/api/policies/{id}/events",
+      "/api/policies/{id}/transactions",
+      "/api/policies/{id}/risk",
+      "/api/policies/{id}/risk/{version}",
+      "/api/policies/{id}/diaries"
+    ],
+    "key_decisions": [
+      "centralised integration module (src/lib/api.ts)",
+      "server-side pagination throughout",
+      "limit=1 count probes for tab badges",
+      "submit-triggered search",
+      "defensive multi-shape response mapping",
+      "named Firestore database with try/catch fallback",
+      "secondary Firebase app for user invitations"
+    ],
+    "document_handling": "UI derives file:///Z:/00/nn/nn/nn/00<filename> paths from legacy CPIO archive filenames and presents them in a copy-to-clipboard dialog, because browsers block https->file navigation."
+  },
+  "integrations": [
+    {
+      "name": "Backend broking REST API",
+      "type": "HTTP/JSON on Google Cloud Run",
+      "role": "all client/policy/event/transaction/risk/diary data"
+    },
+    {
+      "name": "Firebase Authentication",
+      "type": "SDK",
+      "role": "email/password sign-in, password reset, session persistence"
+    },
+    {
+      "name": "Firebase Firestore (named DB)",
+      "type": "SDK",
+      "role": "portal user records: status, invitedAt, invitedBy, lastLogin"
+    },
+    {
+      "name": "Firebase Hosting",
+      "type": "deployment",
+      "role": "static SPA hosting, europe-west1"
+    },
+    {
+      "name": "Windows network file share (Z:)",
+      "type": "referenced, not served",
+      "role": "legacy policy document archive"
+    }
+  ],
+  "workflows": [
+    "Sign in with Firestore suspended-user pre-check (with email-casing retry), then Firebase Auth, then re-check on every session restore",
+    "Password reset with explicit authorized continue-URL plus suspended-user pre-check",
+    "Client search (server-side, spaces encoded as +) -> client details -> client policies",
+    "Policy browse with Live (state=0) / Not-Live (stateNot=0) saved views and live counts; search on Enter or button",
+    "Policy inspection: Events (100/page, type-badge filters, document path dialog), Transactions, Risk versions (code-to-label translation), Diary",
+    "User administration: invite via secondary Firebase app + immediate password-reset email; suspend / re-enable / delete"
+  ],
+  "my_contributions": {
+    "attribution_method": "git blame --line-porcelain on HEAD (branch files-linking, commit 2d06aa2) aggregated per author, cross-checked against commit authorship",
+    "commit_counts": {
+      "scaffolding-tool commits (directed by Abraham)": 133,
+      "AbrahamNobleOX": 44,
+      "Abbas Ali": 27,
+      "total": 198
+    },
+    "whole_src_blame_lines": {
+      "scaffolding-tool commits (directed by Abraham)": 7550,
+      "AbrahamNobleOX (hand-written)": 4226,
+      "Abbas Ali": 2838
+    },
+    "verified": [
+      {
+        "area": "API integration layer",
+        "file": "src/lib/api.ts",
+        "lines_attributed": "315 of 488",
+        "commits": [
+          "750e2c8",
+          "6f0125a",
+          "0e0ac2f",
+          "8eb1714",
+          "a6dee32",
+          "7c45032"
+        ],
+        "detail": "all fetch functions, pagination normalisation, mapApiClientToClient / mapApiPolicyToPolicy / mapApiPolicyEventToPolicyEvent, sanitizeDate, getPolicyCountByState(Not)"
+      },
+      {
+        "area": "REST API contract specification",
+        "file": "API_Specifications.md",
+        "lines_attributed": "337 of 337",
+        "detail": "entities, relationships, 9 endpoint groups, pagination/sorting defaults, error model"
+      },
+      {
+        "area": "Firebase authentication",
+        "file": "src/context/AuthContext.tsx",
+        "lines_attributed": "110 of 159"
+      },
+      {
+        "area": "Sign-in with suspension gate",
+        "file": "src/pages/SignIn.tsx",
+        "lines_attributed": "146 of 235"
+      },
+      {
+        "area": "Password reset",
+        "file": "src/pages/ForgetPassword.tsx",
+        "lines_attributed": "171 of 171"
+      },
+      {
+        "area": "User administration subsystem",
+        "file": "src/pages/ManageUsers.tsx",
+        "lines_attributed": "458 of 613",
+        "detail": "invite via secondary Firebase app, Firestore named DB, status lifecycle invited/completed/suspended, suspend/enable/delete"
+      },
+      {
+        "area": "Prototype reduction",
+        "commits": [
+          "bbef901 (-7665)",
+          "7be15e4",
+          "bdec2e7",
+          "fe21256 (-10328)"
+        ],
+        "detail": "approximately 19,300 deletions across 168 file-changes; removed Quotations, Diaries, SLA rules, Add-ons, Documents/Communications/Accounts tabs"
+      },
+      {
+        "area": "Secret hygiene remediation",
+        "commits": [
+          "80d26a7",
+          "377f742"
+        ],
+        "qualification": "values removed from working tree; history not rewritten; no evidence of key rotation"
+      },
+      {
+        "area": "Legacy document path derivation",
+        "file": "src/components/policies/tabs/EventsTab.tsx",
+        "commits": [
+          "931719c",
+          "1253c53",
+          "2d06aa2"
+        ]
+      },
+      {
+        "area": "Integration ownership",
+        "detail": "merged PRs #1-#5 across branches api-specification, manage-users-integration, data-sdk-integration"
+      }
+    ],
+    "explicitly_not_claimed": [
+      {
+        "who": "Abbas Ali",
+        "what": "Risk Details tab presentation (389/530 lines), policy details cards, risk-version ordering and version-type labels, Live/Not-Live tab behaviour, policy and client search UI, Events table filters, favicon, Firebase Hosting integration and first deploy"
+      },
+      {
+        "who": "Another developer (backend)",
+        "what": "The backend REST API, the data extraction and the database. Abraham did NOT implement any of it and does not claim it. He was deliberately given no backend or database access as a data-protection measure. His involvement was the API contract he authored and the architectural guidance recorded in architectural_influence.",
+        "evidence_level": "CONFIRMED by Abraham directly"
+      }
+    ],
+    "scaffolding_note": "The 133 commits under the gpt-engineer-app[bot] account are Abraham's own output: he directed the scaffolding tool, specified the screens and accepted the results. They appear under a bot author because of how that tool commits, not because someone else designed the application. They are listed separately only because they are generated rather than hand-written, and because the shadcn/ui component library within them is third-party. See private_only_information for how to handle this if an interviewer opens the repository.",
+    "architectural_influence": {
+      "summary": "The backend developer first attempted to serve the dataset through Firebase Data Connect (a generated GraphQL-style SDK). After roughly a week without a workable data path, Abraham's argument for a conventional Node.js REST API over PostgreSQL was accepted. That architecture shipped and has served production since.",
+      "abraham_role": "Architectural advocacy plus the written API contract that made the alternative concrete. He did not implement the backend.",
+      "evidence_level": "VERIFIED (the pivot and its date) / REPORTED (that his advocacy caused it)",
+      "repository_artefacts": [
+        {
+          "artefact": "\"@irev/quote-ap\": \"file:irev-quoteap\" in package.json, pointing at a directory that no longer exists",
+          "shows": "A locally-generated SDK package was once consumed by the frontend",
+          "source": "package.json at HEAD"
+        },
+        {
+          "artefact": "listCustomers({ limit: 50 }) imported from @irev/quote-ap",
+          "shows": "Generated typed query SDK - the Data Connect calling convention, not REST",
+          "source": "commit f627567, 2025-10-30"
+        },
+        {
+          "artefact": "VITE_USE_DATA_CONNECT_EMULATOR / _HOST / _PORT, commented 'Data Connect emulator (disabled)', directly above VITE_API_BASE 'API base for live backend'",
+          "shows": "Both architectures preserved side by side: the abandoned one disabled, the replacement live",
+          "source": ".env.example"
+        },
+        {
+          "artefact": "Branch named data-sdk-integration",
+          "shows": "The SDK approach was a named workstream, not a passing experiment",
+          "source": "git branch -a"
+        },
+        {
+          "artefact": "d4f26f5 removes the SDK import; 750e2c8 implements REST fetching - same day",
+          "shows": "The pivot is dated to 2 November 2025",
+          "source": "commit log"
+        }
+      ],
+      "accuracy_note": "Firebase Data Connect is itself PostgreSQL-backed, so the pivot was away from its generated-SDK access layer toward a conventional REST API - NOT a change of database engine. State it that way; a technically literate interviewer will know the difference.",
+      "how_to_phrase": "The first approach was a Firebase-generated data SDK; I argued for a plain Node REST API over Postgres, and that's what we moved to - you can see the switch in the repo."
+    }
+  },
+  "production_metrics": [
+    {
+      "name": "client_records",
+      "value": 779778,
+      "unit": "records",
+      "measured_on": "2026-10-10",
+      "evidence_source": "GET /api/clients?page=1&pageSize=1 -> total",
+      "calculation_method": "direct read of API total field",
+      "evidence_level": "VERIFIED",
+      "qualification": "API record count, not unique human customers; likely includes prospects, duplicates and driver records",
+      "classification": "private"
+    },
+    {
+      "name": "policies_live",
+      "value": 4249,
+      "unit": "policies",
+      "measured_on": "2026-10-10",
+      "evidence_source": "GET /api/policies?page=1&limit=1&state=0 -> pagination.total",
+      "calculation_method": "direct read",
+      "evidence_level": "VERIFIED",
+      "classification": "private"
+    },
+    {
+      "name": "policies_lapsed_or_cancelled",
+      "value": 397090,
+      "unit": "policies",
+      "measured_on": "2026-10-10",
+      "evidence_source": "GET /api/policies?page=1&limit=1&stateNot=0 -> pagination.total",
+      "calculation_method": "direct read",
+      "evidence_level": "VERIFIED",
+      "classification": "private"
+    },
+    {
+      "name": "policies_total",
+      "value": 401339,
+      "unit": "policies",
+      "measured_on": "2026-10-10",
+      "evidence_source": "sum of live and not-live totals",
+      "calculation_method": "4249 + 397090",
+      "evidence_level": "DERIVED",
+      "classification": "private"
+    },
+    {
+      "name": "live_share_of_portfolio",
+      "value": 1.06,
+      "unit": "percent",
+      "evidence_source": "4249 / 401339",
+      "calculation_method": "arithmetic",
+      "evidence_level": "DERIVED",
+      "classification": "private"
+    },
+    {
+      "name": "events_per_live_policy_mean",
+      "value": 20.7,
+      "unit": "events",
+      "evidence_source": "30 live policies, random.seed(1), pagination.total per policy (620 events total)",
+      "calculation_method": "620 / 30",
+      "evidence_level": "DERIVED",
+      "qualification": "sample-based; pages were convenience-selected, not uniformly random"
+    },
+    {
+      "name": "events_per_historical_policy_mean",
+      "value": 60.8,
+      "unit": "events",
+      "evidence_source": "25 historical policies, random.seed(2) across 4 pages spanning the 397k range (1521 events total)",
+      "calculation_method": "1521 / 25",
+      "evidence_level": "DERIVED",
+      "qualification": "sample-based; not a population estimate; extrapolation to a total event count is NOT defensible and is not claimed"
+    },
+    {
+      "name": "transactions_per_live_policy_mean",
+      "value": 3.7,
+      "unit": "transactions",
+      "evidence_source": "same 30-policy sample (111 transactions)",
+      "evidence_level": "DERIVED"
+    },
+    {
+      "name": "transactions_per_historical_policy_mean",
+      "value": 9.8,
+      "unit": "transactions",
+      "evidence_source": "same 25-policy sample (245 transactions)",
+      "evidence_level": "DERIVED"
+    },
+    {
+      "name": "archive_event_span",
+      "value": "2000-2023",
+      "unit": "years",
+      "evidence_source": "event dates in the 25-policy historical sample; peaks 2011=225, 2020=180, 2015=172",
+      "evidence_level": "VERIFIED",
+      "qualification": "sample-derived range, not a population min/max"
+    },
+    {
+      "name": "policy_inception_span_sampled",
+      "value": "1999-2025",
+      "unit": "years",
+      "evidence_source": "inceptionDate across 749 sampled policies",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "name": "distinct_insurer_codes_live_sample",
+      "value": 33,
+      "unit": "codes",
+      "evidence_source": "349 sampled live policies",
+      "evidence_level": "VERIFIED",
+      "qualification": "sample-based",
+      "classification": "private"
+    },
+    {
+      "name": "distinct_insurer_codes_historical_sample",
+      "value": 67,
+      "unit": "codes",
+      "evidence_source": "400 sampled not-live policies",
+      "evidence_level": "VERIFIED",
+      "qualification": "sample-based",
+      "classification": "private"
+    },
+    {
+      "name": "distinct_product_type_codes",
+      "value": "21 live / 32 historical",
+      "unit": "codes",
+      "evidence_source": "same samples",
+      "evidence_level": "VERIFIED",
+      "classification": "private"
+    },
+    {
+      "name": "distinct_event_type_codes_observed",
+      "value": "8 live / 17 historical",
+      "unit": "codes",
+      "evidence_source": "620 and 1521 sampled events",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "name": "events_carrying_document_reference",
+      "value": "31.0% live (192/620), 23.4% historical (356/1521)",
+      "unit": "percent",
+      "evidence_source": "sampled events with non-null document field",
+      "calculation_method": "count(document != null) / count(events)",
+      "evidence_level": "DERIVED"
+    },
+    {
+      "name": "mean_annual_premium_live_sample",
+      "value": 461.74,
+      "unit": "GBP",
+      "evidence_source": "343 sampled live policies with non-zero annualPremium",
+      "evidence_level": "DERIVED",
+      "classification": "private"
+    },
+    {
+      "name": "mean_annual_premium_historical_sample",
+      "value": 654.81,
+      "unit": "GBP",
+      "evidence_source": "387 sampled not-live policies with non-zero annualPremium",
+      "evidence_level": "DERIVED",
+      "classification": "private"
+    },
+    {
+      "name": "api_latency_observed",
+      "value": {
+        "clients_list": 0.33,
+        "clients_search": 3.82,
+        "policies_live": 5.07,
+        "policies_not_live": 0.44,
+        "policy_events": 0.1
+      },
+      "unit": "seconds",
+      "measured_on": "2026-10-10",
+      "evidence_source": "curl time_total, single cold run from a developer machine",
+      "evidence_level": "VERIFIED",
+      "qualification": "one measurement each; indicative only, not a benchmark; no before/after optimisation data exists"
+    },
+    {
+      "name": "code_removed_in_cleanup",
+      "value": 19346,
+      "unit": "lines",
+      "evidence_source": "git show --shortstat on commits bbef901, 7be15e4, bdec2e7, fe21256",
+      "calculation_method": "7665 + 1077 + 276 + 10328",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "name": "distinct_legacy_event_actors_sampled",
+      "value": 22,
+      "unit": "operator initials",
+      "evidence_source": "620 events across 30 live policies",
+      "evidence_level": "VERIFIED",
+      "qualification": "CRITICAL: these are historic SSP operators recorded in legacy data, NOT portal users. Never cite as user adoption."
+    },
+    {
+      "name": "production_lifespan",
+      "value": "over 1 year",
+      "unit": "duration",
+      "evidence_source": "Abraham, first-hand; backend API confirmed live 2026-10-10, ~11 months after the final frontend commit",
+      "evidence_level": "REPORTED with partial corroboration",
+      "qualification": "No uptime or error data available. Absence of commits since Nov 2025 is consistent with stability but is not proof of it."
+    },
+    {
+      "name": "avoided_vendor_charge",
+      "value": "100000+",
+      "unit": "GBP",
+      "evidence_source": "CTO, relayed verbally to Abraham at project kickoff",
+      "calculation_method": "none - this is a reported figure, not a measurement",
+      "evidence_level": "REPORTED",
+      "qualification": "CRITICAL: always attribute to the CTO. Never present as a figure you measured or calculated. Cannot be verified from this repository. See business_driver.",
+      "classification": "private"
+    }
+  ],
+  "verified_claims": [
+    {
+      "id": "C1",
+      "claim": "Built the complete API integration layer for a production insurance portal exposing 779,778 client records and 401,339 policies from a legacy broking system.",
+      "evidence": "git blame 315/488 lines of src/lib/api.ts; API pagination.total reads 2026-10-10",
+      "period": "Oct-Nov 2025",
+      "qualification": "Record counts, not unique customers; the backend API is a separate service I specified but did not necessarily implement."
+    },
+    {
+      "id": "C2",
+      "claim": "Authored the 337-line REST API contract (entities, relationships, endpoints, pagination, sorting, error model) the backend was implemented against.",
+      "evidence": "API_Specifications.md, 337/337 lines blamed",
+      "period": "Oct 2025",
+      "qualification": "The delivered API diverged from the spec's envelope shape; my client handles both."
+    },
+    {
+      "id": "C3",
+      "claim": "Designed defensive response mapping that repairs malformed legacy data (invalid timestamps, string-typed numbers, -1 status sentinels, fields under four different names).",
+      "evidence": "sanitizeDate, mapApiClientToClient, mapApiPolicyEventToPolicyEvent in src/lib/api.ts",
+      "period": "Nov 2025"
+    },
+    {
+      "id": "C4",
+      "claim": "Built the portal's Firebase authentication and user-administration subsystem: email invitation, self-service reset, suspend/re-enable/delete, suspension enforced pre-authentication and on every session restore.",
+      "evidence": "ManageUsers.tsx 458/613, AuthContext.tsx 110/159, ForgetPassword.tsx 171/171, SignIn.tsx 146/235; five commits 2025-10-30",
+      "period": "Oct 2025"
+    },
+    {
+      "id": "C5",
+      "claim": "Made a ~25-year broking archive navigable: event timelines, financial ledgers and versioned underwriting snapshots, server-paginated throughout against a 400k-row dataset.",
+      "evidence": "events sampled 2000-2023; getPolicyEvents/getPolicyTransactions/getPolicyRiskList; backend page cap 100",
+      "qualification": "Date range from a 25-policy sample, not a population min/max."
+    },
+    {
+      "id": "C6",
+      "claim": "Reverse-engineered an undocumented legacy document-archive sharding scheme and surfaced document paths for the 23-31% of policy events that reference a stored document.",
+      "evidence": "commits 931719c, 1253c53, 2d06aa2; EventsTab.tsx",
+      "qualification": "Mechanism VERIFIED; percentage DERIVED from samples of 620 and 1521 events."
+    },
+    {
+      "id": "C7",
+      "claim": "Reduced an AI-generated prototype by ~19,300 lines across four staged commits, eliminating six feature areas no production data could support, before building the real integration.",
+      "evidence": "git show --shortstat on bbef901, 7be15e4, bdec2e7, fe21256",
+      "period": "Oct 2025"
+    },
+    {
+      "id": "C9",
+      "claim": "Remediated committed credentials: removed values from .env, introduced .env.example, added gitignore coverage.",
+      "evidence": "commits 80d26a7, 377f742",
+      "qualification": "History was not rewritten and there is no evidence keys were rotated."
+    },
+    {
+      "id": "C10",
+      "claim": "Owned repository integration, reviewing and merging five pull requests across three feature branches.",
+      "evidence": "merge commits for PRs #1-#5",
+      "qualification": "Three-person repository."
+    },
+    {
+      "id": "C8",
+      "claim": "Designed and delivered a production insurance portal end to end in nine weeks - from UI prototype to authenticated, production-data-connected application on Firebase Hosting.",
+      "evidence": "commit timeline 2025-09-18 to 2025-11-21; firebase.json; first mock-free commits 2-3 Nov",
+      "period": "Sep-Nov 2025",
+      "qualification": "The UI scaffold was produced with an AI scaffolding tool I directed; the component library is third-party (shadcn/ui); a colleague contributed the risk/policy presentation and the final deploy."
+    }
+  ],
+  "derived_claims": [
+    "Live policies represent approximately 1.1% of the total policy portfolio exposed by the API (4,249 of 401,339).",
+    "Sampled historical policies carry roughly three times the event history of sampled live policies (60.8 vs 20.7 events per policy), consistent with live policies being predominantly recent (2025) inceptions.",
+    "Roughly a quarter to a third of policy events reference a stored document, each of which the UI resolves to a derived file-share path."
+  ],
+  "inferred_claims": [
+    {
+      "claim": "The portal's purpose is access to a dormant-but-significant legacy archive rather than operational policy administration.",
+      "level": "STRONGLY SUPPORTED",
+      "basis": "entirely read-only architecture, no mutation code against the data API, Live/Not-Live browsing views, 99% lapsed portfolio"
+    },
+    {
+      "claim": "The backend is a Fastify service on Google Cloud Run.",
+      "level": "INFERRED",
+      "basis": "FST_ERR_VALIDATION error code and *.a.run.app host"
+    },
+    {
+      "claim": "The portal was used by internal staff during the build period.",
+      "level": "VERIFIED (existence) / UNKNOWN (scale)",
+      "basis": "commit 39b28fc fixes a defect reported by a named internal user on the same day"
+    }
+  ],
+  "business_impact": [
+    {
+      "impact": "Enabled a third-party vendor exit, avoiding a charge reported at GBP 100,000+",
+      "level": "REPORTED",
+      "type": "commercial",
+      "note": "Attribute to the CTO; never present as measured"
+    },
+    {
+      "impact": "Gave ~25 years of client and policy records a home the business controls",
+      "level": "VERIFIED (custody) / REPORTED (the exit itself)",
+      "type": "qualitative"
+    },
+    {
+      "impact": "Still in production use after a year, requiring no frontend commits since Nov 2025",
+      "level": "REPORTED, partially corroborated",
+      "type": "operational"
+    },
+    {
+      "impact": "A ~25-year, 401k-policy legacy archive became browser-accessible and searchable to staff",
+      "level": "VERIFIED",
+      "type": "qualitative"
+    },
+    {
+      "impact": "Policy document references became reachable without knowing the archive's directory convention",
+      "level": "VERIFIED",
+      "type": "qualitative"
+    },
+    {
+      "impact": "Centralised, administrable access control with suspension enforced at two independent points",
+      "level": "VERIFIED",
+      "type": "qualitative"
+    },
+    {
+      "impact": "Reduced reliance on the legacy system's own interface for read tasks",
+      "level": "STRONGLY SUPPORTED",
+      "type": "qualitative"
+    },
+    {
+      "impact": "Time saved, staff hours displaced, licence cost avoided",
+      "level": "UNKNOWN",
+      "type": "not claimed"
+    },
+    {
+      "impact": "Unblocked the backend data layer by guiding a pivot from Firebase Data Connect to Node/PostgreSQL REST after roughly a week of lost progress",
+      "level": "VERIFIED (pivot) / REPORTED (attribution of the guidance)",
+      "type": "delivery"
+    }
+  ],
+  "engineering_challenges": [
+    {
+      "challenge": "Mapping an unreliable, undocumented legacy data shape",
+      "why_hard": "No schema to validate against and no ability to fix the source; correctness must be achieved defensively on the consumer side against values nobody has seen yet"
+    },
+    {
+      "challenge": "Browsing a 400,000-row dataset from a browser",
+      "why_hard": "Default React patterns (fetch-all-then-filter, debounce-on-keystroke) all fail at this cardinality; backend caps page size at 100"
+    },
+    {
+      "challenge": "Bridging the https-to-file browser security boundary",
+      "why_hard": "No technical workaround exists; the correct answer is to change the interaction model, reached after two wrong attempts"
+    },
+    {
+      "challenge": "Reverse-engineering the archive's directory sharding rule",
+      "why_hard": "Undocumented; only inferable from filename/location pairs; took three iterations including a revert"
+    },
+    {
+      "challenge": "Inviting a user without destroying the administrator's session",
+      "why_hard": "createUserWithEmailAndPassword silently replaces the session on the app instance used; invisible in the SDK's API surface"
+    },
+    {
+      "challenge": "Firestore named-database access from a typed SDK",
+      "why_hard": "The two-argument signature was not exposed; required a cast with a graceful fallback to the default database"
+    },
+    {
+      "challenge": "Deleting 19,300 lines of plausible-looking generated code",
+      "why_hard": "Required judging feature by feature what the backend could actually serve; deletion is the most judgement-heavy and least-rewarded work in a prototype-to-production transition"
+    },
+    {
+      "challenge": "Choosing the right data-access architecture for the scale and shape of the problem",
+      "why_hard": "The failure mode is slow and ambiguous - a managed service that nearly works absorbs a week before anyone concludes the abstraction is wrong rather than the implementation, and arguing for the boring option against a platform the team has already committed to is a social problem as much as a technical one"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D1",
+      "problem": "The frontend existed on mock data; the backend did not exist",
+      "decision": "Author the API contract in-repo, derived from the mock fixtures",
+      "reasoning": "The prototype had already encoded the domain model; formalising it let both sides proceed in parallel",
+      "tradeoffs": "Inherits the prototype's modelling mistakes; the delivered API diverged in envelope shape",
+      "result": "Divergence cost nothing at runtime because the client handles both shapes"
+    },
+    {
+      "id": "D2",
+      "problem": "Messy, unstable legacy data shape",
+      "decision": "One centralised integration module rather than per-component fetching",
+      "reasoning": "Isolate coercion in one place",
+      "tradeoffs": "488-line file that grows with every endpoint",
+      "result": "Backend shape changes absorbed in one place; UI stayed free of coercion logic"
+    },
+    {
+      "id": "D3",
+      "problem": "Needed auth, invitation, reset and suspension quickly with no backend auth available",
+      "decision": "Firebase for identity; leave the data API untouched",
+      "reasoning": "Fastest path to a controllable user list",
+      "tradeoffs": "The two planes are not linked, so the data API is not protected by the Firebase session; portal user state lives outside the system of record",
+      "result": "Working administrable access layer delivered in one day of commits, with a security gap left open"
+    },
+    {
+      "id": "D4",
+      "problem": "Replacing mock data would orphan every import type",
+      "decision": "Keep src/data/mock*.ts as the type source of truth; stop importing the arrays",
+      "tradeoffs": "Files named 'mock' that are load-bearing for types confuse newcomers",
+      "result": "The data-source swap touched the API layer and pages, not the type surface"
+    },
+    {
+      "id": "D5",
+      "problem": "Search against 400k rows measured at 4-5 seconds",
+      "decision": "Separate typed query from submitted query; fire on Enter or button only",
+      "tradeoffs": "Less 'modern-feeling' than live search",
+      "result": "One expensive query per intent instead of one per keystroke"
+    },
+    {
+      "id": "D6",
+      "problem": "Live/Not-Live counts needed without fetching rows",
+      "decision": "Request limit=1 and read pagination.total",
+      "tradeoffs": "Still a full count on the backend; two extra round-trips on load",
+      "result": "Accurate counts with near-zero payload"
+    },
+    {
+      "id": "D7",
+      "title": "Abandon Firebase Data Connect for a Node REST API over PostgreSQL",
+      "note": "The most consequential decision on the project, and the one Abraham influenced rather than owned",
+      "problem": "The backend developer's first approach served the dataset through Firebase Data Connect's generated GraphQL-style SDK. It was not working; roughly a week went in without a usable data path (duration REPORTED).",
+      "decision": "Replace it with a conventional Node.js REST API over PostgreSQL",
+      "reasoning": "The frontend needed ordinary paginated list endpoints over a very large relational dataset - what REST and SQL do natively. The generated SDK added a translation layer, an unfamiliar query model and a build-time dependency between the two developers, for nothing the application needed.",
+      "tradeoffs": "Discards a week of work and the managed tooling; the team now owns an API service, its deployment and its performance characteristics",
+      "result": "VERIFIED - SDK import removed and REST fetching implemented the same day, 2025-11-02; the API has served production since and was confirmed live 2026-10-10. Its pagination model is what made the limit=1 count probes and server-side paging viable.",
+      "attribution": "Implemented by the backend developer. Abraham's contribution was the architectural argument (REPORTED) and the API contract it was built to (VERIFIED)."
+    }
+  ],
+  "problems_solved": [
+    {
+      "id": "P1",
+      "title": "Malformed legacy timestamps broke date rendering",
+      "problem": "Values such as 2013-01-22T00:00:00:00Z yield Invalid Date",
+      "solution": "sanitizeDate() regex-repairs the doubled separator, re-validates, falls back to the YYYY-MM-DD prefix; paired with formatDateTime() handling a second legacy format DD-MM-YY HH:mm",
+      "evidence": "src/lib/api.ts:34-48, src/lib/utils.ts"
+    },
+    {
+      "id": "P2",
+      "title": "Policy documents unreachable from the browser",
+      "problem": "Filenames alone do not locate files on an undocumented sharded Windows share; browsers block https->file navigation",
+      "investigation": "Three commits over two days; an 8-10 digit prefix rule, then a dynamic variant, then a revert to the matching rule",
+      "solution": "Derive first-six-digits -> nn/nn/nn path with 00-prefixed filename; present in a modal with copy-to-clipboard and toast feedback",
+      "evidence": "commits 931719c, 1253c53, 2d06aa2; EventsTab.tsx:288-310"
+    },
+    {
+      "id": "P3",
+      "title": "A suspended user could still authenticate",
+      "solution": "Two-layer enforcement: Firestore query by lower-cased email (with casing retry) before the Auth call, plus a re-check in onAuthStateChanged that signs out suspended users and avoids overwriting their status when merging lastLogin",
+      "evidence": "SignIn.tsx:55-95, AuthContext.tsx:67-100"
+    },
+    {
+      "id": "P4",
+      "title": "Inviting a user logged the administrator out",
+      "solution": "Dedicated secondary Firebase app for invitations, followed by an immediate password-reset email so the invitee sets their own password",
+      "evidence": "ManageUsers.tsx:233, :317-350"
+    },
+    {
+      "id": "P5",
+      "title": "A prototype carrying ~19,300 lines of unbacked features",
+      "solution": "Four staged cleanup commits plus an API specification defining what would actually be built",
+      "evidence": "bbef901, 7be15e4, bdec2e7, fe21256"
+    },
+    {
+      "id": "P6",
+      "title": "Forgot-password link submitted the sign-in form",
+      "problem": "A Button inside a form defaults to type=submit",
+      "solution": "type=\"button\"; reported by a named internal user and fixed the same day",
+      "evidence": "commit 39b28fc, 2025-11-20"
+    },
+    {
+      "id": "P7",
+      "title": "Committed secrets in .env",
+      "solution": "Stripped values, created .env.example with key names only, added .env to .gitignore",
+      "evidence": "commits 80d26a7, 377f742",
+      "qualification": "Removes values from the working tree, not from Git history; rotation would be the complete fix and is not evidenced"
+    },
+    {
+      "id": "P7",
+      "title": "A colleague's refactor weakened the suspension control and did not fix the bug it targeted",
+      "situation": "On 2025-11-09 another developer made two commits aimed at sign-in button behaviour and by 11-17 had reworked AuthContext and ManageUsers. Abraham reports the refactor was produced by layering an AI tool over his authentication code.",
+      "problem": "(1) The refactor introduced a checkedUserIds Set memoizing the Firestore status lookup, so suspended status was checked once per uid per session instead of on every auth-state change - defeating the suspension guarantee. (2) It did not fix the reported bug: commit 9cdef3f, despite its message, is a double-to-single quote reformat (35+/35-), and the forgot-password Button still had no type attribute eleven days later.",
+      "solution": "576ccaa restored the original auth and user-management logic across App.tsx, AuthContext.tsx, ManageUsers.tsx and SignIn.tsx (185+/228-), reinstating the unconditional status check. 39b28fc then fixed the real defect with one line (type=\"button\").",
+      "result": "The security control behaves as designed again; the user-facing bug was resolved the day it was escalated.",
+      "evidence": "commits beb75a3, 9cdef3f (9 Nov), 576ccaa, 39b28fc (20 Nov); diffs inspected directly",
+      "evidence_level": "VERIFIED (the regression and the ineffective fix) / REPORTED (that the refactor was AI-assisted)",
+      "why_strong": "A code-review judgement call with a measurable correctness consequence, resolved by reverting rather than patching over. The one-line root-cause fix proves the large refactor was never addressing the problem."
+    }
+  ],
+  "security_observations": {
+    "implemented": [
+      "route-level ProtectedRoute guard",
+      "Firebase-managed password storage and reset",
+      "explicit continue-URL on reset emails",
+      "session vs local persistence by Remember me",
+      "portal suspension enforced at two points",
+      "audit fields invitedBy/invitedAt/lastLogin",
+      ".env configuration with no secrets on HEAD",
+      "strictly read-only data client"
+    ],
+    "gaps": [
+      {
+        "finding": "The data API served production records to an unauthenticated request; the frontend sends no Authorization header or Firebase ID token. All production figures in this dossier were obtained without credentials.",
+        "severity": "significant",
+        "classification": "PRIVATE - raise internally, never publish"
+      },
+      {
+        "finding": "Firestore security rules are the real control for the user plane but are not in this repository and could not be reviewed",
+        "classification": "private"
+      },
+      {
+        "finding": "No automated tests, CI/CD, error tracking or uptime monitoring"
+      },
+      {
+        "finding": "No retry/backoff against a backend whose slow paths measured 4-5 seconds"
+      },
+      {
+        "finding": "Verbose console.log of API responses remains in production code paths, which can print customer data into the browser console"
+      },
+      {
+        "finding": "The access-restriction control did not restrict access. Abraham was deliberately denied backend and database credentials as a data-protection measure while being given full frontend ownership - but the frontend is itself a fully-privileged data client. This audit read production records for 779,778 clients using nothing but the repository's own configuration and no credentials. The control reduced his ability to FIX the data layer without reducing his ability to READ the data.",
+        "severity": "significant",
+        "classification": "PRIVATE - a genuine finding, not a grievance; the professional framing is the security lesson, not a complaint about exclusion"
+      }
+    ]
+  },
+  "known_code_limitations": [
+    "Dashboard KPI trend percentages (8.2%, 12.4%, -2.1%) are hard-coded placeholders, not computed values",
+    "The 'Live Policies' KPI sums policiesCount across the current page of clients only",
+    "TanStack React Query is mounted but data fetching is hand-rolled useEffect + fetch, forgoing caching, retries and request de-duplication"
+  ],
+  "lessons": [
+    "Write the contract before the backend exists, then don't trust it - the spec unblocked parallel work and the defensive mappers absorbed the inevitable divergence; both halves were necessary",
+    "AI scaffolding produces breadth, not a product; the valuable judgement is deciding what cannot be supported",
+    "Cardinality changes which React patterns are legal - debounced live search and client-side filtering do not survive 400,000 rows",
+    "Legacy integration is mostly coercion; most of the integration layer is making a 25-year-old data model safe to render",
+    "Accept the browser's boundaries rather than fighting them",
+    "Convenience SDK calls hide stateful side effects",
+    "Under a deadline, the contract and the scope cut come first - both decisions that bought the most time happened early, when they felt like a detour from shipping",
+    "Would do differently: token-authenticate the data API from day one; integration-test the pure mapping functions; adopt the already-mounted React Query; strip debug logging; compute or remove placeholder KPI trends",
+    "A managed service that nearly works is the expensive failure mode - outright failure is cheap to diagnose, partial success is not; the signal is spending time on the tool's model of the problem instead of the problem",
+    "Influence without authority runs on artefacts, not opinions - the architectural argument landed because there was already a written API contract to point at",
+    "An access control that targets the wrong surface buys nothing - being denied database credentials while owning a fully-privileged data client restricted the ability to fix the data layer, not to read the data",
+    "Reverting is a legitimate review outcome - a refactor that turns a security check into a cache and leaves the original bug in place should be undone, not patched forward"
+  ],
+  "cv_bullets": {
+    "high_confidence_quantified": [
+      "Built the full API integration and data-mapping layer (488-line TypeScript module, 315 lines mine) for an internal insurance portal surfacing 779,778 client and 401,339 policy records from a legacy SSP broking system.",
+      "Authored the 337-line REST API specification - entities, relationships, 9 endpoint groups, pagination, sorting and error model - that the backend team implemented against, enabling parallel frontend/backend delivery.",
+      "Implemented server-side pagination, submit-triggered search and limit=1 count probes so a React SPA could browse a 400,000-row policy dataset without client-side filtering.",
+      "Delivered Firebase authentication and a user-administration subsystem (~900 lines) covering invitation, self-service reset, suspension and deletion, with suspension enforced at two independent points in the auth flow.",
+      "Designed and delivered the portal end to end in 9 weeks, including a ~19,300-line reduction of the prototype that removed six unsupported feature areas before integration began."
+    ],
+    "high_confidence_non_quantified": [
+      "Designed a defensive response-mapping layer that repairs malformed legacy data (invalid ISO timestamps, string-typed numerics, -1 sentinels, multi-named fields), allowing a modern UI to render records a 25-year-old source system emits incorrectly.",
+      "Reverse-engineered an undocumented document-archive directory-sharding convention and built a UI affordance that works within the browser's https-to-file security boundary rather than against it.",
+      "Diagnosed and resolved the Firebase session-replacement side effect in administrative user creation by provisioning invitations through a secondary app instance.",
+      "Remediated committed secrets and established an .env.example convention for the repository.",
+      "Owned pull-request review and merge integration across three feature branches in a three-developer team.",
+      "Built the destination system for a time-boxed exit from a third-party platform, giving ~25 years of extracted client and policy records a home the business controls and can search.",
+      "Delivered a system that has run in production for over a year without requiring further frontend changes.",
+      "Influenced the project's core data architecture from outside the backend team: argued the team off a failing Firebase Data Connect layer onto a Node.js REST API over PostgreSQL, the architecture that shipped and still serves production.",
+      "Authored the REST API contract that let a second developer build the backend in parallel while I built the client against it, without ever needing access to the production database.",
+      "Caught and reverted a refactor that had weakened an authentication control (a memoized status check that let suspended accounts retain access within a session), then resolved the underlying user-reported defect in a single line."
+    ],
+    "requires_confirmation": [
+      "Number of staff actively using the portal (Firestore users collection holds this)",
+      "Exact production launch date",
+      "Confirmation of the vendor-exit deadline, the penalty figure and whether the portal is what averted it - ideally in writing",
+      "Any time saved versus the vendor platform's own interface",
+      "Whether I contributed to the backend API / extraction itself"
+    ],
+    "attributed_safe_with_credit": {
+      "note": "These carry the most weight and attract the most scrutiny. Use with attribution intact; never restate as figures you measured.",
+      "bullets": [
+        "Delivered the portal that enabled an exit from a third-party platform under a contractual deadline - described by the CTO as avoiding a charge in excess of GBP 100,000 if the data was not extracted in time.",
+        "Worked to a business-critical deadline on a project the CTO flagged as a six-figure commercial exposure."
+      ]
+    }
+  },
+  "interview_stories": [
+    {
+      "id": "S1",
+      "theme": "Debugging something undocumented; reverting your own work",
+      "situation": "Policy events referenced archive files that filenames alone did not locate",
+      "action": "Inferred the sharding rule from filename/location pairs across three attempts, including a revert to an earlier rule; accepted the browser's https-to-file block and changed the interaction to a copy-the-path dialog",
+      "result": "Staff can reach any referenced document; 23-31% of events carry one",
+      "evidence": "commits 931719c, 1253c53, 2d06aa2"
+    },
+    {
+      "id": "S2",
+      "theme": "Judgement and ownership; deleting code",
+      "action": "Audited six AI-generated feature areas against what the data source could serve; removed ~19,300 lines across four staged commits; wrote the API spec defining real scope",
+      "result": "Integration had a bounded, deliverable scope",
+      "evidence": "four cleanup commits, API_Specifications.md"
+    },
+    {
+      "id": "S3",
+      "theme": "Architecture; designing against a system that doesn't exist yet",
+      "action": "Derived a full REST contract from the prototype's data model; built the client to accept both the specified envelope and alternatives",
+      "result": "The delivered API diverged and nothing broke",
+      "evidence": "API_Specifications.md vs getClients"
+    },
+    {
+      "id": "S4",
+      "theme": "Scale and performance pragmatism",
+      "action": "Separated typed query from submitted query, kept every list server-paginated, used limit=1 probes for tab counts",
+      "evidence": "Policies.tsx, getPolicyCountByState"
+    },
+    {
+      "id": "S5",
+      "theme": "Root cause discipline; responsiveness",
+      "action": "A staff member reported the forgot-password link triggering a sign-in attempt; root cause was a Button defaulting to type=submit inside a form; fixed same day with one line",
+      "evidence": "commit 39b28fc"
+    },
+    {
+      "id": "S6",
+      "theme": "An SDK behaving unexpectedly",
+      "action": "Found that creating a user for an invitation displaces the administrator's session; solved with a secondary Firebase app plus a reset email",
+      "evidence": "ManageUsers.tsx"
+    },
+    {
+      "id": "S7",
+      "theme": "What you'd do differently; security maturity",
+      "action": "The data API is not token-protected because identity and data were separate planes; would put a Firebase ID token on every request and verify at the API edge from the first integration commit, and add integration tests around the pure mapping functions",
+      "note": "Strong in interview; keep the specific finding out of any public write-up"
+    },
+    {
+      "id": "S8",
+      "theme": "Delivering something commercially critical (pressure, prioritisation) - the strongest story here",
+      "situation": "The company was exiting a third-party platform holding ~25 years of client and policy data. The CTO said the vendor had given about a month to extract it, with a charge over GBP 100,000 if missed, and that this was why delivery speed mattered.",
+      "task": "Build the system that would hold and expose the extracted data so the business could use and verify what came across.",
+      "action": "Cut scope hard before writing integration code (removed six speculative feature areas); wrote the API contract up front so extraction/backend and frontend could proceed in parallel; built the integration defensively because the incoming data was a 25-year legacy extract with no schema guarantees and there would be no second pass.",
+      "result": "The portal shipped; the data has a home the business controls; the application has been in production use for over a year.",
+      "evidence": "API_Specifications.md (contract-first); four cleanup commits (scope control); production data profile consistent with a bulk historical extraction. The deadline and penalty are as told by the CTO, verbally.",
+      "how_to_tell_it": "Attribute the figure explicitly and say the deadline governed the data extraction, with the portal as the destination. Volunteering that boundary makes the story more credible, not less."
+    },
+    {
+      "id": "S9",
+      "theme": "A technical disagreement, and how you handled it (influence without authority) - the strongest seniority signal in this project",
+      "situation": "Abraham owned the frontend; another developer owned the backend and extraction. Abraham was deliberately given no backend or database access as a data-protection measure. The developer chose Firebase Data Connect and spent about a week unable to get a workable data path out of it.",
+      "task": "The frontend had nothing real to consume, under deadline, and Abraham had no authority over that component.",
+      "action": "Rather than escalate it as a blocker, kept making the technical case: the application needed ordinary paginated list endpoints over a large relational dataset, which REST and SQL do natively; the generated SDK added a translation layer, an unfamiliar query model and a build-time dependency between the two developers for nothing needed. The API specification was already written, so the alternative was concrete rather than abstract.",
+      "result": "SDK out and REST fetching in on the same day, 2025-11-02. That architecture shipped and has served production for over a year; its pagination model made server-side paging over 400,000 rows workable.",
+      "evidence": "abandoned @irev/quote-ap dependency in package.json; listCustomers in f627567; Data Connect emulator keys disabled in .env.example above the live API base; branch data-sdk-integration; commits d4f26f5 and 750e2c8",
+      "how_to_tell_it": "The pivot is in the repo; the role in causing it is Abraham's own account. Say both - 'I can show you the switch; you'd have to take my word that I'm the one who pushed for it.' Disarming, and it makes the rest land."
+    },
+    {
+      "id": "S10",
+      "theme": "A time you disagreed with a code change (code review, correctness over politeness)",
+      "situation": "A colleague refactored Abraham's authentication and user-management code with AI assistance while fixing a reported sign-in bug.",
+      "problem": "The refactor memoized the Firestore account-status lookup in a Set, so a suspended user's status was checked once per session instead of on every auth-state change - turning a security control into a cache. And it had not fixed the bug: the commit claiming to fix the sign-in button was a quote-style reformat, and the defect was still present eleven days later.",
+      "action": "Reverted the refactor to restore the unconditional check, then traced the live symptom to its root cause - a Button inside a form defaulting to type=submit - and fixed it with one line.",
+      "result": "The suspension control works as designed; the user-facing bug closed the day it was escalated.",
+      "evidence": "576ccaa (185+/228- across four files), 39b28fc, and 9cdef3f for the ineffective fix",
+      "why_it_lands": "The one-line fix is the argument - it demonstrates the large refactor was never addressing the problem, without needing to say so."
+    }
+  ],
+  "portfolio_material": {
+    "overview": "A browser-based portal that opens a 25-year, 400,000-policy insurance broking archive to internal staff, built on a legacy data source with no usable schema guarantees.",
+    "challenge": "An AI-generated prototype with eight polished feature areas, zero real data and an invented data model; real constraints were a dataset two orders of magnitude larger than any UI pattern in it, a source returning syntactically invalid dates, and a document estate on a Windows file share browsers are forbidden to touch.",
+    "my_role": "Frontend/integration engineer: API contract, integration layer, authentication and user administration, prototype reduction, PR integration. A second developer owned much of the policy/risk presentation; the UI scaffold and component library were AI-generated.",
+    "solution": "React/TypeScript SPA on Firebase Hosting with two independent planes - Firebase Auth plus a named Firestore database for user lifecycle, and a Cloud Run REST API for broking data. All lists server-paginated; all legacy values pass through a single mapping module.",
+    "results": "A working, authenticated, administrable read portal over a legacy archive delivered in nine weeks, plus the specification artefact that let the backend proceed in parallel.",
+    "what_id_improve": "Token-authenticate the data API; test the mapping functions; adopt the already-mounted React Query; remove debug logging and placeholder KPI trends."
+  },
+  "content_ideas": {
+    "articles": [
+      {
+        "title": "Your React data-fetching defaults break at 400,000 rows",
+        "core_problem": "Debounce-on-keystroke search and client-side filtering against a large server dataset",
+        "why_interesting": "Standard tutorial advice is actively wrong at this cardinality",
+        "anonymise": "All record counts and the domain",
+        "never_publish": "API base URL, auth posture, insurer/product codes"
+      },
+      {
+        "title": "Defensive mapping: rendering data a 25-year-old system emits incorrectly",
+        "core_problem": "Invalid timestamps, string-typed numbers, sentinel statuses, dual-padded codes, one field under four names",
+        "anonymise": "Use invented sample values of the same shape",
+        "never_publish": "Real record values or the production schema"
+      },
+      {
+        "title": "You cannot link to file:// from https:// - and that's fine",
+        "core_problem": "A legacy document estate on a Windows share",
+        "anonymise": "Drive letter and path convention",
+        "never_publish": "The actual path algorithm (proprietary)"
+      },
+      {
+        "title": "The Firebase invite footgun: creating a user signs you out",
+        "why_interesting": "Short, widely applicable, nothing proprietary",
+        "note": "Best first-article candidate - publishable almost as-is"
+      },
+      {
+        "title": "Scaffolding got me a UI in a day. Production took nine weeks.",
+        "core_problem": "Generated scaffolding produced eight feature areas immediately; production readiness required deleting ~19,300 lines of them and writing an API contract",
+        "why_interesting": "The judgement step the tooling cannot do",
+        "anonymise": "Organisation and dataset",
+        "note": "Requires being open that you used scaffolding - publish only if comfortable with that"
+      },
+      {
+        "title": "Building the landing site for a data migration you don't control",
+        "core_problem": "You are the destination for a bulk extract from a system you cannot inspect, on a deadline, with one realistic pass",
+        "explain": "Contract-first design; defensive mapping as insurance against a schema you'll only see on arrival; cutting scope to what the extract supports",
+        "anonymise": "Vendor, employer, deadline, penalty, all record counts",
+        "never_publish": "The commercial terms, or that a penalty existed - that is the employer's business"
+      },
+      {
+        "title": "We spent a week on a managed data layer, then replaced it with REST and Postgres in a day",
+        "core_problem": "A generated GraphQL-style SDK over a large relational dataset where the application only ever needed paginated list endpoints",
+        "why_interesting": "Thousands of teams face this on Firebase/Supabase-style stacks and an honest account of why the managed abstraction lost is rare",
+        "explain": "What Data Connect optimises for; why a 400k-row paginated archive browser is not that; how a written API contract made the alternative concrete; generated-SDK build coupling between two developers",
+        "anonymise": "Employer, dataset size, the week spent",
+        "care_required": "Names a product as the wrong choice - keep it about fit for this problem, not quality",
+        "note": "Strongest technical article candidate"
+      }
+    ],
+    "social_posts": [
+      {
+        "idea": "The feature I was proudest of shipping was 19,300 deleted lines",
+        "underlying_evidence": "Four cleanup commits removing six unbacked AI-generated feature areas"
+      },
+      {
+        "idea": "type='button'",
+        "underlying_evidence": "Commit 39b28fc - a one-line root-cause fix to a user-reported bug"
+      },
+      {
+        "idea": "Creating a user in Firebase logs you out. Here's why, and the fix.",
+        "underlying_evidence": "ManageUsers.tsx secondary-app invitation pattern",
+        "note": "Highest engagement, lowest risk"
+      },
+      {
+        "idea": "Three attempts to work out where a file lived",
+        "underlying_evidence": "Commits 931719c, 1253c53, 2d06aa2 including a deliberate revert"
+      },
+      {
+        "idea": "I wrote the API spec before the API existed - and it was partly wrong. That was fine.",
+        "underlying_evidence": "Spec/implementation envelope divergence absorbed by defensive mapping"
+      },
+      {
+        "idea": "Search-as-you-type is a luxury of small datasets",
+        "underlying_evidence": "Submit-triggered search; slow path measured ~4-5 seconds"
+      },
+      {
+        "idea": "The brief was: this data has to be off their system, and it has to land somewhere we can actually use.",
+        "underlying_evidence": "business_driver plus the production data profile",
+        "constraint": "Keep the penalty figure, the vendor and the employer out of it entirely - the engineering lesson carries the post on its own"
+      },
+      {
+        "idea": "A generated SDK is a dependency between two developers, not just between your app and your data.",
+        "underlying_evidence": "architectural_influence artefacts - the abandoned SDK is still visible in package.json",
+        "why_credible": "Visible, not asserted"
+      },
+      {
+        "idea": "The fix was one line. The refactor it replaced was 228 deleted ones.",
+        "underlying_evidence": "commits 576ccaa and 39b28fc",
+        "constraint": "Keep the colleague unidentifiable - the lesson is about the change, never the person"
+      }
+    ],
+    "universal_constraints": "No employer-identifying detail, no record counts, no mention of the API's authentication posture."
+  },
+  "public_safe_claims": [
+    "Built a read-only internal portal over a large legacy insurance dataset (hundreds of thousands of records, ~25 years of history) using React, TypeScript, Vite, Tailwind, shadcn/ui and Firebase.",
+    "Designed a defensive integration layer that repairs malformed legacy data before it reaches the UI.",
+    "Implemented server-side pagination, submit-triggered search and lightweight count probes to make a very large dataset browsable from a SPA.",
+    "Built Firebase authentication with invitation, self-service password reset and administrable account suspension.",
+    "Reduced an AI-scaffolded prototype substantially before building the real integration, removing feature areas with no supporting data.",
+    "Solved the browser https-to-file boundary by changing the interaction model rather than attempting a workaround.",
+    "Built the destination system for a migration off a third-party platform (migration publishable in neutral terms; deadline and penalty are not)",
+    "Delivered a system that has been in production for over a year",
+    "The Data Connect to REST/PostgreSQL architecture pivot, as a technical lesson about managed data layers versus REST over SQL for large paginated datasets (employer, dataset size and timeline removed)",
+    "The revert-versus-patch-forward lesson (a memoized security check, and a one-line root-cause fix), told without reference to who wrote the refactor"
+  ],
+  "private_only_information": [
+    "Employer and product identifiers: Insurance Revolution, BG Insurance, 'iRev SSP Portal', nexus-renew, Firebase project bg-ssp, the Cloud Run API base URL, Firestore database name ssp-portal-users",
+    "All exact production counts (779,778 / 401,339 / 4,249 / 397,090), premium averages and the live-vs-lapsed ratio",
+    "Insurer codes, product-type codes, branch codes, scheme names, event-type taxonomy",
+    "The legacy document path convention and the Z: share layout",
+    "The observation that the data API served production records to an unauthenticated request",
+    "Internal staff names appearing in commit messages",
+    "Any customer record values observed during the audit (none are reproduced in these outputs)",
+    "The entire vendor-exit commercial story: the deadline, the GBP 100,000+ figure, the vendor's identity, and the fact that a penalty existed at all. Employer's commercial information. Excellent interview/CV material in private conversation; must not appear in a public portfolio, LinkedIn post, blog article or published CV. Even unnamed, 'a company facing a six-figure penalty from a vendor' is identifiable to anyone in the sector.",
+    "The identity of the colleague whose refactor was reverted. The engineering substance is Abraham's to tell; the person is not. Describe it as 'a colleague's refactor' and never name, hint at, or make them identifiable - including by naming the repository.",
+    "That backend/database access was withheld from Abraham, and the observation that the restriction did not actually restrict data access. Internal security posture; not publishable, and not to be raised as a grievance in interview - the lessons entry is the professional framing."
+  ],
+  "evidence_gaps": [
+    {
+      "gap": "Written confirmation of the vendor-exit deadline and penalty",
+      "why_useful": "HIGHEST-VALUE GAP. Would move the strongest claim in this dossier from REPORTED to VERIFIED, and is what a sceptical interviewer would probe",
+      "where_it_exists": "The vendor contract or termination notice; CTO/finance email threads; any project kickoff deck or board paper from Aug-Sep 2025",
+      "question_to_ask": "Is there anything in writing about the data-extraction deadline and the charge we'd have faced - a contract clause, a notice, or an email I could reference?"
+    },
+    {
+      "gap": "Number of portal users and actual usage",
+      "why_useful": "Strongest missing adoption metric; converts 'built it' into 'it is used'",
+      "where_it_exists": "Firestore users collection in database ssp-portal-users (invitedAt, invitedBy, lastLogin per record); Firebase Auth user list",
+      "question_to_ask": "Can I get a count of users in the portal's Firestore users collection, and how many have a lastLogin in the last 90 days?"
+    },
+    {
+      "gap": "Production launch date",
+      "why_useful": "Anchors every claim to a real period",
+      "where_it_exists": "Firebase Hosting release history for bg-ssp; first non-developer lastLogin",
+      "question_to_ask": "When did the portal go live to staff?"
+    },
+    {
+      "gap": "Time previously spent retrieving this data from the legacy system",
+      "why_useful": "The only credible route to a time-saving claim",
+      "where_it_exists": "Broking/ops team; pre-existing process documentation",
+      "question_to_ask": "Before the portal, how did staff look up a lapsed policy's event history, and roughly how long did it take?"
+    },
+    {
+      "gap": "Exact total event and transaction counts",
+      "why_useful": "Would upgrade sampled statistics to exact",
+      "where_it_exists": "A backend aggregate endpoint or direct database access",
+      "question_to_ask": "Can the API expose, or can someone run, a total count of policy events and transactions?"
+    },
+    {
+      "gap": "Whether the committed secrets were rotated",
+      "why_useful": "Needed before claiming the remediation was complete",
+      "where_it_exists": "Firebase console key history",
+      "question_to_ask": "Were the Firebase keys rotated after the .env cleanup in November 2025?"
+    },
+    {
+      "gap": "Stakeholder feedback",
+      "why_useful": "The only source of qualitative outcome evidence",
+      "where_it_exists": "The staff who requested features, including the reporter of the 20 Nov defect",
+      "question_to_ask": "Did the team give any feedback on the portal once it was in their hands?"
+    },
+    {
+      "gap": "Whether the data API was later authenticated",
+      "why_useful": "Determines whether the security finding is historic or live",
+      "where_it_exists": "Backend repository / infrastructure config",
+      "question_to_ask": "Is the SSP data API behind authentication now?"
+    },
+    {
+      "gap": "Confirmation that the extraction completed on time and the charge was avoided",
+      "why_useful": "Closes the loop between the system and the outcome; without it you can claim the system, not the result",
+      "where_it_exists": "CTO; finance; the vendor termination record",
+      "question_to_ask": "Did we get the data out in time, and did that avoid the charge?"
+    },
+    {
+      "gap": "Ongoing cost difference versus the vendor platform",
+      "why_useful": "Would add a recurring-saving dimension alongside the one-off penalty avoided",
+      "where_it_exists": "IT/ops; vendor contract; the Firebase/Cloud Run bill",
+      "question_to_ask": "What were we paying the vendor annually, versus what the portal and its API cost us to run?"
+    },
+    {
+      "gap": "Corroboration of the architecture pivot from the backend developer",
+      "why_useful": "Would move the strongest seniority claim (C13) from REPORTED to VERIFIED. The repo proves the pivot happened; only he can confirm who argued for it",
+      "where_it_exists": "The backend developer directly; any Slack/Teams thread or ticket from late Oct-early Nov 2025; the backend repo's commit history",
+      "question_to_ask": "Do you remember the switch from Data Connect to the Node/Postgres API - would you be happy to confirm I was the one pushing for it? A short note or a LinkedIn recommendation mentioning it would mean a lot."
+    }
+  ],
+  "audit_methodology": {
+    "repository_state": "HEAD of branch files-linking, commit 2d06aa2",
+    "attribution": "git blame --line-porcelain aggregated per author, cross-checked against git shortlog commit counts; both reported because they disagree informatively",
+    "production_access": "HTTP GET only. No POST/PUT/PATCH/DELETE. No database connection. No credentials available or used. Raw samples written to a session scratch directory and not retained.",
+    "reproduction": {
+      "clients_total": "GET {API_BASE}/api/clients?page=1&pageSize=1 -> total",
+      "live_policies": "GET {API_BASE}/api/policies?page=1&limit=1&state=0 -> pagination.total",
+      "not_live_policies": "GET {API_BASE}/api/policies?page=1&limit=1&stateNot=0 -> pagination.total",
+      "policy_sampling": "4 pages x 100 live (pages 1,10,25,43 -> n=349) and 4 pages x 100 not-live (pages 1,1000,2000,3970 -> n=400)",
+      "sub_resource_sampling": "30 live policies (random.seed(1)) and 25 historical policies (random.seed(2)); pagination.total read per policy"
+    },
+    "limitations": [
+      "Sub-resource statistics are sample-based; page selection was convenience-based, not uniformly random across all 3,971 not-live pages",
+      "Latency figures are single cold measurements from one machine and network location",
+      "The backend service, legacy data store and Firestore security rules were not available for inspection",
+      "Portal usage (as opposed to data scale) could not be measured at all",
+      "git blame credits the last author to touch a line, under-crediting rewritten work and over-crediting reformatting"
+    ],
+    "safety_confirmations": [
+      "No credentials, keys, URLs or connection strings appear in any output file",
+      "No customer PII is reproduced in any output file",
+      "No production state was modified"
+    ]
+  },
+  "business_driver": {
+    "summary": "The company was exiting a third-party vendor whose platform held roughly 25 years of its client and policy data. The vendor gave approximately one month to extract the data, with a charge reported as in excess of GBP 100,000 if the deadline passed. This portal was the destination for the extracted data.",
+    "evidence_level": "REPORTED",
+    "source": "Abraham, relaying what the CTO told him at project kickoff. Verbal, undocumented, not independently verifiable from this repository.",
+    "corroborated_by": [
+      "Data profile is a bulk historical extraction, not an operational system: 779,778 clients, 401,339 policies of which only 1.06% are Live, events from 2000, 67 insurer codes in the historical sample",
+      "Application is entirely read-only - no POST/PUT/PATCH/DELETE against the data API anywhere in the codebase",
+      "Delivery was compressed: nine weeks end to end, with production-data integration landing in a concentrated burst on 2-3 Nov 2025"
+    ],
+    "NOT_corroborated": [
+      "The GBP 100,000 figure",
+      "The deadline length",
+      "The vendor's identity and contract terms",
+      "That this portal is what averted the charge"
+    ],
+    "important_caveat": "The nine-week commit span does not evidence a sub-one-month deadline. The deadline most plausibly governed the data EXTRACTION (a separate backend workstream), with this portal as the destination. State it that way - it is more accurate and more defensible.",
+    "how_to_phrase": "The business was exiting a vendor under a contractual deadline, with a six-figure penalty if the data wasn't extracted in time - that's what the CTO described as the driver.",
+    "classification": "PRIVATE - interview and CV use with attribution only; never publish"
+  },
+  "reported_claims": [
+    {
+      "id": "C11",
+      "claim": "Built the destination system for a time-boxed third-party data exit, holding ~25 years of extracted client and policy records - reported by the CTO as avoiding a charge in excess of GBP 100,000.",
+      "evidence_level": "REPORTED (commercial context) / VERIFIED (the system and the data it holds)",
+      "evidence": "CTO, relayed verbally at project kickoff; corroborated in shape by the production data profile",
+      "qualification": "Always attribute the figure. Not measured, contract terms not evidenced, and the deadline most plausibly governed the extraction workstream rather than this frontend.",
+      "classification": "private - interview/CV with attribution only"
+    },
+    {
+      "id": "C12",
+      "claim": "Delivered a system that has run in production for over a year without requiring further frontend changes.",
+      "evidence_level": "REPORTED (first-hand) with partial corroboration",
+      "evidence": "Production API returned live data on 2026-10-10, ~11 months after the final commit",
+      "qualification": "No commits since Nov 2025 is consistent with stability but is not proof of it; no uptime or error data."
+    },
+    {
+      "id": "C13",
+      "claim": "Provided the architectural guidance that moved the project off a failing Firebase Data Connect data layer onto the Node.js REST API over PostgreSQL that shipped and has served production since.",
+      "evidence_level": "VERIFIED (the pivot and its date) / REPORTED (that the advocacy drove it)",
+      "evidence": "@irev/quote-ap generated-SDK dependency and its listCustomers call (f627567); Data Connect emulator keys disabled in .env.example alongside live VITE_API_BASE; branch data-sdk-integration; SDK removed and REST implemented same day 2025-11-02 (d4f26f5, 750e2c8)",
+      "qualification": "Abraham did NOT build the backend - another developer did, and he had no backend or database access by design. The repository evidences the pivot, not who caused it."
+    },
+    {
+      "id": "C14",
+      "claim": "Identified and reverted a refactor that had weakened an authentication control, then fixed the underlying defect in a single line.",
+      "evidence_level": "VERIFIED",
+      "evidence": "576ccaa restores the unconditional Firestore status check by removing a checkedUserIds memoization (185+/228- across four files); 39b28fc adds the missing type=\"button\"; preceding commit 9cdef3f is a quote-style reformat that left the defect in place",
+      "qualification": "That the refactor was AI-assisted is REPORTED; the regression and the ineffective fix are verifiable from the diffs regardless."
+    }
+  ],
+  "handling_the_scaffolding_question": {
+    "situation": "The repository history shows 133 commits under a scaffolding tool's bot account.",
+    "position": "That work is Abraham's - he directed the tool - and the dossier records it that way. But it is visible to anyone who opens the repo.",
+    "recommended_answer": "I prototyped the UI with a scaffolding tool, then specified the API, built the integration layer, the auth and user-admin subsystem, and cut about 19,300 lines of what the tool had produced because the data couldn't support it.",
+    "why": "More impressive than claiming to have hand-typed a shadcn component library, and cannot be undercut by someone scrolling the commit log.",
+    "guidance": "Do not volunteer the tool's brand name; do not deny the approach if asked directly."
+  },
+  "evidence_level_legend": {
+    "VERIFIED": "Directly supported by code, production data, git history or documentation",
+    "DERIVED": "Calculated from verified evidence; calculation shown",
+    "STRONGLY_SUPPORTED": "Multiple pieces of evidence point the same way but it cannot be proven outright",
+    "INFERRED": "Likely from architecture or context; direct evidence unavailable",
+    "REPORTED": "Stated to Abraham by a colleague (here, the CTO) or by Abraham first-hand, verbally and without documentation. Usable with attribution; never as a measured figure.",
+    "UNKNOWN": "Cannot responsibly be established from available evidence"
+  }
+}

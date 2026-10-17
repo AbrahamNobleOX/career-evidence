@@ -1,0 +1,1397 @@
+{
+  "project_name": "iRevolution Payments",
+  "repository_name": "o-payment-gateway",
+  "package_name": "irevolution-payments",
+  "organisation": "Insurance Revolution",
+  "project_type": "Internal payment-operations web application (B2B internal tool, financial)",
+  "project_description": "Internal tool for Insurance Revolution staff to create Worldpay hosted-payment links, send them to customers by email and SMS, and track payment and communication status. Single Next.js 12 application with frontend and API routes in one codebase, MySQL via Prisma, deployed as a Docker container to Azure App Service.",
+  "audit": {
+    "audit_date": "2026-10-10",
+    "subject": "Abraham Akintola (AbrahamNobleOX)",
+    "repository_head": "8f334e1",
+    "head_date": "2026-08-05",
+    "branch": "main",
+    "production_database_accessed": true,
+    "production_database_note": "Live production database (Azure Database for MySQL 8.0.46, database 'appdb') accessed read-only on 2026-10-10 via a connection string held commented-out in .env. Session ran SET SESSION TRANSACTION READ ONLY with server confirmation @@transaction_read_only=1, so MySQL itself would reject any write. Guard script additionally refused all write/DDL keywords. Only SELECT, aggregate and SHOW statements executed. No schema, data or configuration modified.",
+    "database_access_method": "TLS connection (--ssl-mode=REQUIRED). Read-only transaction mode, server-verified. Bounded aggregates and GROUP BY rollups only; no bulk raw-row extraction. A local Docker development database was also started, queried under the same guard, and returned to its stopped state.",
+    "pii_and_secrets": "No credentials, connection strings, tokens or keys recorded. Only environment variable names read. No customer PII reproduced; all database findings are aggregate counts."
+  },
+  "dates": {
+    "project_first_commit": "2022-06-08",
+    "contribution_window_start": "2026-06-25",
+    "contribution_window_end": "2026-08-05",
+    "contribution_duration_approx": "6 weeks",
+    "production_launch_date": "UNKNOWN - see evidence_gaps",
+    "production_golive": "2026-07-17",
+    "production_golive_evidence": "2026 Prisma migrations applied to production 2026-07-17 18:26; first AuthUser and AuditLog rows 19:33 same evening.",
+    "production_latest_activity": "2026-10-09",
+    "production_runtime_days_at_audit": 84
+  },
+  "technologies": {
+    "frontend": [
+      "React 18",
+      "Next.js 12 (pages router)",
+      "TypeScript 4.7",
+      "Tailwind CSS 3",
+      "Headless UI 1.7",
+      "Formik",
+      "react-query",
+      "react-paginate",
+      "date-fns"
+    ],
+    "backend": [
+      "Next.js API routes",
+      "next-connect",
+      "custom Node server",
+      "yup",
+      "yup-phone"
+    ],
+    "auth": [
+      "NextAuth 4",
+      "Google OAuth",
+      "application-owned RBAC"
+    ],
+    "data": [
+      "MySQL",
+      "Prisma 4.16"
+    ],
+    "infrastructure": [
+      "Docker",
+      "Azure Container Registry",
+      "Azure App Service",
+      "GitHub Actions"
+    ],
+    "tooling": [
+      "Yarn 1.22",
+      "ESLint",
+      "nodemon",
+      "ts-node"
+    ]
+  },
+  "integrations": [
+    {
+      "name": "Worldpay Business Gateway",
+      "type": "payment provider",
+      "detail": "Hosted payment pages with MD5 request signing; inbound payment response callback"
+    },
+    {
+      "name": "UCP",
+      "type": "communications platform",
+      "detail": "Internal mail and SMS API, bearer authenticated; database-backed sender configuration"
+    },
+    {
+      "name": "TinyURL-compatible shortener",
+      "type": "link shortening",
+      "detail": "Shortens signed payment URLs for delivery"
+    },
+    {
+      "name": "Google OAuth",
+      "type": "identity provider",
+      "detail": "SSO via NextAuth, domain allow-list"
+    },
+    {
+      "name": "Azure",
+      "type": "cloud platform",
+      "detail": "ACR image registry and App Service hosting for stage and prod"
+    }
+  ],
+  "architecture": {
+    "pattern": "Modular monolith - single Next.js app, frontend and API in one deployable container",
+    "api_trust_zones": [
+      {
+        "path": "/api/cred/*",
+        "protection": "NextAuth session + permission middleware"
+      },
+      {
+        "path": "/api/admin/*",
+        "protection": "Session + granular permission middleware"
+      },
+      {
+        "path": "/api/key/*",
+        "protection": "API key (machine integrations, report scheduler)"
+      },
+      {
+        "path": "/api/public/*",
+        "protection": "Public - Worldpay callback only, validated by transStatus and amount"
+      },
+      {
+        "path": "/api/health",
+        "protection": "Public liveness/readiness probe"
+      }
+    ],
+    "data_models_total": 11,
+    "data_models_preexisting": [
+      "Payment",
+      "Communication"
+    ],
+    "data_models_added_2026": [
+      "AuthUser",
+      "Invite",
+      "AuditLog",
+      "DailyReportSetting",
+      "DailyReportRecipient",
+      "DailyReportSendLog",
+      "BulkPaymentResendJob",
+      "BulkPaymentResendJobItem",
+      "UcpSetting"
+    ],
+    "services": [
+      "authorization",
+      "audit",
+      "ucp",
+      "payment-link-message",
+      "daily-report",
+      "bulk-payment-resend",
+      "communication"
+    ],
+    "background_processing": "In-process deferred execution guarded by a runningJobs Set, backed by durable job/item tables. No external queue.",
+    "deployment": "GitHub Actions -> docker build -> Azure Container Registry -> prisma migrate deploy -> Azure App Service (stage and prod pipelines)"
+  },
+  "workflows": [
+    {
+      "name": "Create and send payment link",
+      "steps": [
+        "Validate input (client + server yup)",
+        "Check payments.create permission",
+        "Assemble Worldpay params incl. 7-day authValidTo",
+        "Compute MD5 signature over configured fields",
+        "Shorten URL",
+        "Persist Payment with link_expires_at",
+        "Write audit log",
+        "Send via UCP email/SMS",
+        "Record Communication per attempt"
+      ]
+    },
+    {
+      "name": "Customer payment callback",
+      "steps": [
+        "Worldpay POSTs to /api/public/payment/response",
+        "Verify transStatus === 'Y'",
+        "Resolve payment by CM_uuid",
+        "Re-verify paid amount against stored amount",
+        "Mark paid",
+        "Email confirmation to creating agent"
+      ]
+    },
+    {
+      "name": "Bulk resend",
+      "steps": [
+        "Select payments explicitly or by filter",
+        "Create job + item rows (cap 5000)",
+        "Start async processing",
+        "Per item: optionally regenerate and re-sign link, send email and/or SMS",
+        "Record Communication rows and per-item outcome",
+        "Finalise completed or completed_with_errors",
+        "Email completion notification"
+      ]
+    },
+    {
+      "name": "Daily report",
+      "steps": [
+        "External scheduler calls API-key-protected run-due",
+        "Check configured send time due",
+        "Build previous-day dataset with communication counts",
+        "Render HTML + CSV attachment",
+        "Send via UCP to active recipients",
+        "Write DailyReportSendLog"
+      ]
+    },
+    {
+      "name": "Access control",
+      "steps": [
+        "Google sign-in",
+        "Domain allow-list (toggleable)",
+        "Invite requirement (toggleable)",
+        "AuthUser lookup, reject disabled",
+        "Bootstrap first admin from INITIAL_ADMIN_EMAIL",
+        "Audit login and denial"
+      ]
+    }
+  ],
+  "my_contributions": {
+    "summary": "Led and implemented the 2026 modernisation, security and operations phase of a pre-existing 2022-built application.",
+    "authorship_evidence": {
+      "commits_authored": 47,
+      "commits_all_in_year": 2026,
+      "project_total_commits": 134,
+      "files_changed_in_phase": 103,
+      "lines_added": 9029,
+      "lines_removed": 1110,
+      "new_files_created": 46,
+      "surviving_lines_attributed": 8519,
+      "surviving_lines_total": 10077,
+      "surviving_lines_share_percent": 84.5,
+      "baseline_commit_for_phase": "af467f9 (2026-07-05), parent used as diff baseline",
+      "method": "git shortlog, git log --author, git diff --shortstat, git diff --diff-filter=A, git blame --line-porcelain"
+    },
+    "per_file_authorship": [
+      {
+        "file": "src/pages/admin/index.tsx",
+        "abraham_lines": 1551,
+        "total_lines": 1551
+      },
+      {
+        "file": "src/services/bulk-payment-resend.service.ts",
+        "abraham_lines": 458,
+        "total_lines": 458
+      },
+      {
+        "file": "src/services/authorization.service.ts",
+        "abraham_lines": 374,
+        "total_lines": 374
+      },
+      {
+        "file": "src/services/daily-report.service.ts",
+        "abraham_lines": 362,
+        "total_lines": 362
+      },
+      {
+        "file": "src/services/ucp.service.ts",
+        "abraham_lines": 143,
+        "total_lines": 143
+      },
+      {
+        "file": "src/components/payment/index.tsx",
+        "abraham_lines": 1105,
+        "total_lines": 1115
+      },
+      {
+        "file": "README.md",
+        "abraham_lines": 426,
+        "total_lines": 487
+      },
+      {
+        "file": "src/pages/api/cred/payment/new.ts",
+        "abraham_lines": 95,
+        "total_lines": 165
+      }
+    ],
+    "subsystems_built": [
+      {
+        "name": "Authorisation and audit system",
+        "detail": "3 roles, 7 permissions, 5 new models, permission middleware, SHA-256 hashed single-use invite tokens with 48h TTL, revocation, bulk invites, env-flag rollout controls, server-side admin session validation"
+      },
+      {
+        "name": "Bulk payment resend subsystem",
+        "detail": "458 LOC service, 2 models, 2 API routes; selected/filtered selection modes, optional Worldpay link regeneration, per-item partial-failure isolation, 5000-record cap, duplicate-run guard, completion notification"
+      },
+      {
+        "name": "UCP communications migration",
+        "detail": "Typed mail/SMS client, bearer auth, error normalisation, database-backed admin-editable sender config, typed MissingUcpSenderConfigError, shared message service, removal of deprecated private logger package"
+      },
+      {
+        "name": "Daily reporting system",
+        "detail": "362 LOC service, 4 API routes, 3 models; CSV attachment, schedule_time + timezone due calculation, persistent send logging incl. raw provider response"
+      },
+      {
+        "name": "Payments dashboard and operations UI",
+        "detail": "1115 LOC list component + 1551 LOC admin page; server-side filtering, 5-field search, sorting, pagination, link expiry status filter, CSV export with selectable fields and audit entry, KPI cards, breadcrumbs, icon set"
+      },
+      {
+        "name": "Deployment infrastructure",
+        "detail": "Two GitHub Actions workflows (prod + stage) building/pushing to ACR and deploying to App Service; migration step resolves connection string from target Web App settings"
+      },
+      {
+        "name": "Legacy data migration",
+        "detail": "220 LOC idempotent batched sync script with --since, --all, --dry-run, --batch-size"
+      },
+      {
+        "name": "Health check endpoint",
+        "detail": "Status, service, version, timestamp, uptime; HEAD support; no-store caching"
+      },
+      {
+        "name": "Database migrations",
+        "detail": "7 Prisma migrations authored in 2026 introducing 9 models, with composite indexing on (state, updated_at) and a dedicated link_expires_at index"
+      }
+    ],
+    "work_by_others": "Core payment flow predates this contribution (2022-2023, primarily Michal Tesar 54 commits and javier 20 commits): original Payment/Communication models, Worldpay hosted-page link construction, TinyURL integration, payment response callback, Next.js scaffolding. Four 2026 commits attributed to zayan_DevOps were not separately analysed and must not be claimed."
+  },
+  "production_metrics": {
+    "available": true,
+    "source": "Azure Database for MySQL 8.0.46, database appdb, read-only, 2026-10-10",
+    "golive": "2026-07-17",
+    "attribution_warning": "The whole-estate figures largely PREDATE this contribution. Only 3,308 of 68,869 payments were created on the 2026 codebase. Never present the lifetime £34.95M as processed by this work.",
+    "since_golive": [
+      {
+        "metric": "Payment requests created on the 2026 codebase",
+        "value": 3308,
+        "unit": "records",
+        "start_date": "2026-07-17",
+        "end_date": "2026-10-09",
+        "evidence_source": "Payment table",
+        "calculation_method": "COUNT(*) WHERE created_at >= '2026-07-17'",
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "metric": "Distinct staff users creating payments",
+        "value": 71,
+        "unit": "users",
+        "start_date": "2026-07-17",
+        "end_date": "2026-10-09",
+        "evidence_source": "Payment table",
+        "calculation_method": "COUNT(DISTINCT created_by) over window",
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "metric": "Completed (paid) payments",
+        "value": 2611,
+        "unit": "records",
+        "percent_of_requests": 78.9,
+        "evidence_source": "Payment table",
+        "calculation_method": "SUM(state='paid') over window",
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "metric": "Value of completed payments",
+        "value": 1792455.49,
+        "unit": "GBP",
+        "evidence_source": "Payment table",
+        "calculation_method": "SUM(amount) WHERE state='paid' AND created_at>=golive",
+        "evidence_level": "VERIFIED",
+        "qualification": "Attributable to the post-go-live period only."
+      },
+      {
+        "metric": "Total requested value",
+        "value": 2369846.31,
+        "unit": "GBP",
+        "evidence_source": "Payment table",
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "metric": "Email + SMS delivery attempts via UCP integration",
+        "value": 6225,
+        "unit": "messages",
+        "breakdown": {
+          "email": 3361,
+          "sms": 2864
+        },
+        "evidence_source": "Communication table",
+        "calculation_method": "COUNT(*) GROUP BY type WHERE created_at>=golive",
+        "evidence_level": "VERIFIED",
+        "qualification": "CRITICAL: rows are written with state='sent' BEFORE the provider call and the table contains no 'failed' state at all. These are application-logged send ATTEMPTS, not provider-confirmed deliveries."
+      },
+      {
+        "metric": "Messages per payment request",
+        "value": 1.88,
+        "unit": "ratio",
+        "calculation_method": "6216 joined sends / 3308 payments",
+        "evidence_level": "DERIVED"
+      },
+      {
+        "metric": "Mean time from link creation to payment",
+        "value": 3.3,
+        "unit": "hours",
+        "evidence_source": "Payment table",
+        "calculation_method": "AVG(TIMESTAMPDIFF(MINUTE,created_at,updated_at))/60 over 2611 paid rows",
+        "evidence_level": "DERIVED",
+        "qualification": "Mean, not median; updated_at is the state-change timestamp."
+      },
+      {
+        "metric": "Average payments per day",
+        "value": 39,
+        "unit": "payments/day",
+        "calculation_method": "3308 / 84 days",
+        "evidence_level": "DERIVED"
+      },
+      {
+        "metric": "Average messages per day",
+        "value": 74,
+        "unit": "messages/day",
+        "calculation_method": "6225 / 84 days",
+        "evidence_level": "DERIVED"
+      },
+      {
+        "metric": "Busiest single day",
+        "value": 82,
+        "unit": "payments",
+        "start_date": "2026-09-01",
+        "end_date": "2026-09-01",
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "metric": "Month-over-month volume growth Aug to Sep 2026",
+        "value": 27.8,
+        "unit": "percent",
+        "calculation_method": "(1318-1031)/1031",
+        "evidence_level": "DERIVED",
+        "qualification": "Business growth the platform carried; NOT growth caused by the engineering work."
+      }
+    ],
+    "monthly_trend": [
+      {
+        "month": "2026-07",
+        "note": "partial, from 17th",
+        "payments": 591,
+        "active_users": 46,
+        "paid": 454,
+        "paid_pct": 76.8,
+        "paid_value_gbp": 303095.03
+      },
+      {
+        "month": "2026-08",
+        "payments": 1031,
+        "active_users": 57,
+        "paid": 823,
+        "paid_pct": 79.8,
+        "paid_value_gbp": 548621.64
+      },
+      {
+        "month": "2026-09",
+        "payments": 1318,
+        "active_users": 55,
+        "paid": 1044,
+        "paid_pct": 79.2,
+        "paid_value_gbp": 745809.17
+      },
+      {
+        "month": "2026-10",
+        "note": "partial, to 9th",
+        "payments": 368,
+        "active_users": 46,
+        "paid": 290,
+        "paid_pct": 78.8,
+        "paid_value_gbp": 194929.65
+      }
+    ],
+    "authorisation_system": [
+      {
+        "metric": "Users under RBAC",
+        "value": 71,
+        "breakdown": {
+          "user": 68,
+          "admin": 3
+        },
+        "evidence_source": "AuthUser",
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "metric": "Active users",
+        "value": 71,
+        "disabled": 0,
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "metric": "Users who have signed in",
+        "value": 71,
+        "of": 71,
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "metric": "Successful logins recorded",
+        "value": 906,
+        "evidence_source": "AuditLog action=auth.login",
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "metric": "Blocked access attempts",
+        "value": 31,
+        "distinct_actors": 6,
+        "start_date": "2026-08-23",
+        "end_date": "2026-09-15",
+        "evidence_source": "AuditLog action=auth.denied",
+        "evidence_level": "VERIFIED",
+        "qualification": "Strongest single proof the access-control system does real work in production."
+      },
+      {
+        "metric": "Self-registrations via open-registration toggle",
+        "value": 68,
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "metric": "Invites issued / accepted",
+        "value": "2 / 2",
+        "evidence_level": "VERIFIED"
+      }
+    ],
+    "audit_trail": {
+      "total_events": 8634,
+      "start_date": "2026-07-17",
+      "end_date": "2026-10-09",
+      "evidence_level": "VERIFIED",
+      "by_action": {
+        "payment.created": {
+          "n": 2707,
+          "actors": 65
+        },
+        "payment.link_emailed": {
+          "n": 2656,
+          "actors": 64
+        },
+        "payment.link_texted": {
+          "n": 2253,
+          "actors": 62
+        },
+        "auth.login": {
+          "n": 906,
+          "actors": 71
+        },
+        "user.self_registered": {
+          "n": 68,
+          "actors": 68
+        },
+        "auth.denied": {
+          "n": 31,
+          "actors": 6
+        },
+        "payment.exported": {
+          "n": 7,
+          "actors": 1
+        },
+        "user.invited": {
+          "n": 2,
+          "actors": 1
+        },
+        "user.invite_accepted": {
+          "n": 2,
+          "actors": 2
+        },
+        "payment.bulk_resend_started": {
+          "n": 1,
+          "actors": 1
+        },
+        "user.updated": {
+          "n": 1,
+          "actors": 1
+        }
+      },
+      "qualification": "payment.created events (2707) are fewer than payments created since go-live (3308) because payment-level audit logging began 2026-08-02, two weeks after initial release."
+    },
+    "daily_reporting": [
+      {
+        "metric": "Reports sent",
+        "value": 81,
+        "evidence_source": "DailyReportSendLog",
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "metric": "Reports failed",
+        "value": 0,
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "metric": "Success rate",
+        "value": 100,
+        "unit": "percent",
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "metric": "Distinct consecutive days covered",
+        "value": 81,
+        "start_date": "2026-07-20",
+        "end_date": "2026-10-08",
+        "evidence_level": "VERIFIED",
+        "qualification": "81 reports across 81 distinct days - the scheduled job has not missed a single day since launch. Strongest reliability evidence in the project."
+      },
+      {
+        "metric": "Recipient deliveries",
+        "value": 223,
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "metric": "Payment records reported",
+        "value": 2819,
+        "evidence_level": "VERIFIED"
+      }
+    ],
+    "bulk_resend": [
+      {
+        "metric": "Production jobs executed",
+        "value": 1,
+        "start_date": "2026-08-02",
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "metric": "Payments processed",
+        "value": 70,
+        "of": 70,
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "metric": "Worldpay links regenerated and re-signed",
+        "value": 70,
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "metric": "Emails sent",
+        "value": 70,
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "metric": "SMS sent",
+        "value": 65,
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "metric": "SMS skipped (no mobile held)",
+        "value": 5,
+        "evidence_level": "VERIFIED",
+        "qualification": "Validates the partial-failure design: these recorded email:sent / sms:skipped rather than failing wholesale."
+      },
+      {
+        "metric": "Failures",
+        "value": 0,
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "metric": "Duration",
+        "value": 123,
+        "unit": "seconds",
+        "evidence_level": "VERIFIED",
+        "qualification": "~1.8s per item including link re-signing and two channel sends. Used ~1.4% of the engine's 5000-record design cap."
+      }
+    ],
+    "whole_estate": [
+      {
+        "metric": "Total payment requests under management",
+        "value": 68869,
+        "start_date": "2023-01-13",
+        "end_date": "2026-10-09",
+        "evidence_level": "VERIFIED",
+        "qualification": "Mostly predates the contribution; 65,561 were migrated from the legacy system."
+      },
+      {
+        "metric": "Distinct creating users (lifetime)",
+        "value": 185,
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "metric": "Completed payments (lifetime)",
+        "value": 52556,
+        "percent": 76.3,
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "metric": "Value of completed payments (lifetime)",
+        "value": 34954889.03,
+        "unit": "GBP",
+        "evidence_level": "VERIFIED",
+        "qualification": "DO NOT claim as processed by this contribution. Cumulative since 2023."
+      },
+      {
+        "metric": "Total requested value (lifetime)",
+        "value": 47756321.91,
+        "unit": "GBP",
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "metric": "Communication records (lifetime)",
+        "value": 131669,
+        "evidence_level": "VERIFIED"
+      },
+      {
+        "metric": "Legacy records migrated into Azure",
+        "value": {
+          "payments": 65561,
+          "communications": 125444
+        },
+        "evidence_level": "VERIFIED (data present) / STRONGLY SUPPORTED (that all passed through the sync script rather than partly a database restore)"
+      },
+      {
+        "metric": "Pending payments with expired links (operational backlog)",
+        "value": 16257,
+        "compared_to_active": 56,
+        "evidence_level": "VERIFIED",
+        "qualification": "Quantifies the problem the expiry-tracking and bulk-resend features address."
+      }
+    ]
+  },
+  "codebase_metrics": [
+    {
+      "metric": "Total source lines (src/)",
+      "value": 8738,
+      "unit": "lines",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "metric": "Largest component (admin page)",
+      "value": 1551,
+      "unit": "lines",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "metric": "Largest list component (payments)",
+      "value": 1115,
+      "unit": "lines",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "metric": "API route files",
+      "value": 25,
+      "unit": "files",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "metric": "Designed bulk job cap",
+      "value": 5000,
+      "unit": "payment requests per job",
+      "evidence_level": "VERIFIED",
+      "qualification": "Designed capacity, not observed load."
+    }
+  ],
+  "verified_claims": [
+    {
+      "id": "C1",
+      "claim": "Identified and fixed a parameter-tampering vulnerability in a live payment platform that allowed customers to alter the amount they paid, implementing MD5 request signing as the first substantive commit roughly ten days after joining.",
+      "evidence_level": "VERIFIED",
+      "evidence": "Pre-fix source at af467f9^ shows the payment URL built with no signature; all 36 lines of the signing implementation attributed to af467f9 (2026-07-05); see engagement_origin.",
+      "qualification": "The pre-existing callback amount check (2022, another author) was retained as a second layer, not authored by him."
+    },
+    {
+      "id": "C1a",
+      "claim": "Closed an exposure surface of 65,093 previously-issued payment links representing £45,049,376 of transaction value.",
+      "evidence_level": "VERIFIED (as exposure measurement)",
+      "qualification": "CRITICAL - exposure surface, not money lost or recovered. Never phrase as 'saved' or 'prevented the loss of'."
+    },
+    {
+      "id": "C1b",
+      "claim": "Solved a payment-integration problem previous developers had attempted unsuccessfully, without any surviving documentation for the legacy integration; CTO commended the fix.",
+      "evidence_level": "STRONGLY SUPPORTED / USER-REPORTED",
+      "qualification": "Use in interview narrative; obtain written confirmation before stating as fact on a CV."
+    },
+    {
+      "id": "C1",
+      "claim": "Delivered a six-week modernisation of a payment-operations platform that has run in production continuously since 17 July 2026, serving 71 staff users.",
+      "evidence_level": "VERIFIED",
+      "period": "2026-06-25 to 2026-08-05 (build); live 2026-07-17 onward",
+      "qualification": "Modernisation of an existing 2022-built application, not greenfield."
+    },
+    {
+      "id": "C2",
+      "claim": "Contributed 47 commits and +9,029 lines across 103 files, authoring 84.5% of the application's surviving source.",
+      "evidence_level": "VERIFIED",
+      "qualification": "git blame favours recent contributors; the original payment flow was authored by others."
+    },
+    {
+      "id": "C3",
+      "claim": "Designed and shipped a role-based access control and audit system now governing 71 production users, which recorded 906 logins, blocked 31 unauthorised access attempts and captured 8,634 audit events in its first 84 days.",
+      "evidence_level": "VERIFIED",
+      "qualification": "Replaced domain-based implicit access; identity remains Google SSO."
+    },
+    {
+      "id": "C4",
+      "claim": "Built a bulk payment-link resend engine that regenerated and re-signed 70 Worldpay links and dispatched 135 messages across two channels in 123 seconds with zero failures.",
+      "evidence_level": "VERIFIED",
+      "qualification": "One production job to date, at ~1.4% of the 5,000-record design cap."
+    },
+    {
+      "id": "C5",
+      "claim": "Migrated all transactional email and SMS onto the company's UCP platform; the integration has carried 6,225 production delivery attempts (~74/day) over 84 days.",
+      "evidence_level": "VERIFIED",
+      "qualification": "Counts are application-logged send attempts, not provider-confirmed deliveries."
+    },
+    {
+      "id": "C6",
+      "claim": "Built an automated daily reporting system that delivered 81 of 81 scheduled reports across 81 consecutive days with a 100% success rate and no missed day.",
+      "evidence_level": "VERIFIED",
+      "qualification": "Strongest reliability claim in the project."
+    },
+    {
+      "id": "C7",
+      "claim": "Introduced payment-link expiry tracking across a 68,869-record estate, surfacing a previously invisible backlog of 16,257 pending payments with expired links.",
+      "evidence_level": "VERIFIED",
+      "qualification": "The backlog's existence is measured; its prior business cost is not."
+    },
+    {
+      "id": "C8",
+      "claim": "Delivered a platform release that processed £1,792,455 in completed customer payments in its first 84 days of production, at a 78.9% completion rate across 3,308 requests.",
+      "evidence_level": "VERIFIED",
+      "qualification": "Lifetime estate is £34.95M paid since 2023, the large majority predating this contribution and not claimable by it."
+    },
+    {
+      "id": "C9",
+      "claim": "Migrated a historical estate of 65,561 payment and 125,444 communication records into Azure Database for MySQL.",
+      "evidence_level": "VERIFIED (data present in Azure) / STRONGLY SUPPORTED (that it passed through the purpose-built sync script rather than partly a database restore)"
+    },
+    {
+      "id": "C10",
+      "claim": "Created Dockerised CI/CD pipelines to Azure Container Registry and App Service; nine database migrations were applied cleanly to production through them.",
+      "evidence_level": "VERIFIED",
+      "qualification": "Workflow runs themselves were not inspected; migration timestamps in production confirm the effect."
+    },
+    {
+      "id": "C11",
+      "claim": "Hardened a Worldpay hosted-payment integration with MD5 request signing, fail-closed configuration checks and independent server-side amount verification.",
+      "evidence_level": "VERIFIED (implementation) / STRONGLY SUPPORTED (personal authorship: 58% of lines in payment/new.ts including the fail-closed path, but the file predates the contribution)"
+    },
+    {
+      "id": "C12",
+      "claim": "Authored 7 production database migrations introducing 9 models, with composite indexing supporting dashboard queries over a 68,869-row payment table.",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "id": "C13",
+      "claim": "Rebuilt the operations dashboard (server-side filtering, multi-field search, sorting, pagination, link-expiry filtering, CSV export, KPIs) now used by 46-57 distinct staff per month.",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "id": "C14",
+      "claim": "Supported sustained production growth of +27.8% in monthly payment volume (1,031 to 1,318, Aug to Sep 2026) with stable ~79% completion.",
+      "evidence_level": "VERIFIED as measurement",
+      "qualification": "Business growth the platform carried; NOT growth caused by the engineering work."
+    }
+  ],
+  "derived_claims": [
+    {
+      "claim": "Approximately six weeks of concentrated contribution.",
+      "derivation": "First phase commit 2026-06-25, last 2026-08-05.",
+      "evidence_level": "DERIVED"
+    },
+    {
+      "claim": "Average of roughly 1.1 commits per calendar day across the contribution window.",
+      "derivation": "47 commits over 42 days.",
+      "evidence_level": "DERIVED",
+      "qualification": "Calendar days, not working days; commit cadence is not a productivity measure."
+    }
+  ],
+  "inferred_claims": [
+    {
+      "claim": "The authorisation work was motivated by a control gap in a financially sensitive internal tool.",
+      "evidence_level": "INFERRED",
+      "basis": "Nature of the implemented controls and documentation; no requirements or ticket records available."
+    },
+    {
+      "claim": "Bulk resend was motivated by a backlog of pending/expired payment links.",
+      "evidence_level": "INFERRED",
+      "basis": "Feature design targets pending payments with expiry filtering and link regeneration; no operational records available."
+    },
+    {
+      "claim": "The original 2022 system existed to take card payments from customers not completing payment at point of sale.",
+      "evidence_level": "INFERRED",
+      "basis": "Architecture of the Worldpay hosted-page link flow."
+    }
+  ],
+  "business_impact": [
+    {
+      "area": "Payment integrity (the originating problem)",
+      "impact": "Closed a vulnerability that allowed customers to set their own payment amount on any generated link, ending the resulting accounting reconciliation problem of payments taken at the provider but never recorded. Exposure surface closed: 65,093 links worth £45,049,376.",
+      "evidence_level": "VERIFIED",
+      "quantified": true,
+      "qualification": "Exposure surface, not measured losses."
+    },
+    {
+      "area": "Governance and control",
+      "impact": "71 staff users under explicit RBAC with 906 logins, 31 blocked access attempts and 8,634 audit events recorded, for a tool that has generated £47.76M in payment requests across its lifetime. None of this was recorded before the work.",
+      "evidence_level": "VERIFIED",
+      "quantified": true
+    },
+    {
+      "area": "Operational capability",
+      "impact": "Bulk resend remediated 70 expired payment links in 123 seconds with zero failures - work that previously had no mechanism. Latent problem scale: 16,257 pending payments with expired links.",
+      "evidence_level": "VERIFIED",
+      "quantified": true
+    },
+    {
+      "area": "Operational visibility",
+      "impact": "81 of 81 automated daily reports delivered across 81 consecutive days with no failures and no missed day, covering 2,819 payment records to 5 recipients.",
+      "evidence_level": "VERIFIED",
+      "quantified": true
+    },
+    {
+      "area": "Platform consolidation",
+      "impact": "UCP integration carried 6,225 email and SMS delivery attempts in 84 days (~74/day), with senders changeable by an administrator without redeployment.",
+      "evidence_level": "VERIFIED",
+      "quantified": true,
+      "qualification": "Send attempts, not confirmed deliveries."
+    },
+    {
+      "area": "Sustained adoption and growth",
+      "impact": "Monthly volume rose 1,031 (Aug) to 1,318 (Sep), +27.8%, with 46-57 distinct users active monthly and paid conversion steady at ~79%. £1,792,455 completed on the new codebase in 84 days.",
+      "evidence_level": "VERIFIED",
+      "quantified": true,
+      "qualification": "Platform carried this growth; did not necessarily cause it."
+    },
+    {
+      "area": "Deployment repeatability",
+      "impact": "Nine migrations applied cleanly to production through the automated pipeline between 17 and 28 July, with no production credentials in the repository or CI.",
+      "evidence_level": "VERIFIED",
+      "quantified": true
+    },
+    {
+      "area": "NOT ESTABLISHED",
+      "impact": "Staff hours saved, cost impact, and whether payment conversion changed as a result of this work. No pre-go-live baseline computed.",
+      "evidence_level": "UNKNOWN",
+      "quantified": false
+    }
+  ],
+  "engineering_challenges": [
+    {
+      "challenge": "Retrofitting authorisation into a live authenticated application",
+      "why_hard": "Inserting enforcement without locking out existing users mid-rollout. Solved with a bootstrap admin from configuration and three independent environment flags allowing domain checks and invite requirements to be tightened separately at runtime."
+    },
+    {
+      "challenge": "Bulk operations over a payment provider with partial failure",
+      "why_hard": "Each item makes up to three external calls across two channels, any of which can fail independently. Required separate link/email/SMS state per item, aggregated job counters, and a distinct completed_with_errors terminal state so operators can see precisely which recipients failed and why."
+    },
+    {
+      "challenge": "Signing correctness with a legacy hosted-payment integration",
+      "why_hard": "Hosted-page parameters are client-visible and alterable, so an unsigned link allows amount tampering. The signature must cover exactly the configured fields in order; a partially-populated set would produce a valid signature over the wrong data."
+    },
+    {
+      "challenge": "Background processing within Next.js 12 constraints",
+      "why_hard": "No App Router, route handlers or built-in job support. Required an in-process deferred execution pattern plus durable job tables, with explicitly understood limits."
+    },
+    {
+      "challenge": "Legacy data migration without downtime",
+      "why_hard": "Script had to be re-runnable, incremental and verifiable before committing - hence upsert-by-uuid, --since, batching and --dry-run."
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "Application-owned authorisation rather than Google Workspace groups",
+      "problem": "Needed roles, invites and disablement tied to app-specific permissions.",
+      "reasoning": "Permissions are domain-specific (payments.export, payments.send) and map poorly onto directory groups; keeps the audit trail adjacent to the payment data it describes.",
+      "tradeoffs": "A second user store to maintain; offboarding is not automatic when a Google account is disabled.",
+      "result": "Granular per-route enforcement; auth.denied events confirm the path is exercised."
+    },
+    {
+      "decision": "In-process asynchronous job execution rather than a queue or worker service",
+      "problem": "Bulk resend involves many external calls and cannot run inside a request.",
+      "reasoning": "Avoids introducing a broker and separate worker deployment for a single internal workflow on one App Service.",
+      "tradeoffs": "Duplicate-run guard is per-process so would not prevent concurrency across instances; instance restart mid-job leaves items pending with no automatic resumption.",
+      "result": "Working bulk processing with no new infrastructure; durable item state leaves a clean upgrade path to a real queue."
+    },
+    {
+      "decision": "Database-backed sender configuration rather than environment variables",
+      "problem": "UCP sender addresses change and must match senders pre-approved in UCP.",
+      "reasoning": "Changing a sender should not require a redeploy.",
+      "tradeoffs": "Configuration split between env vars and database.",
+      "result": "Misconfiguration surfaces as an explicit actionable error rather than silent delivery failure."
+    },
+    {
+      "decision": "Resolve production connection string from Azure at deploy time",
+      "problem": "Migrations need production credentials.",
+      "reasoning": "Avoids duplicating the production connection string into GitHub secrets; single source of truth.",
+      "tradeoffs": "Pipeline needs a service principal with configuration read rights.",
+      "result": "No database credentials in the repository or CI - corroborated by this audit finding only local strings in .env."
+    },
+    {
+      "decision": "Keep Next.js 12 pages router rather than upgrading",
+      "problem": "Framework was several major versions behind.",
+      "reasoning": "Goal was security and operational capability, not framework migration; an upgrade would have risked the live payment flow.",
+      "tradeoffs": "No App Router features; legacy next/link semantics.",
+      "result": "Substantial capability added with the core payment path untouched."
+    }
+  ],
+  "problems_solved": [
+    {
+      "problem": "Payment links expiring unnoticed with no bulk remediation",
+      "solution": "Added link_expires_at with dedicated index, derived a four-state link status, exposed it as a dashboard filter, and built bulk resend with optional regeneration.",
+      "evidence": "Migration 20260728133000_add_payment_link_expiry; commit 32b035d; EPaymentLinkStatus logic"
+    },
+    {
+      "problem": "Silent delivery failures after the UCP migration",
+      "solution": "Typed MissingUcpSenderConfigError with remediation text naming the admin screen, surfaced to the operator instead of logged and swallowed.",
+      "evidence": "ucp.service.ts; commit ad29cf6"
+    },
+    {
+      "problem": "Unsigned payment links allowing amount tampering",
+      "solution": "MD5 signing over configured fields, refusal to sign on missing fields, fail-closed on absent configuration, independent amount verification in the callback.",
+      "evidence": "payment/new.ts; public/payment/response.ts; documented as non-removable in AGENTS.md and CLAUDE.md"
+    },
+    {
+      "problem": "Full page reloads between screens",
+      "solution": "Identified plain anchor tags bypassing the Next.js router; converted navigation, table row links and menu items to next/link. Rejected a React Router proposal as incompatible with the pages router and unnecessary.",
+      "evidence": "commit d825ab5"
+    },
+    {
+      "problem": "Validation errors arriving as HTTP 400s with no client-side guard",
+      "solution": "Added client-side yup schemas mirroring server rules plus a mergeFieldErrors helper, while retaining server validation as authoritative for all callers.",
+      "evidence": "commit d825ab5; src/utils/react.ts"
+    }
+  ],
+  "lessons": [
+    "Undocumented legacy integrations are a research problem before they are a coding problem - the signing fix was ~40 lines, but nearly all the risk sat in establishing which fields the installation verified and in what order, with a failure mode that can look like success. Failing closed and refusing partial signatures were the safeguards against being wrong.",
+    "Fixing the real problem earns the mandate for the rest - the engagement began as one security fix and expanded into access control, auditing, reporting and bulk remediation.",
+    "Retrofitting access control is a migration problem, not a modelling problem - the valuable design work was the bootstrap admin and independent feature flags, not the permission table.",
+    "Model partial failure explicitly when fanning out to external providers; per-channel state turns an opaque failure into an actionable one.",
+    "Fail closed and say why - typed errors with remediation text converted silent misconfiguration into visible, fixable messages.",
+    "Configuration belongs where its change cadence lives: secrets in environment variables, operationally-tuned values in the database behind an admin screen.",
+    "An in-process job runner is a legitimate interim choice only if the state is durable; persisting job items made the shortcut defensible and kept a queue migration cheap.",
+    "Would do differently: automated tests on signing, permission middleware and bulk-resend state transitions; retry with backoff on provider calls; job resumption after restart."
+  ],
+  "cv_bullets": {
+    "high_confidence_quantified": [
+      "Identified and remediated a parameter-tampering vulnerability in a live payment platform that allowed customers to alter the amount payable on any generated payment link, implementing MD5 request signing with fail-closed configuration - shipped as the first substantive commit ~10 days after joining, closing an exposure surface of 65,093 issued links representing £45M of transaction value.",
+      "Modernised and now own the production codebase of an internal payment platform serving 71 staff users and managing 68,869 payment records worth £47.8M, authoring 84.5% of its surviving source across 47 commits in a six-week engagement.",
+      "Designed and shipped role-based access control and audit logging for a financial payment-link platform, governing 71 users and capturing 8,634 audit events, 906 logins and 31 blocked access attempts in the first 84 days of production.",
+      "Built an automated daily reporting service achieving 81/81 successful scheduled deliveries across 81 consecutive days - 100% reliability, zero missed days.",
+      "Engineered a bulk payment-link resend subsystem that regenerated and re-signed 70 Worldpay payment links and dispatched 135 messages in 123 seconds with zero failures, against a design capacity of 5,000 requests per job.",
+      "Migrated all transactional messaging to a central communications platform, carrying 6,225 email and SMS delivery attempts (~74/day) across 84 days in production.",
+      "Delivered a platform release that processed £1.79M of completed customer payments at a 78.9% completion rate across 3,308 requests in its first 84 days.",
+      "Introduced payment-link expiry tracking across 68,869 records, exposing a previously invisible operational backlog of 16,257 expired pending payment links.",
+      "Led a cloud database migration of 65,561 payment and 125,444 communication records into Azure Database for MySQL, and authored 7 schema migrations introducing 9 data models applied cleanly to production."
+    ],
+    "high_confidence_non_quantified": [
+      "Migrated all transactional email and SMS onto a central communications platform, introducing database-backed sender configuration manageable by administrators without redeployment.",
+      "Implemented an automated daily payment-activity report with CSV attachment, configurable scheduling and persistent delivery logging.",
+      "Hardened a legacy Worldpay hosted-payment integration with MD5 request signing, fail-closed configuration validation and independent server-side amount verification on the payment callback.",
+      "Designed an idempotent, batched legacy-to-Azure data migration supporting incremental and dry-run execution.",
+      "Rebuilt the payments dashboard with server-side filtering, search, sorting, pagination, CSV export and payment-link expiry tracking.",
+      "Eliminated full-page reloads across the application by migrating to client-side routing, and added mirrored client-side validation without weakening server-side enforcement."
+    ],
+    "requires_confirmation": [
+      "Causal impact on payment conversion - not yet assessable (~3 months post-release). Do not use the lifetime-average comparison; it is an artefact. Baseline and method prepared for a re-check around March 2027.",
+      "Delivery success rates - message counts are application-logged attempts; the Communication table records no failures by design. Confirm true rates from UCP reporting.",
+      "'Sole engineer on the 2026 phase' - four 2026 commits are attributed to zayan_DevOps.",
+      "Attribution of the full £34.95M lifetime value - only £1.79M arose on the new codebase.",
+      "Time or cost saved - no baseline exists for manual effort displaced."
+    ]
+  },
+  "interview_stories": [
+    {
+      "id": "S0",
+      "title": "The payment links customers could rewrite",
+      "themes": [
+        "security",
+        "ownership",
+        "working without documentation",
+        "delivering under pressure"
+      ],
+      "flagship": true,
+      "situation": "Brought into a four-year-old internal payment platform for one reason: customers were paying less than they were invoiced. The amount travelled in the Worldpay hosted-page URL as a plain query parameter, so a link for £500 could be edited to £5.",
+      "task": "Close it in a live financial system without breaking the daily payment flow.",
+      "action": "Traced the full failure path first - a 2022 callback check rejected mismatched amounts, so money was taken at the provider but never recorded, surfacing as an accounting mess rather than clean underpayment. Implemented MD5 signing with a configuration-driven ordered field list, a throw-on-missing-field guard so a partial parameter set can never be signed, fail-closed behaviour when signing config is absent, and deliberate retention of the existing callback check as an independent second layer.",
+      "result": "Shipped as the first substantive commit ~10 days after joining; closed an exposure surface of 65,093 links worth £45M; previous developers had reportedly failed at it; CTO commended the fix; the engagement then expanded into the wider modernisation.",
+      "evidence": "Pre-fix source has no signature; git blame attributes all 36 signing lines to the 2026-07-05 commit; production data sizes the exposure.",
+      "what_id_do_differently": "Write tests around the signing logic - still the highest-risk untested code in the system."
+    },
+    {
+      "id": "S1",
+      "title": "Retrofitting access control into a live financial tool",
+      "themes": [
+        "ownership",
+        "migration safety",
+        "security"
+      ],
+      "situation": "An internal tool generating customer payment links allowed any company Google account full access, with no audit trail.",
+      "task": "Introduce roles, invites and disablement without locking out active users or disrupting payment operations.",
+      "action": "Designed app-owned authorisation (3 roles, 7 permissions) with hashed single-use invite tokens and 48h TTL; permission middleware per route; bootstrap admin from configuration; domain enforcement and invite requirement behind independent environment flags.",
+      "result": "Granular enforcement with a complete audit trail; auth.denied events confirm the rejection path is active.",
+      "evidence": "Migration 20260716152000; domain/auth.ts; authorization.service.ts"
+    },
+    {
+      "id": "S2",
+      "title": "Designing for partial failure in a bulk external fan-out",
+      "themes": [
+        "systems design",
+        "reliability"
+      ],
+      "situation": "Operators needed to resend hundreds of pending payment links at once.",
+      "task": "Build bulk processing where each item makes up to three external calls across two channels, any of which can fail.",
+      "action": "Modelled a parent job and per-item rows with independent link/email/SMS state; isolated failures per item; aggregated counters; distinguished completed from completed_with_errors; capped jobs at 5,000; guarded against duplicate concurrent runs.",
+      "result": "Operators can see exactly which recipients failed and why instead of a single opaque failure.",
+      "evidence": "bulk-payment-resend.service.ts; local run 2 jobs, 3/3 items sent"
+    },
+    {
+      "id": "S3",
+      "title": "A deliberate shortcut, and knowing its limits",
+      "themes": [
+        "trade-offs",
+        "technical honesty"
+      ],
+      "situation": "Bulk jobs needed background execution; stack was Next.js 12 on a single App Service with no queue infrastructure.",
+      "action": "Chose durable job/item tables plus in-process deferred execution with a duplicate-run guard rather than introducing a broker and worker deployment.",
+      "result": "Delivered the capability with no new infrastructure.",
+      "reflection": "The guard is per-process and would not hold across instances; a restart mid-job leaves items pending with no automatic resumption. Durable item state was the deliberate hedge keeping a queue migration cheap.",
+      "evidence": "bulk-payment-resend.service.ts runningJobs guard"
+    },
+    {
+      "id": "S4",
+      "title": "Debugging full-page reloads",
+      "themes": [
+        "investigation",
+        "front-end performance"
+      ],
+      "situation": "Every navigation reloaded the entire application; a proposal to adopt React Router was on the table.",
+      "action": "Identified that several links were plain anchors bypassing the Next.js router, and that React Router is incompatible with the pages router; converted navigation, table row links and menu items to next/link.",
+      "result": "Client-side transitions with prefetching; the correct fix was a handful of components, not a routing library.",
+      "evidence": "commit d825ab5"
+    },
+    {
+      "id": "S5",
+      "title": "Reading a 400 correctly before fixing it",
+      "themes": [
+        "diagnostic discipline",
+        "validation design"
+      ],
+      "situation": "Submitting an empty form produced 400 Bad Request errors in the console.",
+      "action": "Traced the flow and established the 400 was the validation mechanism; added mirrored client-side validation for instant feedback while deliberately retaining server validation as authoritative for all API callers.",
+      "result": "Immediate feedback; 400s reserved for genuine anomalies; no weakening of the security boundary.",
+      "evidence": "commit d825ab5; src/utils/react.ts mergeFieldErrors"
+    },
+    {
+      "id": "S6",
+      "title": "Securing a legacy hosted-payment integration",
+      "themes": [
+        "security thinking",
+        "defence in depth"
+      ],
+      "situation": "Worldpay hosted pages carry the amount in a client-visible URL.",
+      "action": "MD5 signing over configured fields; refusal to sign when any field is missing; fail-closed when signing configuration is absent; independent amount re-verification in the callback.",
+      "result": "Defence in depth on the financially sensitive field.",
+      "evidence": "payment/new.ts; public/payment/response.ts"
+    }
+  ],
+  "portfolio_material": {
+    "overview": "iRevolution Payments lets insurance staff generate a signed Worldpay payment link for a specific customer, amount and reference, deliver it by email or SMS, and track it to completion.",
+    "challenge": "A 2022-built application had accumulated control and operational gaps: unrestricted domain-based access, no audit trail, legacy mail path, no bulk remediation of expired links, no automated reporting, no repeatable deployment. Binding constraint: no payment or Worldpay behaviour could change.",
+    "role": "Led and implemented the 2026 modernisation end to end - data modelling, backend services, API design, front-end rebuild, infrastructure and data migration.",
+    "interesting_problems": [
+      "Retrofitting authorisation without locking out live users",
+      "Modelling partial failure across a two-channel bulk fan-out",
+      "Signing correctness against a legacy hosted-payment page",
+      "Background jobs inside Next.js 12 without a queue"
+    ],
+    "results": "Functional verification across every subsystem; governance, operational and deployment improvements. Production scale explicitly not claimed.",
+    "next_improvements": [
+      "Test coverage on signing, permissions and job state transitions",
+      "Retry with backoff on provider calls",
+      "Job resumption after restart",
+      "A real queue if bulk volume grows"
+    ]
+  },
+  "content_ideas": {
+    "articles": [
+      {
+        "title": "Retrofitting RBAC into a live application without locking anyone out",
+        "core_problem": "Adding enforcement to a system whose users currently have implicit access",
+        "anonymise": [
+          "company",
+          "domains",
+          "admin email"
+        ],
+        "do_not_publish": [
+          "production flag names and defaults"
+        ]
+      },
+      {
+        "title": "Partial failure is a product feature: bulk operations that touch external providers",
+        "core_problem": "'The job failed' is useless to an operator",
+        "anonymise": [
+          "provider names"
+        ],
+        "do_not_publish": [
+          "internal API shapes",
+          "sender configuration"
+        ]
+      },
+      {
+        "title": "You probably don't need a queue yet - but you do need durable job state",
+        "core_problem": "When is an in-process background runner acceptable",
+        "do_not_publish": [
+          "deployment topology specifics"
+        ]
+      },
+      {
+        "title": "Signing legacy hosted payment pages: why a missing field is worse than no signature",
+        "core_problem": "Partially-populated signature sets produce valid signatures over wrong data",
+        "anonymise": [
+          "merchant/installation identifiers"
+        ],
+        "do_not_publish": [
+          "signature field order",
+          "secret handling specifics",
+          "live endpoint configuration"
+        ],
+        "caution": "HIGHEST - generalise heavily before publication"
+      },
+      {
+        "title": "That 400 in your console might be your validation working",
+        "core_problem": "Teams suppress server validation errors instead of understanding them",
+        "safe_to_publish": true
+      }
+    ],
+    "social_posts": [
+      {
+        "hook": "The fix was three components, not a new library",
+        "basis": "Full-page-reload investigation; React Router considered and rejected on evidence"
+      },
+      {
+        "hook": "We shipped a background job system without a queue - and wrote down exactly when that stops working",
+        "basis": "In-process runner trade-off with named limitations"
+      },
+      {
+        "hook": "Adding permissions to a live tool is a migration problem",
+        "basis": "Feature-flag rollout design visible in the code"
+      },
+      {
+        "hook": "Partial failure should be visible",
+        "basis": "Per-item, per-channel state modelling in bulk resend"
+      },
+      {
+        "hook": "A 400 isn't always a bug",
+        "basis": "Client/server validation as complementary layers"
+      },
+      {
+        "hook": "Six weeks on a four-year-old codebase",
+        "basis": "Scope discipline - payment path deliberately untouched, documented as a project constraint"
+      },
+      {
+        "hook": "Configuration belongs where its change cadence lives",
+        "basis": "Secrets in env vars, operational values in database behind admin screen"
+      }
+    ],
+    "avoid": "Any post containing volume or impact figures - none are evidenced."
+  },
+  "public_safe_claims": [
+    "Architectural patterns: app-owned RBAC with hashed invite tokens; job/item modelling for bulk operations; fail-closed configuration; database-backed sender settings.",
+    "Technology stack as a list: Next.js, React, TypeScript, Prisma, MySQL, Docker, Azure, GitHub Actions.",
+    "Personal contribution metrics: commits, lines changed, authorship share - these describe personal output, not business data.",
+    "Lessons and trade-offs described generically ('a payment provider', 'a communications platform').",
+    "Interview stories S1-S6 with employer-identifying detail removed.",
+    "Reliability and operational outcomes stated without employer context: '81 consecutive scheduled reports with zero failures', '70 links regenerated and 135 messages sent in 123 seconds with no failures', 'an RBAC system serving ~70 internal users'."
+  ],
+  "private_only_information": [
+    "The vulnerability narrative tied to this employer - that a named insurance company issued 65,093 payment links worth £45M with an editable amount parameter is commercially and reputationally sensitive. The engineering pattern is publishable; the attribution is not.",
+    "The CTO's commendation and the detail that previous developers attempted the fix unsuccessfully - legitimate for interviews and personal record, but it characterises identifiable colleagues; keep verbal, not published.",
+    "AI-assisted research on the Worldpay signing scheme in the absence of documentation. Noted here for accuracy; whether to surface it is the engineer's own call. Defensible framing: validated the scheme against the live integration and designed the fail-closed and missing-field safeguards personally, which is what the code shows.",
+    "Azure resource names (resource group, web app names, container registry name) and the production hostname.",
+    "Absolute business volumes and monetary values (£47.76M lifetime estate, £34.95M paid, 68,869 payment records, monthly payment counts) - commercially sensitive.",
+    "UCP base URL and internal platform naming in any employer-identifying context.",
+    "Environment variable names and defaults relating to Worldpay signing, and any signature field ordering.",
+    "The internal admin email used as bootstrap admin default.",
+    "Local development database contents and all per-record data.",
+    "Permission taxonomy as applied to real named staff, and any audit log contents.",
+    "Repository source code."
+  ],
+  "evidence_gaps": [
+    {
+      "gap": "Any record of actual exploitation of the link vulnerability",
+      "why_useful": "Would move the £45M from exposure surface to a measured incident",
+      "where_it_exists": "Worldpay merchant transaction reports vs application records for the same period; finance reconciliation records",
+      "question_to_ask": "Can finance or Worldpay reporting show how many transactions settled at an amount not matching the issued payment request before July 2026?",
+      "note": "Unknowable from the application: tampered payments were rejected by the callback and left no record of the amount charged."
+    },
+    {
+      "gap": "Written confirmation of the CTO commendation and prior failed attempts",
+      "why_useful": "Would upgrade C1b from STRONGLY SUPPORTED to VERIFIED; strong CV material",
+      "where_it_exists": "Slack/Teams, email, performance review notes, the originating ticket",
+      "question_to_ask": "Could I get that feedback in writing for my record?",
+      "priority": "Do this soon, before it becomes hard to retrieve."
+    },
+    {
+      "gap": "True message delivery rates",
+      "why_useful": "Volume counts are application-logged attempts; Communication has no failure state so bounces and provider rejections are invisible. Most important remaining caveat on the strongest volume claim.",
+      "where_it_exists": "UCP platform reporting / provider dashboards",
+      "question_to_ask": "What are the actual delivery, bounce and failure rates for the payments app's email and SMS since July 2026?"
+    },
+    {
+      "gap": "Manual effort displaced by bulk resend",
+      "why_useful": "Only responsible basis for a time-saving claim; 70 links took 123 seconds but the manual equivalent is unknown",
+      "where_it_exists": "Operations team",
+      "question_to_ask": "Before bulk resend, how long did it take to chase and re-issue an expired payment link?"
+    },
+    {
+      "gap": "Whether the 16,257 expired-link backlog is being worked",
+      "why_useful": "Shows ongoing value rather than a single use - only one bulk job has run",
+      "where_it_exists": "BulkPaymentResendJob over time",
+      "question_to_ask": "Is bulk resend a regular operational routine, or was August a one-off?"
+    },
+    {
+      "gap": "Exact mechanism of the legacy migration",
+      "why_useful": "Determines whether C9 is VERIFIED or STRONGLY SUPPORTED for personal attribution",
+      "where_it_exists": "Sync script run logs; whoever performed the Azure cutover",
+      "question_to_ask": "Were all 65,561 legacy rows moved via the sync script, or partly by database restore?"
+    },
+    {
+      "gap": "Infrastructure cost",
+      "why_useful": "Cloud migration cost impact unknown",
+      "where_it_exists": "Azure Cost Management",
+      "question_to_ask": "What does the App Service plus MySQL footprint cost per month?"
+    },
+    {
+      "gap": "Uptime and HTTP error rates",
+      "why_useful": "Reliability beyond job-level evidence",
+      "where_it_exists": "Azure App Service metrics; /api/health probe history",
+      "question_to_ask": "Can I see availability and HTTP error rates since 17 July 2026?"
+    },
+    {
+      "gap": "Scope of the other 2026 contributor's work",
+      "why_useful": "Required before claiming sole ownership of the phase",
+      "where_it_exists": "The four zayan_DevOps commits",
+      "question_to_ask": "What did the DevOps contributions cover?"
+    },
+    {
+      "gap": "Stakeholder feedback",
+      "why_useful": "Qualitative colour for interviews and portfolio",
+      "where_it_exists": "Operations/finance team, line manager",
+      "question_to_ask": "Has the team given feedback on the admin, reporting or bulk resend features?"
+    },
+    {
+      "gap": "Longer-run effect on payment conversion",
+      "why_useful": "Release has only ~3 months of post-deployment data, below the threshold at which a modest effect is distinguishable from normal variation. Baseline and repeatable method already prepared.",
+      "where_it_exists": "Production Payment table, once 6-12 months of post-release data exist",
+      "question_to_ask": "Re-run the prepared comparison around March 2027; until then make no conversion claim either way."
+    },
+    {
+      "gap": "Cause of the 2025 paid-rate movement",
+      "why_useful": "Predates this work and is why a lifetime-average comparison is not a valid baseline",
+      "where_it_exists": "Business/ops records for 2025",
+      "question_to_ask": "Does anyone know what moved payment conversion during 2025, and what drove the recovery?"
+    }
+  ],
+  "audit_limitations": [
+    "Message volume counts application-logged send attempts, not provider-confirmed deliveries - the most significant remaining caveat.",
+    "The 68,869-record estate and its £34.95M paid value largely predate this contribution; only post-2026-07-17 figures are attributable, and the two must never be conflated.",
+    "git blame measures surviving lines at HEAD and favours the most recent contributor; reported alongside raw commit and diff counts.",
+    "Business motivations are inferred from code and documentation; no requirements or ticket records were available.",
+    "Deployment definitions and their database effects were verified, but GitHub Actions run history and Azure platform metrics were not accessible.",
+    "The repository's three .test.ts files are empty placeholders; no test suite was available to assess quality.",
+    "The post-release window (~3 months) is too short to assess any effect on payment conversion; no causal claim is made in either direction, and the lifetime average is not a valid baseline for that comparison."
+  ],
+  "development_environment_note": "A local development database (14 payments, 2 users) was also inspected but is NOT cited as evidence; all metrics above come from production.",
+  "engagement_origin": {
+    "summary": "Brought onto the project specifically to fix a parameter-tampering vulnerability in the Worldpay payment links that allowed customers to alter the amount they paid.",
+    "vulnerability": {
+      "type": "Parameter tampering / unsigned request in a hosted payment page integration",
+      "mechanism": "getPaymentLink built the Worldpay URL as a plain query string including amount, with no signature of any kind. A recipient could rewrite &amount=500 to &amount=5 and complete a genuine checkout at the lower amount.",
+      "why_worse_than_underpayment": "A pre-existing callback check (ef1ff7f, Michal Tesar, 2022-12-23) compared the amount reported by Worldpay against the stored amount and refused to mark mismatched payments as paid. The payment therefore completed at the provider - the card was charged - but was never recorded by the application, leaving unreconcilable receipts and permanently pending requests.",
+      "business_consequences": [
+        "Accounting and reconciliation problems from payments taken but never recorded",
+        "Loss of customer trust in the payment links",
+        "Compounded by generic, unbranded payment emails that recipients found untrustworthy"
+      ],
+      "evidence_level": "VERIFIED (pre-fix source at af467f9^ shows no signature; callback check authorship confirmed by git log)"
+    },
+    "fix": {
+      "commit": "af467f9",
+      "date": "2026-07-05",
+      "significance": "First substantive commit on the project, roughly ten days after joining (first activity 2026-06-25).",
+      "implementation": [
+        "MD5 digest over a configurable, ordered field list (WP_SIGNATURE_FIELDS, default instId:amount:currency:cartId) joined with the shared secret, so the app can be aligned to the Worldpay installation without a code change",
+        "Throws if any signature field is missing or empty rather than signing a partial parameter set - a missing amount would otherwise produce a valid signature over the wrong data",
+        "assertWorldpayMd5Config() makes the system fail closed: no signing configuration means no link generation, surfaced as a validation-shaped error",
+        "Pre-existing callback amount check deliberately retained as an independent second layer (defence in depth)"
+      ],
+      "authorship": "All 36 lines of the signing implementation attributed to af467f9 (AbrahamNobleOX) by git blame",
+      "evidence_level": "VERIFIED"
+    },
+    "difficulty": {
+      "no_documentation": "No surviving documentation for the legacy Worldpay integration. The hard part was determining which fields the installation verified and in what order - a failure mode that can silently appear to work while protecting nothing.",
+      "prior_attempts": "Other developers had reportedly attempted the fix without success.",
+      "evidence_level": "STRONGLY SUPPORTED (absence of docs consistent with repository state; prior attempts are the engineer's account, not independently verifiable)"
+    },
+    "recognition": {
+      "detail": "CTO commended the fix.",
+      "evidence_level": "USER-REPORTED / not independently verifiable",
+      "action": "Worth obtaining in writing - see evidence_gaps."
+    },
+    "exposure_surface": {
+      "links_issued_before_fix": 65093,
+      "value_gbp": 45049375.97,
+      "period_start": "2023-01-13",
+      "period_end": "2026-07-04",
+      "calculation_method": "COUNT(*) and SUM(amount) over Payment where created_at < '2026-07-05'",
+      "evidence_level": "VERIFIED",
+      "critical_qualification": "This is the EXPOSURE SURFACE - every link issued in the period carried an editable amount parameter. It is NOT a loss figure. Nothing establishes how many links were actually tampered with, because a tampered payment was rejected by the callback and left no record of the amount charged. Phrase as 'closed a vulnerability affecting £45M of issued payment links'; never 'saved' or 'prevented the loss of' £45M."
+    }
+  },
+  "conversion_impact": {
+    "status": "NOT_YET_ASSESSABLE",
+    "reason": "Only ~3 months of post-release data at time of audit; smallest difference distinguishable from normal variation was about +/-2 percentage points, so a modest effect could not be seen in either direction.",
+    "do_not_claim": "Do NOT use the lifetime-average comparison (post-release 78.9% vs lifetime 76.3%, apparent ~2.6pp gain). It is an artefact: the lifetime figure is depressed by a 2025 dip that had already recovered before the release (May and June 2026 both recorded 80.1%, higher than any later month). Make no conversion claim in either direction until re-measured.",
+    "baseline_and_method": "Held in the private working note 'Paid-rate baseline and re-check method.md' alongside this dossier - contains prepared pre/post figures, seasonal and size controls, maturity rule and statistical approach.",
+    "recheck_due": "2027-03",
+    "note": "The MD5 signing fix is justified as closing a security and accounting-integrity defect; its value does not depend on the conversion metric."
+  }
+}
