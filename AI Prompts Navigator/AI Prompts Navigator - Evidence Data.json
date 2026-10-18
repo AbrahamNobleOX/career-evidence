@@ -1,0 +1,402 @@
+{
+  "project_name": "AI Prompts Navigator",
+  "audit_date": "2026-10-17",
+  "project_type": "Self-initiated personal product — cross-browser extension (Manifest V3), publicly published",
+  "project_description": "A zero-dependency browser extension that injects a collapsible side panel into five AI chat platforms (ChatGPT, Claude, Google Gemini, DeepSeek, Grok), listing every prompt the user has sent in the current conversation as a numbered, clickable outline with smooth scroll-to-prompt and hover previews. No backend, no database, no network requests, no analytics.",
+  "former_names": ["ChatGPT Quick Jump", "AI Chat Quick Jump"],
+  "local_path": "~/Documents/Coding/portfolio-projects/ai-prompts-navigator",
+  "public_listings": {
+    "firefox": {
+      "url": "https://addons.mozilla.org/en-US/firefox/addon/ai-prompts-navigator/",
+      "slug": "ai-prompts-navigator",
+      "amo_id": 2907788,
+      "guid": "ai-prompts-navigator@example.com",
+      "publisher_display_name": "Clevali",
+      "status": "VERIFIED LIVE at audit date"
+    },
+    "chrome_web_store": {
+      "url": "https://chromewebstore.google.com/detail/ai-prompts-navigator/ajodgicjemafjmbgkjbhfogdpfejihjg",
+      "extension_id": "ajodgicjemafjmbgkjbhfogdpfejihjg",
+      "publisher_display_name": "abramseyakid",
+      "status": "VERIFIED LIVE at audit date"
+    },
+    "microsoft_edge_addons": {
+      "url": "https://microsoftedge.microsoft.com/addons/detail/ai-prompts-navigator/abcopdbmckchogodlkknclocabccidie",
+      "crx_id": "abcopdbmckchogodlkknclocabccidie",
+      "publisher_display_name": "Clevali",
+      "status": "VERIFIED LIVE at audit date"
+    }
+  },
+  "revision_note": "First produced 2026-10-17 with the Chrome and Edge listings recorded as UNKNOWN / REQUIRES CONFIRMATION because neither could be located by public search. The project owner supplied both listing URLs the same day; all three stores were then measured directly and this file was revised. All Chrome and Edge figures are now VERIFIED.",
+  "dates": {
+    "first_artefact": "2025-03-15",
+    "final_packaging": "2025-04-17",
+    "final_store_update": "2025-04-21",
+    "elapsed_build_window_days": 37,
+    "firefox_listing_created": "2025-04-13T09:48:53Z",
+    "firefox_listing_last_updated": "2025-04-16",
+    "chrome_listing_last_updated": "2025-04-21",
+    "edge_listing_last_update_reported": "2025-04-06 (INFERRED to be the package build date rather than a listing-update date; it predates the Firefox listing. Partner Center would show the true publication date)",
+    "landing_page_commits": "2025-04-03 to 2025-04-04",
+    "last_updated_since": "No updates since April 2025",
+    "date_evidence_quality": "Extension dates derive from filesystem mtimes and zip-archive entry dates (reliable for ordering, weaker than commits). Landing-page dates derive from git commits. Store dates derive from the AMO API."
+  },
+  "technologies": {
+    "extension": [
+      "WebExtensions Manifest V3 (Chromium service_worker + Gecko background.scripts)",
+      "Vanilla JavaScript (ES2017+), zero runtime dependencies",
+      "chrome.action, chrome.tabs, chrome.runtime messaging",
+      "chrome.storage.local, chrome.notifications, chrome.runtime.getURL",
+      "MutationObserver, querySelectorAll, scrollIntoView, getBoundingClientRect, requestAnimationFrame",
+      "localStorage"
+    ],
+    "landing_page": [
+      "Vite 5",
+      "React 18",
+      "TypeScript 5",
+      "Tailwind CSS 3",
+      "shadcn/ui + Radix UI",
+      "React Router",
+      "GitHub Actions",
+      "GitHub Pages"
+    ]
+  },
+  "architecture": {
+    "pattern": "Content script + background (toolbar action) extension; no server tier",
+    "components": [
+      {"name": "background.js", "role": "Toolbar-action handler: host allow-list check, panel toggle, action-icon swap, off-platform user feedback", "chromium_lines": 75, "firefox_lines": 92},
+      {"name": "content.js", "role": "All injected UI and DOM integration: platform detection, conversation-ID parsing, selector cascade, panel/tooltip/launcher rendering, MutationObservers, retry ladders", "lines": 1684, "bytes": 62243, "note": "Byte-identical across both builds"},
+      {"name": "styles.css", "role": "Secondary stylesheet; largely superseded by inline style assignment for specificity isolation", "lines": 157}
+    ],
+    "persistence": ["localStorage (launcher button x/y position)", "chrome.storage.local (Firefox only: panel open/closed state)"],
+    "backend": null,
+    "database": null,
+    "network_requests": 0,
+    "third_party_dependencies": 0,
+    "analytics": null,
+    "verification_of_no_network": "grep across content.js for fetch(, XMLHttpRequest, .send(, analytics, googletagmanager returns zero matches"
+  },
+  "integrations": [
+    {"platform": "ChatGPT", "origin": "https://chatgpt.com/*", "message_selector": "[data-message-author-role=\"user\"]", "selector_type": "semantic data attribute", "fragility": "low", "chat_id_pattern": "/c/<id>", "fallback_id": "chatgpt-home"},
+    {"platform": "Claude", "origin": "https://claude.ai/*", "message_selector": "[data-testid=\"user-message\"]", "selector_type": "test hook repurposed as product hook", "fragility": "medium", "chat_id_pattern": "/chat/<id>", "fallback_id": "claude-home"},
+    {"platform": "Google Gemini", "origin": "https://gemini.google.com/*", "message_selector": "user-query-content", "selector_type": "custom element tag name (Angular web component)", "fragility": "medium", "chat_id_pattern": "/app/<id> plus location.hash", "fallback_id": "gemini-home", "note": "Hash is concatenated into the identity key because Gemini sometimes changes only the hash on conversation switch"},
+    {"platform": "DeepSeek", "origin": "https://chat.deepseek.com/*", "message_selector": ".fbb737a4", "selector_type": "build-hashed CSS class", "fragility": "high", "chat_id_pattern": "/chat/s/<id>", "fallback_id": "deepseek-home"},
+    {"platform": "Grok", "origin": "https://grok.com/*", "message_selector": ".whitespace-pre-wrap", "selector_type": "Tailwind utility class", "fragility": "high", "chat_id_pattern": "/chat/<id>", "fallback_id": "grok-home"}
+  ],
+  "workflows": [
+    "Content script loads at document_end on one of five supported origins; platform detected by hostname",
+    "Conversation ID parsed from URL using per-platform pattern with named sentinel fallbacks",
+    "Panel injected off-screen (right: -320px) plus draggable launcher whose position persists to localStorage",
+    "On open: prioritised selector cascade finds user messages; each rendered as numbered button with truncated preview; click scrolls to message with temporary highlight",
+    "MutationObserver on chat container detects new user messages by count delta and refreshes the list",
+    "MutationObserver on document.body detects SPA URL change, resets conversation state and restores panel visibility",
+    "Hover populates a single shared tooltip with full prompt text, repositioned to avoid viewport edges"
+  ],
+  "my_contributions": {
+    "extension": {
+      "attribution": "VERIFIED — sole author",
+      "evidence": "manifest.json author field 'Abraham Akintola'; AMO support email matches landing-page git commit email (abramseyakid@gmail.com); homepage/support URLs point to a gist under AbrahamNobleOX; no second contributor, no vendored library, no package manifest in either build",
+      "scope": ["product idea", "UX design", "full implementation", "cross-browser port", "icon/brand assets", "privacy policy", "packaging", "store submission and review response"]
+    },
+    "landing_page": {
+      "attribution": "PARTIAL — must be stated honestly",
+      "total_commits": 19,
+      "bot_commits": 11,
+      "bot_identity": "gpt-engineer-app[bot] (Lovable AI site builder), 2025-04-03",
+      "personal_commits": 8,
+      "personal_identity": "Akintola Abraham <abramseyakid@gmail.com>, 2025-04-04",
+      "ai_generated": "Initial Vite + React + TypeScript + Tailwind + shadcn/ui scaffold and first pass at sections",
+      "personally_authored": ["rebranding to AI Prompts Navigator", "Header/Footer/Hero/About/Download/FAQ/Privacy component restructuring", "CSS variables and Tailwind theme rewrite", "privacy-policy content", "GitHub Actions build-and-deploy-to-Pages workflow"]
+    }
+  },
+  "production_metrics": [
+    {
+      "metric": "combined_store_reported_users",
+      "value": 64,
+      "unit": "store-reported users",
+      "platform": "Chrome Web Store + Microsoft Edge Add-ons + Firefox Add-ons",
+      "breakdown": {"edge_active_installs": 24, "chrome_users": 21, "firefox_average_daily_users": 19},
+      "measured_on": "2026-10-17",
+      "start_date": "2025-04-13",
+      "end_date": "2026-10-17",
+      "evidence_source": "All three public listings read on the same day: AMO API v5; Edge getproductdetailsbycrxid API; Chrome Web Store listing page",
+      "calculation_method": "Arithmetic sum of the three store-reported figures",
+      "evidence_level": "VERIFIED (components) / DERIVED (sum)",
+      "qualification": "CRITICAL: the three stores use three different definitions — Edge reports active installs, Chrome reports 'users' on an undisclosed basis, Firefox reports average daily users. 64 is a sum of three differently-defined figures, NOT a measured population of 64 distinct people, and NOT a cumulative install total. Never state as '64 daily users' or '64 active users'."
+    },
+    {
+      "metric": "active_install_count",
+      "value": 24,
+      "unit": "active installs",
+      "platform": "Microsoft Edge Add-ons",
+      "measured_on": "2026-10-17",
+      "evidence_source": "https://microsoftedge.microsoft.com/addons/getproductdetailsbycrxid/abcopdbmckchogodlkknclocabccidie, field activeInstallCount",
+      "calculation_method": "Read directly",
+      "evidence_level": "VERIFIED",
+      "qualification": "Point-in-time active installs, not cumulative. The Edge listing has 0 ratings."
+    },
+    {
+      "metric": "users",
+      "value": 21,
+      "unit": "users (Chrome's own definition)",
+      "platform": "Chrome Web Store",
+      "measured_on": "2026-10-17",
+      "evidence_source": "Public listing page for extension ID ajodgicjemafjmbgkjbhfogdpfejihjg",
+      "calculation_method": "Read directly from the listing",
+      "evidence_level": "VERIFIED",
+      "qualification": "Chrome does not publish the basis for its displayed user count; it is not interchangeable with Firefox's daily actives or Edge's active installs."
+    },
+    {
+      "metric": "rating_chrome",
+      "value": 5.0,
+      "unit": "stars",
+      "sample_size": 2,
+      "platform": "Chrome Web Store",
+      "measured_on": "2026-10-17",
+      "evidence_source": "Public listing page",
+      "evidence_level": "VERIFIED",
+      "qualification": "n = 2. Always state the sample size."
+    },
+    {
+      "metric": "ratings_all_stores",
+      "value": 4.67,
+      "unit": "mean stars",
+      "sample_size": 3,
+      "breakdown": {"chrome": "5.0 from 2", "firefox": "4.0 from 1", "edge": "no ratings"},
+      "measured_on": "2026-10-17",
+      "evidence_level": "DERIVED",
+      "qualification": "n = 3 across all three stores. Directionally positive, statistically meaningless. Never publish without the sample size."
+    },
+    {
+      "metric": "independent_store_reviews_passed",
+      "value": 3,
+      "unit": "review processes",
+      "platform": "Google, Microsoft, Mozilla",
+      "evidence_source": "Three live public listings at audit date",
+      "evidence_level": "VERIFIED",
+      "qualification": "The listings being live evidences the outcomes; the review correspondence itself was not inspected, so the number of review rounds is unknown."
+    },
+    {
+      "metric": "average_daily_users",
+      "value": 19,
+      "unit": "users",
+      "platform": "Firefox Add-ons",
+      "measured_on": "2026-10-17",
+      "start_date": "2025-04-13",
+      "end_date": "2026-10-17",
+      "evidence_source": "addons.mozilla.org API v5 /addons/addon/ai-prompts-navigator/, cross-checked against rendered listing page",
+      "calculation_method": "Read directly from the API field average_daily_users",
+      "evidence_level": "VERIFIED",
+      "qualification": "A rolling point-in-time measure of active installs, NOT a cumulative install total. AMO does not publish the historical series to non-owners, so peak and cumulative installs are unknown."
+    },
+    {
+      "metric": "weekly_downloads",
+      "value": 1,
+      "unit": "downloads",
+      "platform": "Firefox Add-ons",
+      "measured_on": "2026-10-17",
+      "evidence_source": "AMO API v5 field weekly_downloads",
+      "calculation_method": "Read directly",
+      "evidence_level": "VERIFIED",
+      "qualification": "The product has not been marketed or updated since April 2025."
+    },
+    {
+      "metric": "rating_average",
+      "value": 4.0,
+      "unit": "stars",
+      "sample_size": 1,
+      "platform": "Firefox Add-ons",
+      "measured_on": "2026-10-17",
+      "evidence_source": "AMO API v5 ratings.average / ratings.count / ratings.text_count",
+      "evidence_level": "VERIFIED",
+      "qualification": "n = 1. Statistically meaningless; always state the sample size alongside the figure."
+    },
+    {
+      "metric": "listing_lifespan",
+      "value": 18,
+      "unit": "months (approx)",
+      "start_date": "2025-04-13",
+      "end_date": "2026-10-17",
+      "evidence_source": "AMO created date vs audit date",
+      "calculation_method": "Audit date minus listing creation date",
+      "evidence_level": "DERIVED",
+      "qualification": "Measures continuous public availability, not continuous use by any individual."
+    },
+    {
+      "metric": "package_size",
+      "value": 91.39,
+      "unit": "KB",
+      "evidence_source": "AMO listing page",
+      "evidence_level": "VERIFIED",
+      "qualification": null
+    },
+    {
+      "metric": "elapsed_build_window",
+      "value": 37,
+      "unit": "days",
+      "start_date": "2025-03-15",
+      "end_date": "2025-04-21",
+      "evidence_source": "Filesystem mtimes across both builds, entry dates inside three dated development zip archives, and the store-verified Firefox creation (13 Apr) and Chrome last-updated (21 Apr) dates",
+      "calculation_method": "Last recorded project activity minus first artefact date",
+      "evidence_level": "DERIVED",
+      "qualification": "Bounds the elapsed window for solo part-time work; does NOT measure hours spent. The endpoints are store-verified; interior dates come from mtimes."
+    },
+    {
+      "metric": "cumulative_lifetime_installs",
+      "value": null,
+      "evidence_level": "UNKNOWN / REQUIRES CONFIRMATION",
+      "qualification": "Would almost certainly exceed the 64 current users and is the largest honest number still unclaimed. None of the three stores publishes it to a non-owner; all three developer dashboards do. See evidence_gaps item 1."
+    }
+  ],
+  "verified_claims": [
+    {"claim": "Designed, built and published a cross-browser Manifest V3 browser extension to all three major extension stores — Chrome Web Store, Microsoft Edge Add-ons and Firefox Add-ons — as sole author", "evidence_level": "VERIFIED", "evidence": "Three live listings verified 2026-10-17 (IDs ajodgicjemafjmbgkjbhfogdpfejihjg, abcopdbmckchogodlkknclocabccidie, ai-prompts-navigator); manifest author field; no other contributor in any artefact", "period": "Mar–Apr 2025, live since Apr 2025", "qualification": "Publisher shows as 'Clevali' on Edge and Firefox and 'abramseyakid' on Chrome; manifest author field names Abraham Akintola"},
+    {"claim": "Passed three independent third-party add-on review processes (Google, Microsoft, Mozilla) with the same product", "evidence_level": "VERIFIED", "evidence": "All three listings live at audit date", "period": "Apr 2025", "qualification": "Outcomes are evidenced by the live listings; review correspondence was not inspected, so the number of review rounds is unknown"},
+    {"claim": "Built a DOM-integration layer supporting five independent AI chat platforms from a single byte-identical content script", "evidence_level": "VERIFIED", "evidence": "manifest host permissions; five-tier selector cascade and five URL-parsing branches in content.js; chromium and mozilla content.js are byte-identical", "period": "Mar–Apr 2025", "qualification": "Current functional status on each platform is unverified — unmaintained since April 2025"},
+    {"claim": "Ported the extension across two divergent MV3 implementations, diagnosing and fixing a background-lifecycle state-persistence bug and an unavailable-API path", "evidence_level": "VERIFIED", "evidence": "background.js diff: module-level state replaced with chrome.storage.local; alert() replaced with chrome.notifications.create(); async/await with try/catch; gecko ID and strict_min_version 109.0 declared", "period": "Apr 2025", "qualification": "Fix applied to the Firefox build only; the Chromium build retains the latent bug"},
+    {"claim": "Reduced the extension's requested privilege surface before public release — removed the scripting permission, a legacy host origin, and ten web-accessible JavaScript files", "evidence_level": "VERIFIED (in the final packaged Chromium build)", "evidence": "March 2025 archive manifest (activeTab, scripting, tabs; 6 origins; 10 WAR scripts; 11 content scripts) vs final Chromium manifest (activeTab, tabs; 5 origins; icons/* only; 1 content script)", "period": "Mar–Apr 2025", "qualification": "IMPORTANT: the Edge listing API reports its published package's permissions as activeTab, scripting, tabs — the EARLIER set — so the narrowing did not reach all three stores. The narrowed manifest (mtime 17 Apr) postdates the Edge submission; the Chrome listing (last updated 21 Apr) is the likely carrier but its permission list is not exposed publicly. Claim the narrowing, not its universal rollout."},
+    {"claim": "Built the product with zero backend, zero network requests and zero third-party dependencies; all state is browser-local", "evidence_level": "VERIFIED", "evidence": "grep for fetch/XMLHttpRequest/.send/analytics returns zero matches; only two localStorage calls and two chrome.storage.local calls exist", "period": "Mar–Apr 2025", "qualification": null},
+    {"claim": "Wrote a hand-rolled resilience layer — prioritised selector cascade, per-platform text extraction, three independent retry ladders and fail-soft UI — for five third-party SPAs with no stable integration contract", "evidence_level": "VERIFIED", "evidence": "content.js lines 829–1503; initializeWithRetry (5x/2s), startObserving (5x/2s), 500/1000/1500ms post-navigation ladder; empty-state + Refresh button instead of exception", "period": "Mar–Apr 2025", "qualification": "Two of the five selectors are knowingly fragile; this is a stated design trade-off, not an oversight"},
+    {"claim": "Built and deployed a React/TypeScript/Tailwind marketing site with an automated GitHub Actions to GitHub Pages pipeline", "evidence_level": "VERIFIED", "evidence": ".github/workflows/deploy.yml (setup-node@v4, npm ci, npm run build, upload-pages-artifact@v3, deploy-pages@v4); 8 personal commits; gh-pages branch present on origin", "period": "4 Apr 2025", "qualification": "Initial scaffold was AI-generated by Lovable (11 bot commits). Branding, restructuring, content and CI are personal work and must be described as such"}
+  ],
+  "derived_claims": [
+    {"claim": "The extension has been continuously publicly available on three stores for approximately 18 months", "evidence_level": "DERIVED", "basis": "AMO created 2025-04-13; Chrome listing last updated 2025-04-21; all three live at audit date 2026-10-17", "qualification": "Availability, not continuous individual use"},
+    {"claim": "Delivered the complete product lifecycle solo in roughly five weeks of elapsed part-time work", "evidence_level": "STRONGLY SUPPORTED", "basis": "Artefact timeline 15 Mar – 21 Apr 2025 covering three renames, expansion from one to five platforms, a modular refactor and its reversal, a cross-browser port, a marketing site with CI/CD, a privacy policy and three separate store submissions", "qualification": "Elapsed window, not hours worked; endpoints store-verified"}
+  ],
+  "inferred_claims": [
+    {"claim": "The ten-module split was reverted because MV3 content scripts are not ES modules, forcing a manifest load-order contract and ten web-accessible files", "evidence_level": "INFERRED", "basis": "Manifest comparison proves the split and the reversal; no written rationale exists"},
+    {"claim": "Hard-coded selectors with no remote config were chosen to preserve the zero-network-request privacy property", "evidence_level": "INFERRED", "basis": "Code shows both the hard-coding and the zero network calls; the causal link is not documented"}
+  ],
+  "business_impact": {
+    "type": "Qualitative and adoption-based; not commercial",
+    "established": [
+      "A real, publicly shipped product with real installed users on every major browser — 64 store-reported users across Chrome, Edge and Firefox, ~18 months after the last update, with no ongoing effort",
+      "Passed three independent third-party add-on reviews (Google, Microsoft, Mozilla), each an external gate on permissions, packaging and privacy claims",
+      "Positively received at a sample size too small to generalise: 3 ratings in total, mean 4.67 (Chrome 5.0 from 2, Firefox 4.0 from 1, Edge none)",
+      "Privacy-preserving by construction and independently auditable — zero network requests in a product whose input is the user's own prompt text",
+      "Zero running cost and zero operational burden for 18 months, a direct consequence of the no-backend architecture"
+    ],
+    "not_established": [
+      "User-facing time saved — the product collects no usage data and no before/after study exists",
+      "Revenue — the product is free; an ad-banner container exists in the code but is commented out and was never activated",
+      "Reach beyond installs — no landing-page analytics were configured"
+    ]
+  },
+  "engineering_challenges": [
+    {"challenge": "Five proprietary, obfuscated, frequently-changing SPA DOMs with no API and no shared markup convention", "why_hard": "Gemini renders prompts inside an Angular custom element; DeepSeek's only hook is a build-hashed class; Grok's is a generic Tailwind utility with high false-positive risk. No CI can test against any of them.", "solution": "Prioritised selector cascade with per-selector try/catch, per-platform text-extraction branches, and explicit fail-soft UI with a Refresh action"},
+    {"challenge": "SPA conversation-change detection without router access", "why_hard": "A content script cannot hook a host SPA's router; Gemini sometimes changes only the URL hash on conversation switch", "solution": "Per-platform URL parsing including the hash, named sentinel fallbacks, and a document.body MutationObserver comparing location.href as a route-change proxy, with panel visibility captured before and restored after state reset"},
+    {"challenge": "MV3 ephemeral background contexts", "why_hard": "Module-level state silently vanishes on teardown, and alert() does not exist in a worker/event-page context at all, so that feedback path was dead code", "solution": "chrome.storage.local for panel state, chrome.notifications.create() for off-platform feedback, async/await with try/catch"},
+    {"challenge": "Style isolation inside five hostile host pages with their own theming", "why_hard": "Host global CSS and nested flex layouts broke the panel's scroll container intermittently and differently per platform", "solution": "Inline styles as primary mechanism, z-index 9999999, fixed positioning, a full font stack on every injected element, absolute-positioned scroll container with explicit top/bottom, and a post-open verification pass at 0/1000/2000ms"},
+    {"challenge": "Packaging an over-privileged development build for public store review", "why_hard": "Ten web-accessible script files is a real attack surface and a predictable review flag; the scripting permission produces the scariest install warning", "solution": "Consolidated to one content script, dropped scripting, removed the legacy chat.openai.com origin, reduced web_accessible_resources to icons/*"}
+  ],
+  "decisions": [
+    {"problem": "Content script had grown to ~50KB", "decision": "Split into ten modules (19 Mar 2025), then revert to a single content.js (by 5 Apr 2025)", "reasoning": "INFERRED: MV3 content scripts are not ES modules; ten plain scripts means ten globals, a manifest load-order contract, and ten web-accessible files", "tradeoff": "A 1,684-line file with no module boundaries — the project's main maintainability cost", "result": "Simpler, smaller, safer package", "evidence_level": "Decision VERIFIED by manifest comparison; reasoning INFERRED"},
+    {"problem": "Panel styling must survive uncontrolled host CSS", "decision": "Inline style assignment as the primary mechanism rather than a stylesheet", "reasoning": "Guaranteed specificity without !important everywhere", "tradeoff": "Styling scattered through logic, no theming layer, styles.css became partly vestigial", "result": "Consistent appearance across all five platforms", "alternative_today": "Shadow DOM, which gives isolation and a clean stylesheet"},
+    {"problem": "The product's input is the user's own prompt text", "decision": "No backend, no telemetry, no analytics", "reasoning": "Trust posture for a high-sensitivity input; stated in the privacy policy and corroborated by the code", "tradeoff": "The product has no idea how it is used — no funnel, no retention data, no selector-breakage alerting", "result": "Verifiable privacy property; a dossier with thin metrics as the direct consequence"},
+    {"problem": "Vendor DOM changes break selectors between releases", "decision": "Hard-code selectors in the shipped bundle rather than fetch a remote selector manifest", "reasoning": "INFERRED: a remote config would end the zero-network-request property", "tradeoff": "A vendor change can only be fixed by a new store release and review cycle", "result": "Privacy preserved; responsiveness to breakage sacrificed"},
+    {"problem": "Where should the panel live?", "decision": "Self-injected fixed-position panel toggled by the toolbar action, not chrome.sidePanel", "reasoning": "chrome.sidePanel is Chromium-only and would fork the UI layer", "tradeoff": "Must fight host-page CSS rather than getting a native container", "result": "Byte-identical content.js across both builds"}
+  ],
+  "known_weaknesses": [
+    "updateQuestionsList() looks up #questions-list, which createPanel() never creates (it creates #ai-prompts-navigator-questions) — the function returns early every time, making extractQuestions() and the observeChat() rendering pipeline vestigial. All live rendering happens through findChatQuestions().",
+    "observeUrlChanges() is defined twice (lines 537 and 1598) with identical bodies; the second silently wins",
+    "Chromium build still holds panelVisible in a module-level variable in an MV3 service worker — the bug diagnosed and fixed for Firefox was never back-ported",
+    "57 console.* calls shipped to production",
+    "No automated tests of any kind, including for trivially testable pure functions (escapeHtml, URL parsing)",
+    "No version control for the extension code — history survives only as three dated zip archives and filesystem timestamps",
+    "Unmaintained since April 2025; at least the DeepSeek and Grok selectors are likely to have decayed, and current functional status is unverified",
+    "mouseout handler reads event.clientX/clientY from the implicit global rather than the handler parameter"
+  ],
+  "lessons": [
+    "Use version control even for a weekend project — the absence of git made this audit archaeology and is the single highest-value process change for future projects",
+    "Delete the old implementation when you write the new one — iterating by addition left half the message-extraction pipeline dead",
+    "Platform lifecycle beats platform API differences — the hardest part of the Firefox port was understanding that an MV3 background context is ephemeral, not chrome.* vs browser.*",
+    "Modularisation the platform fights is not worth it — but Shadow DOM plus a bundler would have given both isolation and structure",
+    "Privacy by construction has a cost and it should be a conscious one — collecting nothing means no visibility when a vendor DOM change silently breaks the product; an opt-in, local-only breakage signal is the middle ground",
+    "Shipping is a skill of its own — icons, privacy policy, landing page, store copy, permission justification and review were roughly as much elapsed work as the panel itself"
+  ],
+  "cv_bullets": {
+    "high_confidence_quantified": [
+      "Designed, built and published AI Prompts Navigator, a zero-dependency Manifest V3 browser extension that adds a clickable prompt outline to five AI chat platforms (ChatGPT, Claude, Gemini, DeepSeek, Grok); live on all three major extension stores — Chrome, Edge and Firefox — with 64 store-reported users 18 months after release, rated 5.0 on Chrome, and running at zero infrastructure cost with no backend and no telemetry.",
+      "Took a solo product from idea to three approved public store listings in ~5 weeks, passing three independent third-party add-on reviews (Google, Microsoft, Mozilla) — including packaging, icon assets, privacy policy and permission justification for each.",
+      "Shipped a cross-browser extension from a single 1,684-line content script, byte-identical across Chromium and Gecko builds, with all platform divergence isolated to the manifest and background layer — including a diagnosed fix for MV3 background-context state loss using chrome.storage.local.",
+      "Cut the extension's requested privilege surface before release — removed one permission, one host origin and ten web-accessible script files — producing a minimum-privilege Chromium package."
+    ],
+    "high_confidence_non_quantified": [
+      "Engineered a fail-soft DOM integration layer against five proprietary single-page applications with no public API and no stable markup contract, combining a prioritised five-tier selector cascade, per-platform text-extraction fallbacks, three independent retry ladders and an explicit recoverable empty state.",
+      "Solved SPA conversation-change detection without router access by parsing five distinct URL schemes (including Google Gemini's hash-only transitions) and using a MutationObserver on the document body as a route-change proxy, preserving UI state across navigation.",
+      "Built the product privacy-first by construction: zero network requests, zero analytics, zero third-party code, with all state confined to browser-local storage — a verifiable property of the shipped bundle rather than a policy promise.",
+      "Delivered an entire consumer product solo — UX, implementation, icon set, privacy policy, React/TypeScript marketing site with automated GitHub Pages deployment, store packaging and review response across three stores."
+    ],
+    "phrasing_warnings": [
+      "Write '64 store-reported users across three stores', never '64 daily users' or '64 active users' — the three stores count differently and no cumulative install total is available.",
+      "Write 'rated 5.0 on Chrome (2 ratings)' or '4.67 average across 3 ratings', never a bare '5-star rated' — the sample is three.",
+      "Claim the permission narrowing, not that it shipped everywhere — the Edge listing carries the earlier permission set."
+    ]
+  },
+  "interview_stories": [
+    {"theme": "Integrating with systems you don't control", "story": "The five-selector cascade, and why .fbb737a4 (DeepSeek) and .whitespace-pre-wrap (Grok) were knowingly fragile choices whose mitigation was architectural — fail soft, retry, visible Refresh — rather than selectorial"},
+    {"theme": "Debugging a platform, not your code", "story": "MV3 ephemeral background contexts: the panel-state bug and the dead alert() path, both traced to lifecycle rather than Chrome-vs-Firefox API differences"},
+    {"theme": "Architecture decision and reversal", "story": "Splitting into ten modules then consolidating back to one file, with a concrete platform-level explanation for why modularity was expensive under MV3"},
+    {"theme": "A trade-off with no right answer", "story": "No telemetry means no breakage detection — defend the privacy decision, then describe the opt-in middle ground you would build today"},
+    {"theme": "Security awareness", "story": "Finding your own dev build over-privileged and cutting it back before review: the scripting permission, the legacy origin, ten web-accessible scripts"},
+    {"theme": "Honest self-critique", "story": "The dead updateQuestionsList path — a feature that works because a second implementation quietly took over — and the duplicated observeUrlChanges"},
+    {"theme": "Ownership and shipping", "story": "Taking a personal idea through icons, privacy policy, landing page, CI/CD, packaging and third-party store review in roughly 33 elapsed days"},
+    {"theme": "Working with AI tooling honestly", "story": "The landing page was scaffolded by Lovable and then substantially reworked by hand; being precise about the split is itself a credibility signal"}
+  ],
+  "portfolio_material": {
+    "pitch": "A browser extension that gives long AI conversations the table of contents they should have shipped with — across five platforms, with no server and no data collection.",
+    "challenge": "AI chat products render conversations as an infinite scroll with no index. Building an outline means reading the DOM of five proprietary SPAs that expose no API, change markup without notice, and in two cases offer no better hook than a build-hashed class or a Tailwind utility.",
+    "role": "Sole designer, engineer and publisher. Landing-page scaffold was AI-generated; branding, restructuring, content and deployment pipeline were not.",
+    "results": "Live on Chrome, Edge and Firefox since April 2025. 64 store-reported users at 18 months (Edge 24, Chrome 21, Firefox 19 — three different metric definitions). Rated 5.0 on Chrome (2 ratings) and 4.0 on Firefox (1). Three independent store reviews passed. Zero maintenance, zero infrastructure, zero cost since release.",
+    "what_id_do_differently": ["Shadow DOM plus a bundler for isolation and structure", "git from commit one", "delete superseded code paths", "back-port the storage fix to Chromium", "a privacy-preserving breakage signal", "strip production logging"]
+  },
+  "content_ideas": [
+    {"title": "Five AI chat apps, five different ways to find a user's message", "angle": "What each selector reveals about the app behind it, and how to design a cascade that degrades instead of throwing", "evidence": "The five-tier selector cascade"},
+    {"title": "Your MV3 background script is not a server", "angle": "Ephemeral background contexts, state that silently vanishes, APIs that don't exist there", "evidence": "The before/after background.js diff"},
+    {"title": "Detecting navigation in an SPA you don't own", "angle": "Why you can't hook the router, why a body MutationObserver works, what it costs on a token-streaming page", "evidence": "bodyObserver and the Gemini hash case"},
+    {"title": "I shipped an extension with no analytics — here's what that cost me", "angle": "Privacy by construction: what you gain in trust, what you lose in breakage detection, the opt-in middle ground", "evidence": "Zero network calls in the bundle"},
+    {"title": "Trimming an extension's permissions before store review", "angle": "A concrete before/after of the manifest and why web-accessible scripts matter", "evidence": "March archive vs shipped manifest"},
+    {"title": "I modularised, then un-modularised", "angle": "Why MV3 punishes multi-file content scripts and what Shadow DOM plus a bundler does instead", "evidence": "Manifest comparison"}
+  ],
+  "public_safe_claims": [
+    "All architecture, selector strategy, MV3 porting work, permission narrowing and privacy posture details",
+    "AMO metrics: 19 average daily users, 4.0 rating from 1 review, live since April 2025",
+    "The full development timeline and technology stack",
+    "All self-critical findings in the weaknesses section — there is no customer data, credential, proprietary code or commercial confidence anywhere in this project"
+  ],
+  "public_safe_caveats": [
+    "Always state the sample size alongside any rating (3 ratings across all stores)",
+    "Always state the metric-definition caveat alongside the combined 64-user figure",
+    "Always state that the landing-page scaffold was AI-generated",
+    "Do not present selectors as currently working — they may have decayed"
+  ],
+  "private_only_information": [
+    "The likelihood that selectors are currently broken on one or more platforms — do not demo without checking first",
+    "The Edge-vs-Chromium permission discrepancy, if you would rather not volunteer it unprompted — though it is a good answer if asked",
+    "Any future revenue or advertising plans referenced in the privacy policy"
+  ],
+  "evidence_gaps": [
+    {"gap": "Historical user curves and peak/cumulative installs across all three stores", "why_useful": "HIGHEST-VALUE REMAINING ITEM. Turns three point-in-time numbers into a trend, and a cumulative lifetime install total is a legitimately larger but still honest figure than the 64 current users", "where": "Chrome Developer Dashboard, Microsoft Partner Center, AMO Developer Hub Statistics — all owner-only", "action": "Sign in to each and export the install/user series since Apr 2025"},
+    {"gap": "Exact Edge publication date", "why_useful": "The Edge API reports 6 Apr 2025, which predates the Firefox listing and is probably the package build date rather than the listing date — the one dated anomaly in this dossier", "where": "Microsoft Partner Center submission history", "action": "Record the actual published date"},
+    {"gap": "Whether the Chrome listing carries the narrowed permission set", "why_useful": "Would settle the §6.8 qualification — the Edge package shipped with 'scripting', the final local manifest does not", "where": "Chrome Developer Dashboard, or chrome://extensions with the store build installed", "action": "Install the Chrome Web Store build and read its permissions"},
+    {"gap": "Review feedback or rejection rounds from the three stores", "why_useful": "'Passed three reviews' is verified; how many rounds it took is an interview story that cannot be reconstructed from the listings", "where": "Review-decision emails in the submission account's inbox", "action": "Search mail for 'Chrome Web Store', 'Partner Center' and 'addons.mozilla' around 6–25 Apr 2025"},
+    {"gap": "The text of the three ratings (Chrome x2, Firefox x1)", "why_useful": "A real user sentence is worth more than a star rating in a portfolio", "where": "Public listing reviews tabs on both stores", "action": "Read and quote them"},
+    {"gap": "Current functional status on each of the five platforms", "why_useful": "Selector decay is likely; you should know before anyone demos it", "where": "Your own browser, ~15 minutes", "action": "Install the build, open one conversation per platform, record dated pass/fail"},
+    {"gap": "Any advertising or monetisation outcome", "why_useful": "The privacy policy anticipates ads and the panel reserves a commented-out ad-banner container", "where": "Personal records", "action": "Confirm none was ever enabled"},
+    {"gap": "Landing-page traffic", "why_useful": "Would evidence reach beyond installs", "where": "GitHub Pages has no built-in analytics", "action": "Check whether any was added; otherwise record as permanently unknown"},
+    {"gap": "Whether the gh-pages site is still live", "why_useful": "A working demo link materially strengthens a portfolio entry", "where": "origin/gh-pages exists; the obvious Pages URL returned 404 at audit date", "action": "Check repository Settings → Pages for the configured URL, or redeploy"}
+  ],
+  "methodology": {
+    "inspected": [
+      "Both packaged extension builds in full (manifest.json, background.js, content.js, styles.css, icon sets)",
+      "Three dated development zip archives, extracted and compared against the shipped builds",
+      "Landing-page repository: full git log, shortlog -sne, per-commit file statistics, branch list, GitHub Actions workflow",
+      "Filesystem modification times across every artefact",
+      "All three public store listings, read on the same day (2026-10-17): AMO v5 API plus rendered page; Edge getproductdetailsbycrxid API; Chrome Web Store listing page"
+    ],
+    "production_data_protocol": "Not applicable. No .env, no credential, no connection string, no database and no backend exist in this project. No query of any kind was executed against any system. No credential, token or secret appears in any output file because none exists in the project.",
+    "store_metric_method": "All three stores read on 2026-10-17, the same day, so the figures are contemporaneous even though their definitions differ. Firefox: AMO v5 API cross-checked against the rendered listing page, both agreeing. Edge: getproductdetailsbycrxid API returning activeInstallCount 24, ratingCount 0, and the package permission list. Chrome: public listing page reporting 21 users, 5.0 from 2 ratings, 86.73 KiB, last updated 2025-04-21 (the page does not expose a permission list). The combined 64 is an arithmetic sum of three differently-defined metrics and is flagged as such everywhere it appears; no cumulative install total is claimed because no store publishes one to a non-owner.",
+    "audit_history": "During the original audit the Chrome and Edge listings could not be located by public search (exact product name, publisher name 'Clevali', and domain-restricted search against chromewebstore.google.com, chrome.google.com and microsoftedge.microsoft.com) and were recorded as UNKNOWN rather than assumed in either direction. The project owner supplied both URLs the same day and both were then measured directly. The original negative result is retained because 'the listing exists but is not discoverable by name search' is itself a fact worth knowing about the product's distribution.",
+    "attribution_method": "Extension authorship attributed wholly to the project owner on the basis of the manifest author field, matching contact details across the AMO listing and git commits, the absence of any other contributor or vendored dependency, and the owner's own account. Landing-page authorship split explicitly by commit author, with the AI-generated portion named rather than absorbed.",
+    "line_references": "All line numbers refer to ai-prompts-navigator-chromium/content.js (1,684 lines), byte-identical to the Mozilla build's copy."
+  }
+}

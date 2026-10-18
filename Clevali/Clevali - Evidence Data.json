@@ -1,0 +1,366 @@
+{
+  "schema_version": "1.0",
+  "audit_date": "2026-10-17",
+  "project_name": "Clevali (Expense Tracker)",
+  "project_type": "Cross-platform mobile application (iOS + Android), offline-first, no backend",
+  "project_description": "A privacy-first personal expense tracker built with React Native (Expo SDK 53) and TypeScript, storing all data in an on-device SQLite database. Multi-currency, with annual monthly budgets, local reminder notifications, and transactional JSON import/export for device-to-device portability. Solo-authored portfolio and skills project, published to the Google Play Store and Apple App Store (user-attested).",
+  "repositories": [
+    {
+      "name": "expense-tracker",
+      "url": "https://github.com/AbrahamNobleOX/expense-tracker-app",
+      "local_path": "~/Documents/Coding/personal-projects/tracking-reactnn",
+      "branch_audited": "v1-golive",
+      "head_commit": "94d80ea",
+      "visibility": "public",
+      "notes": "v1-golive is the release branch, 2 commits ahead of main"
+    }
+  ],
+  "dates": {
+    "first_commit": "2025-06-05",
+    "last_commit": "2025-07-22",
+    "build_window_days": 47,
+    "core_build_sprint": "2025-06-05 to 2025-06-10 (54 of 59 commits)",
+    "release_phase": "2025-07-13 to 2025-07-22 (5 commits)",
+    "store_publication_date": null,
+    "store_publication_date_evidence_level": "UNKNOWN",
+    "store_publication_note": "Publication to both stores is USER-ATTESTED; exact dates must be retrieved from Play Console and App Store Connect"
+  },
+  "technologies": {
+    "language": ["TypeScript 5.8.3 (strict mode)"],
+    "framework": ["React Native 0.79.3", "React 19.0.0", "Expo SDK 53.0.10 (New Architecture enabled)"],
+    "routing": ["Expo Router 5.0.7 (file-based)"],
+    "styling": ["NativeWind 4.1.23", "Tailwind CSS 3.4.17", "React Native StyleSheet (2 screens)"],
+    "database": ["expo-sqlite 15.2.11 (on-device SQLite)"],
+    "key_value_store": ["@react-native-async-storage/async-storage 2.2.0"],
+    "notifications": ["expo-notifications 0.31.3"],
+    "gestures_animation": ["react-native-gesture-handler 2.25.0", "react-native-reanimated 3.6.1"],
+    "file_and_share": ["expo-file-system 18.1.10", "expo-sharing 13.1.5", "expo-document-picker 13.1.5"],
+    "ui_components": ["@expo/vector-icons 14.1.0", "@react-native-community/datetimepicker 8.4.1", "react-native-safe-area-context 5.4.0", "react-native-screens 4.11.1"],
+    "build_release": ["EAS Build", "EAS Submit", "EAS CLI >= 16.15.0"],
+    "absent_by_design": ["backend/API", "authentication", "remote database", "cloud sync", "analytics SDK", "crash reporting", "any network client"]
+  },
+  "architecture": {
+    "pattern": "Offline-first, local-only, three-layer (presentation / domain-data-access / storage)",
+    "presentation": "Expo Router file-based routing; 3 visible tab routes (index, add-expense, expenses) and 5 hidden routes via href:null (set-budget, notification-settings, currency-settings, currency-setup, debug); first-run gating redirects to currency-setup based on two AsyncStorage flags",
+    "domain_data_access": "12 modules in lib/: db, currency, budget, reminderSettings, notifications, dbJsonExport, dbJsonImport, dbRootExport, dbWipe, dbDiagnostics, sampleData, utils",
+    "storage": "SQLite (5 tables) + AsyncStorage (setup flags) + OS notification scheduler + device filesystem",
+    "network": "None. No API client, no remote calls anywhere in source or dependency tree.",
+    "database_tables": [
+      {"name": "expenses", "columns": ["id PK", "category", "description", "amount REAL", "currency", "date", "updated"], "notes": "currency denormalised as code string; updated added by later additive migration"},
+      {"name": "yearly_monthly_budgets", "columns": ["id PK", "year", "currency", "monthly_limit REAL"], "constraints": ["UNIQUE(year, currency)"]},
+      {"name": "reminder_settings", "columns": ["id PK", "frequency INTEGER days", "start_time", "last_triggered", "enabled"], "notes": "single-row by convention"},
+      {"name": "currencies", "columns": ["id PK", "code UNIQUE", "name", "symbol"]},
+      {"name": "user_currencies", "columns": ["id PK", "currency_id FK -> currencies(id) ON DELETE CASCADE", "is_default"], "notes": "single-default invariant enforced in code"}
+    ],
+    "platform_abstraction": "Structurally-typed mock SQLiteDatabase installed when Platform.OS === 'web', allowing one codebase to run where expo-sqlite has no implementation (graceful degradation, not feature parity)"
+  },
+  "integrations": [
+    {"name": "OS notification scheduler", "via": "expo-notifications", "purpose": "local reminder delivery; permissions, categories with an 'Add Expense' action, foreground and response listeners"},
+    {"name": "OS share sheet", "via": "expo-sharing", "purpose": "JSON export destination chosen by the user"},
+    {"name": "OS document picker", "via": "expo-document-picker", "purpose": "JSON import source"},
+    {"name": "Device filesystem", "via": "expo-file-system", "purpose": "export file writing, raw DB export (developer feature)"},
+    {"name": "EAS Build / Submit", "via": "eas.json", "purpose": "cloud build and store submission pipeline; appVersionSource remote, production autoIncrement"}
+  ],
+  "workflows": [
+    {"name": "First run", "steps": ["launch", "initDatabase()", "check first_time_setup_completed and currency_setup_completed flags", "router.replace('/currency-setup') if incomplete", "select currencies from catalogue of 20, star a default", "persist to currencies + user_currencies", "mark both flags", "home"]},
+    {"name": "Record expense", "steps": ["Add tab (carries reset=true and ts params)", "date picker, future dates blocked", "currency selection", "category (8 options)", "description", "amount with live thousands-separator formatting", "validation", "INSERT", "clear form", "navigate to expenses"]},
+    {"name": "Edit expense", "steps": ["Expenses", "drill into month", "swipe row left", "pencil action", "route to add-expense?id=N&ts=...", "load by id", "UPDATE with new updated timestamp"]},
+    {"name": "Review spending", "steps": ["currency filter", "months grouped under year headers, current month pinned and badged", "per-month budget progress bar", "scroll to bottom lazily loads preceding year down to floor of 2000", "tap month", "day-grouped SectionList with per-day subtotals"]},
+    {"name": "Set budget", "steps": ["currency", "year (current + 4 future)", "amount", "upsert on (year, currency)", "existing budget list refreshes"]},
+    {"name": "Configure reminders", "steps": ["enable toggle", "frequency (1, 2, 3, 7, 14, 30 days)", "time of day", "request permission", "cancel all existing", "schedule daily native trigger or computed one-shot date trigger"]},
+    {"name": "Backup and restore", "steps": ["Export JSON: enumerate tables from sqlite_master, serialise all rows, write to cache, share sheet", "Import JSON: document picker, confirm, BEGIN TRANSACTION, validate and upsert per collection, COMMIT or ROLLBACK, report counts"]},
+    {"name": "Reset", "steps": ["two sequential escalating confirmations", "BEGIN TRANSACTION", "count then delete 5 tables honouring FK order", "clear 3 AsyncStorage flags", "COMMIT", "cancel all scheduled notifications"]}
+  ],
+  "my_contributions": {
+    "authorship": {"commits_authored": 59, "commits_total": 59, "percentage": 100, "other_contributors": 0, "evidence": "git shortlog -sne --all", "evidence_level": "VERIFIED"},
+    "areas": [
+      {"area": "Data modelling", "detail": "5-table SQLite schema", "commits": ["9e4b432", "51975dd", "69d2cc8", "02703c1", "4422e31"]},
+      {"area": "Data access layer", "detail": "12 modules, ~1800 lines, all SQL parameterised"},
+      {"area": "Navigation and app shell", "detail": "Expo Router migration, tab navigator with hidden routes, first-run redirect gating", "commits": ["2d6ba76"]},
+      {"area": "UI", "detail": "9 screens, 3700+ lines, NativeWind with StyleSheet fallback on 2 screens"},
+      {"area": "Gestures and interaction", "detail": "swipe-to-action, pull-to-refresh, lazy year loading", "commits": ["8d34744", "70e1715"]},
+      {"area": "Notifications", "detail": "permissions, categories, hybrid scheduling, foreground and response listeners", "commits": ["02703c1", "dc5d753"]},
+      {"area": "Data portability", "detail": "transactional JSON import, full-table export, raw DB export, transactional wipe", "commits": ["a41366a", "ac49f3c", "d574753", "da16d52"]},
+      {"area": "Release engineering", "detail": "EAS configuration, dependency pinning, dev-control removal, iOS export-compliance declaration", "commits": ["2fef9f6", "18e8ff1", "b7f8549", "94d80ea"]},
+      {"area": "Documentation", "detail": "README.md, BUDGET_FEATURE.md, DATA_PORTABILITY.md written alongside implementation"}
+    ]
+  },
+  "production_metrics": {
+    "available": false,
+    "reason": "No backend, no remote database, no analytics or crash reporting. All data is local to each user's device and never transmitted. No production data exists to query and no usage telemetry was ever collected.",
+    "evidence_level": "VERIFIED",
+    "metrics": [],
+    "do_not_claim": ["downloads", "installs", "active users", "retention", "session counts", "ratings", "revenue", "percentage improvements", "time savings"]
+  },
+  "repository_metrics": [
+    {"metric": "total_commits", "value": 59, "unit": "commits", "start_date": "2025-06-05", "end_date": "2025-07-22", "evidence_source": "git rev-list --count HEAD", "calculation_method": "direct count", "evidence_level": "VERIFIED"},
+    {"metric": "contributors", "value": 1, "unit": "people", "evidence_source": "git shortlog -sne --all", "evidence_level": "VERIFIED"},
+    {"metric": "build_window", "value": 47, "unit": "days", "evidence_source": "first and last commit dates", "evidence_level": "VERIFIED"},
+    {"metric": "core_sprint_commits", "value": 54, "unit": "commits", "start_date": "2025-06-05", "end_date": "2025-06-10", "calculation_method": "sum of per-day commit counts over the first six active days; 54/59 = 92%", "evidence_level": "DERIVED"},
+    {"metric": "application_code", "value": 5540, "unit": "lines of TypeScript/TSX", "evidence_source": "wc -l app/*.tsx lib/*.ts", "calculation_method": "excludes node_modules, package-lock.json and config files", "evidence_level": "VERIFIED"},
+    {"metric": "code_churn_insertions", "value": 7615, "unit": "lines", "evidence_source": "git log --numstat excluding package-lock.json", "evidence_level": "VERIFIED"},
+    {"metric": "code_churn_deletions", "value": 968, "unit": "lines", "evidence_source": "git log --numstat excluding package-lock.json", "evidence_level": "VERIFIED"},
+    {"metric": "routes", "value": 9, "unit": "screens", "evidence_source": "app/ directory", "evidence_level": "VERIFIED"},
+    {"metric": "library_modules", "value": 12, "unit": "modules", "evidence_source": "lib/ directory", "evidence_level": "VERIFIED"},
+    {"metric": "database_tables", "value": 5, "unit": "tables", "evidence_source": "schema inspection", "evidence_level": "VERIFIED"},
+    {"metric": "currency_catalogue", "value": 20, "unit": "currencies", "evidence_source": "WORLD_CURRENCIES in lib/currency.ts", "evidence_level": "VERIFIED"},
+    {"metric": "expense_categories", "value": 8, "unit": "categories", "evidence_source": "app/add-expense.tsx", "evidence_level": "VERIFIED"},
+    {"metric": "reminder_frequencies", "value": 6, "unit": "options", "evidence_source": "FREQUENCY_OPTIONS in app/notification-settings.tsx", "evidence_level": "VERIFIED"},
+    {"metric": "automated_tests", "value": 0, "unit": "tests", "evidence_source": "no test files, no test runner in dependencies", "evidence_level": "VERIFIED"},
+    {"metric": "most_revised_file", "value": "app/expenses.tsx (22 commits, 861 lines)", "evidence_source": "git log --name-only", "evidence_level": "VERIFIED"},
+    {"metric": "android_version_code", "value": 17, "unit": "version code", "evidence_source": "app.json", "calculation_method": "direct read", "evidence_level": "VERIFIED", "qualification": "Establishes at least 17 distinct Android build artefacts under this configuration. NOT a count of public Play Store releases."},
+    {"metric": "commit_type_distribution", "value": {"feat": 49, "refactor": 5, "fix": 2, "chore": 2, "initial": 1}, "evidence_source": "git log --format='%s'", "evidence_level": "VERIFIED"}
+  ],
+  "verified_claims": [
+    {"id": "C2", "claim": "Sole author of the entire codebase - 59 of 59 commits, 5,540 lines of strict-mode TypeScript across 9 screens and 12 modules.", "evidence": "git shortlog, wc -l, tsconfig.json strict:true", "period": "2025-06-05 to 2025-07-22"},
+    {"id": "C3", "claim": "Designed and implemented a 5-table offline-first SQLite data layer with idempotent bootstrap, additive in-place schema evolution and backward-compatible data backfill.", "evidence": "lib/db.ts, lib/currency.ts; commits 51975dd, 39711de"},
+    {"id": "C4", "claim": "Implemented a privacy-first architecture in which all financial data remains on the user's device - no backend, no authentication, no network transmission, no analytics.", "evidence": "complete dependency list and source tree inspection", "qualification": "Privacy intent is USER-ATTESTED; the architecture itself is fact."},
+    {"id": "C5", "claim": "Built a transactional JSON import/export subsystem across five tables with per-row validation, upsert-by-id semantics, skip-and-warn tolerance of malformed rows, and BEGIN/COMMIT/ROLLBACK integrity.", "evidence": "lib/dbJsonImport.ts, lib/dbJsonExport.ts"},
+    {"id": "C6", "claim": "Engineered a hybrid local notification scheduler delivering six reminder cadences on a platform API supporting only fixed calendar repeats.", "evidence": "lib/notifications.ts", "qualification": "Non-daily chains depend on app activity to re-arm."},
+    {"id": "C8", "claim": "Implemented a multi-currency domain model (20-currency catalogue, normalised user selection, enforced single-default invariant) with per-currency filtering, budgets and aggregation.", "evidence": "lib/currency.ts, lib/budget.ts, app/expenses.tsx"},
+    {"id": "C9", "claim": "Built a transaction browser with year-grouped month navigation, lazily loaded historical years, day-grouped SectionList detail, gesture-driven edit/delete, pull-to-refresh and budget progress visualisation.", "evidence": "app/expenses.tsx, 861 lines, 22 commits"},
+    {"id": "C10", "claim": "Solved cross-platform compatibility with a structurally-typed mock database adapter, allowing a single codebase to run on web where the native SQLite module is unavailable.", "evidence": "lib/db.ts", "qualification": "Graceful degradation - the web build renders empty - not web feature parity."},
+    {"id": "C12", "claim": "Authored user- and developer-facing documentation alongside implementation.", "evidence": "README.md, BUDGET_FEATURE.md, DATA_PORTABILITY.md"}
+  ],
+  "derived_claims": [
+    {"id": "C7", "claim": "Produced at least 17 distinct Android build artefacts through an EAS Build pipeline configured with remote version sourcing and production auto-increment.", "evidence": "versionCode 17 in app.json; eas.json", "calculation_method": "Android version codes increment per build artefact", "qualification": "Build artefacts, NOT public releases - internal, preview and failed builds also consume version codes."},
+    {"id": "C11", "claim": "Delivered a complete feature set in a 6-day build sprint (54 of 59 commits, 92%), then carried the project through a distinct release-engineering phase on a dedicated branch.", "evidence": "commit date aggregation; v1-golive branch"}
+  ],
+  "strongly_supported_claims": [
+    {"claim": "The project went through a genuine app store submission cycle rather than stopping at local development.", "evidence": "Release work isolated on a branch named v1-golive; final commit is an iOS export-compliance declaration (ITSAppUsesNonExemptEncryption); EAS submit profile configured; developer-only controls hidden before submission; dual-platform bundle identifiers; adaptive icon and splash assets configured."}
+  ],
+  "inferred_claims": [
+    {"claim": "The multi-currency design was driven by the author's own need, operating between the UK and Nigeria.", "evidence": "GBP and NGN are the currency pair used throughout the author's sample data generator (lib/sampleData.ts, commit 8ade42f)", "evidence_level": "INFERRED"}
+  ],
+  "user_attested_claims": [
+    {"claim": "The application was published to both the Google Play Store and the Apple App Store.", "corroboration": "Consistent with EAS configuration, dual bundle identifiers and the iOS export-compliance declaration present in the repository, but not proven by them."},
+    {"claim": "The Play Store listing remained live for approximately one year.", "corroboration": "None available from the repository."},
+    {"claim": "The Apple Developer Program subscription is believed to have lapsed, so the iOS listing may no longer be live.", "corroboration": "None available from the repository."},
+    {"claim": "This is the only one of the author's mobile applications to reach public app stores; earlier React Native apps were not published.", "corroboration": "None available from this repository."},
+    {"claim": "The project was built in preparation for a UK Global Talent visa application, as evidence of versatility across web and mobile.", "corroboration": "Consistent with the project's portfolio character and the deliberate push to store release."},
+    {"claim": "The project is intended to remain a portfolio piece demonstrating cross-platform capability.", "corroboration": "None required."}
+  ],
+  "unknown_claims": [
+    {"item": "Download / install counts on either store", "resolution": "Google Play Console Statistics; App Store Connect App Analytics"},
+    {"item": "Active users, retention, session frequency", "resolution": "Not collected by the app; only store-level install data can exist"},
+    {"item": "Ratings and reviews", "resolution": "Store consoles"},
+    {"item": "Exact store publication and delisting dates", "resolution": "Store consoles; store confirmation emails"},
+    {"item": "Total EAS builds and submissions", "resolution": "eas build:list / eas submit:list for EAS project 2877daaf-6bf9-41c9-a796-ed7a0e36a4f6"}
+  ],
+  "business_impact": {
+    "commercial_impact": "None. Personal project, no revenue model, no client, no commercial stakeholder. No business impact should be claimed.",
+    "career_capital": [
+      {"type": "Demonstrated delivery", "detail": "Complete product from empty repository to published store listing, solo, in under two months. 'Shipped and reviewed by Apple and Google' is materially different from 'built'."},
+      {"type": "Demonstrated breadth", "detail": "Establishes cross-platform mobile, native release engineering and offline-first data design alongside the author's web and backend evidence."},
+      {"type": "Demonstrated judgement", "detail": "The privacy architecture and the data-portability answer to the sync problem are coherent decisions with costs the author can state."},
+      {"type": "Immigration evidence", "detail": "Built explicitly as supporting material for a UK Global Talent application (USER-ATTESTED)."}
+    ]
+  },
+  "engineering_challenges": [
+    {"challenge": "Running one codebase on a platform where the database does not exist", "why_hard": "expo-sqlite has no web implementation; the alternatives are forking the data layer or blocking web entirely", "solution": "Structurally-typed mock SQLiteDatabase installed on Platform.OS === 'web', so every consumer is written against one interface", "limitation": "Web renders a functional but permanently empty app - graceful degradation, not support", "file": "lib/db.ts"},
+    {"challenge": "Schema evolution without a migration framework", "why_hard": "Columns must be added to databases already on users' devices, with no server-side coordination and no way to run a one-off script", "solution": "Idempotent CREATE TABLE IF NOT EXISTS bootstrap; ALTER TABLE ADD COLUMN wrapped in try/catch treating the already-exists error as success; backfill UPDATE for the derived column", "limitation": "Exception control flow in place of state; no schema version table; cannot express non-additive changes", "file": "lib/db.ts"},
+    {"challenge": "Scheduling 'every N days' notifications on an API that supports only fixed calendar repeats", "why_hard": "expo-notifications offers DAILY and WEEKLY triggers; 2, 3, 14 and 30-day cadences have no native representation, and there is no server to push from", "solution": "Hybrid scheduler - native DAILY trigger where it fits; elsewhere a computed one-shot DATE trigger derived from last_triggered, frequency and configured time, with same-day roll-forward, written back by both tap and foreground listeners, and a blanket cancel before each reschedule", "limitation": "Chains can break after long inactivity; a production app would reconcile on cold start", "file": "lib/notifications.ts"},
+    {"challenge": "Form state leaking across a tab navigator", "why_hard": "The add-expense screen serves both 'new' and 'edit'; in a tab navigator the screen stays mounted, so edit values persisted into the next new-expense entry", "solution": "Route-parameter identity (reset=true plus a timestamp on the tab href), a useEffect keyed on [id, reset, ts] branching between reset / load / clear, and useFocusEffect to refresh currency data on every focus", "evidence": "six commits over two days: b105e1c, e7ea599, 6155d3c, 921b072, 7ac750f, de49a46", "file": "app/add-expense.tsx"},
+    {"challenge": "Transactional import with partial-failure tolerance", "why_hard": "A backup file may be partially malformed; aborting the whole restore is user-hostile, but silently skipping rows can hide corruption", "solution": "BEGIN TRANSACTION, per-row validation across five collections, upsert by primary key, warn-and-skip malformed rows, per-collection counts returned to the caller, ROLLBACK in catch with a defensively wrapped rollback", "limitation": "Skipped-row counts surface only in the console, not the UI", "file": "lib/dbJsonImport.ts"},
+    {"challenge": "Destructive reset that includes state outside the database", "why_hard": "OS-level scheduled notifications and AsyncStorage flags are not rolled back by a SQL transaction", "solution": "Two sequential escalating confirmations; single transaction counting then deleting 5 tables in foreign-key order; clearing the three setup flags so first-run setup re-enters correctly; cancelling all scheduled notifications", "file": "lib/dbWipe.ts"},
+    {"challenge": "Browsing history that does not exist yet", "why_hard": "A new user has no data; a long-term user has years of it; the same list must serve both without loading everything", "solution": "Year-grouped month list from the current year, lazily appending the preceding year on onEndReached down to a floor of 2000, synthesising twelve non-interactive placeholder month cards for empty years, current month pinned and badged", "file": "app/expenses.tsx"}
+  ],
+  "decisions": [
+    {
+      "id": "D1",
+      "title": "Local-only storage, no cloud sync",
+      "problem": "An expense tracker holds a detailed picture of someone's financial life; any server-side storage makes the developer custodian of that.",
+      "decision": "Store everything in on-device SQLite. No backend, no account, no network transmission.",
+      "reasoning": "Privacy by architecture rather than policy: data never collected cannot be breached, subpoenaed, mishandled or monetised. Also removes authentication, hosting cost, GDPR controller obligations and a large security surface from a solo-maintained app.",
+      "trade_offs": ["No multi-device sync", "No server-side backup - device loss means data loss unless exported", "No analytics, therefore no product insight and no usage metrics at all"],
+      "result": "A genuinely private app, and a measurable cost the author can name precisely.",
+      "evidence_level": "VERIFIED (architecture) / USER-ATTESTED (intent)"
+    },
+    {
+      "id": "D2",
+      "title": "Manual JSON export/import instead of sync",
+      "problem": "Local-only storage leaves users with no way to move to a new phone.",
+      "decision": "Full-database JSON export through the OS share sheet; transactional import from a picked file.",
+      "reasoning": "Preserves the no-server guarantee while giving users genuine data ownership - a human-readable file they control.",
+      "trade_offs": ["Manual rather than automatic", "No conflict resolution", "Requires the user to remember"],
+      "result": "Working device-to-device portability, documented in DATA_PORTABILITY.md.",
+      "known_issue": "DATA_PORTABILITY.md describes a Merge vs Replace All choice at import; the shipped implementation offers a single upsert-by-id path. Documentation drift to correct.",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "id": "D3",
+      "title": "Uniform monthly budget per year rather than per month",
+      "problem": "Budgets could be per-month (flexible, 12 rows per year per currency) or one figure applied to all months.",
+      "decision": "One monthly_limit per (year, currency), enforced by a UNIQUE constraint.",
+      "reasoning": "Documented as a simplicity choice in BUDGET_FEATURE.md: most people hold a steady monthly target, and the simpler model makes the UI one field rather than a twelve-row editor.",
+      "trade_offs": ["Cannot express a seasonal or mid-year change"],
+      "result": "Simple model; but introduced a defect - the month list loads only the current year's budget and scores every displayed month, including earlier years, against it.",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "id": "D4",
+      "title": "Denormalised currency code on expenses",
+      "problem": "Expenses could reference currencies by foreign key or store the code directly.",
+      "decision": "Store the ISO code string on each expense row.",
+      "reasoning": "Keeps queries and the JSON export flat and self-describing; removing a currency from the user's selection cannot orphan expense rows.",
+      "trade_offs": ["No referential integrity between expenses and the currency table", "No cascade if currency metadata changes"],
+      "result": "Defensible for an append-mostly local ledger keyed on a stable ISO standard, provided the cost is stated.",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "id": "D5",
+      "title": "Expo managed workflow with EAS",
+      "problem": "Reaching two app stores solo requires credentials, signing and build infrastructure for both platforms.",
+      "decision": "Expo managed workflow with EAS Build and EAS Submit, three build profiles, remote version source, production auto-increment.",
+      "reasoning": "Trades native-module freedom for a dramatically shorter path from code to signed store binary - the decision that made a solo dual-store release achievable.",
+      "trade_offs": ["Less native-module freedom", "Dependency on Expo's release cadence"],
+      "result": "17+ Android build artefacts produced; both stores reached (USER-ATTESTED).",
+      "evidence_level": "VERIFIED"
+    },
+    {
+      "id": "D6",
+      "title": "NativeWind for styling",
+      "problem": "Styling approach for a React Native app by a developer with strong Tailwind fluency.",
+      "decision": "NativeWind utility classes on seven screens.",
+      "reasoning": "Rapid iteration without context-switching to a separate style object; existing Tailwind knowledge transfers directly.",
+      "trade_offs": ["Two screens and parts of _layout use StyleSheet.create instead, leaving an inconsistency within one codebase"],
+      "result": "Fast UI development; a minor cohesion weakness worth acknowledging rather than defending.",
+      "evidence_level": "VERIFIED"
+    }
+  ],
+  "problems_solved": [
+    {"title": "Reminder cadences the platform cannot express", "situation": "Six reminder frequencies required", "problem": "expo-notifications repeating triggers cover fixed calendar units only", "solution": "Hybrid native-daily plus computed one-shot date triggers re-armed from last_triggered", "result": "All six cadences work; remaining weakness documented", "evidence": "lib/notifications.ts; commits 02703c1, dc5d753"},
+    {"title": "Edit form showing the previous expense", "situation": "add-expense serves both new and edit in a tab navigator", "problem": "Screen stays mounted, so state persisted across uses", "solution": "Explicit route-parameter identity plus useFocusEffect", "result": "Correct form state in all entry paths", "evidence": "six commits over two days in app/add-expense.tsx"},
+    {"title": "Adding currency support to a schema already in use", "situation": "Multi-currency landed after the expenses table existed", "problem": "A NOT NULL column cannot be added to a populated table without a default", "solution": "ALTER TABLE ... ADD COLUMN currency TEXT NOT NULL DEFAULT 'GBP' in try/catch; same pattern plus backfill UPDATE for 'updated'", "result": "Backward-compatible evolution with no data loss", "evidence": "lib/db.ts; commits 51975dd, 39711de"},
+    {"title": "Browsing history that does not exist yet", "situation": "The month list must serve both a new user and one with years of data", "solution": "Lazily loaded year-grouped months with synthesised placeholders and a pinned current month", "result": "A calendar that feels complete on day one and stays navigable at scale", "evidence": "app/expenses.tsx; commits 1416830, 70e1715"},
+    {"title": "Apple's export-compliance gate", "situation": "App Store Connect submission", "problem": "Every binary must declare whether it uses non-exempt encryption or each submission stalls on a manual question", "solution": "ITSAppUsesNonExemptEncryption: false added to the iOS infoPlist - accurate, since the app performs no cryptography and makes no network calls", "result": "Submissions proceed without manual intervention; this is the final commit in the repository", "evidence": "app.json; commit 94d80ea, 2025-07-22"}
+  ],
+  "known_weaknesses": [
+    {"id": 1, "issue": "Zero automated tests; no runner, no test files. The pure date/currency/budget logic in lib/utils.ts is trivially unit-testable.", "location": "project-wide", "severity": "High"},
+    {"id": 2, "issue": "Budget compared across the wrong year - loadMonthlyBudget loads only the current year and the month list scores every displayed month, including earlier years, against it.", "location": "app/expenses.tsx", "severity": "Medium (correctness defect)"},
+    {"id": 3, "issue": "useRef called inside renderExpenseItem, a render function rather than a component - violates the Rules of Hooks and is fragile under list virtualisation.", "location": "app/expenses.tsx", "severity": "Medium"},
+    {"id": 4, "issue": "Table name interpolated into SQL (SELECT * FROM ${table.name}). Not exploitable - names come from sqlite_master - but it is the pattern that becomes an injection when the source changes.", "location": "lib/dbJsonExport.ts", "severity": "Low (pattern)"},
+    {"id": 5, "issue": "Exception-driven migrations with no schema version table.", "location": "lib/db.ts", "severity": "Medium"},
+    {"id": 6, "issue": "Developer surfaces shipped in the release build - the debug screen is hidden via href:null rather than removed, and dev controls were commented out rather than guarded with __DEV__.", "location": "app/debug.tsx, app/index.tsx", "severity": "Low-Medium"},
+    {"id": 7, "issue": "initializeDefaultCurrencies() is effectively dead code - it returns either way.", "location": "lib/currency.ts", "severity": "Low"},
+    {"id": 8, "issue": "Documentation drift between DATA_PORTABILITY.md and the shipped import flow.", "location": "docs", "severity": "Low"},
+    {"id": 9, "issue": "Artificial 500ms delay in loadMoreYears, commented as simulating database latency.", "location": "app/expenses.tsx", "severity": "Low"},
+    {"id": 10, "issue": "Non-daily reminder chains can break if the app is not opened for a long period.", "location": "lib/notifications.ts", "severity": "Medium"},
+    {"id": 11, "issue": "Unused import of the deprecated ProgressBarAndroid.", "location": "app/expenses.tsx", "severity": "Trivial"}
+  ],
+  "lessons": [
+    {"lesson": "Shipping is a separate skill from building.", "detail": "92% of the code existed by 10 June; submission was late July. The gap was signing, icons, version codes, store metadata, review and a one-line encryption declaration. Build time does not predict ship time."},
+    {"lesson": "Privacy by architecture has a bill, and it comes due at review time.", "detail": "Choosing never to collect data is right for a personal finance app. The bill is that this dossier contains no usage metric. Knowing a decision's cost in advance is different from discovering it later."},
+    {"lesson": "Tab navigators do not manage your state for you.", "detail": "Making 'which record am I editing' explicit in the route is the durable fix; relying on mount/unmount is not."},
+    {"lesson": "try/catch around ALTER TABLE is where a migration strategy goes to hide.", "detail": "It held for two additive columns and would not survive a rename or type change. A version table and ordered migrations are a day's work at the start."},
+    {"lesson": "Writing the feature document alongside the feature caught design gaps.", "detail": "BUDGET_FEATURE.md is why the budget model's constraints are articulable today. The corollary is drift when docs are not maintained."},
+    {"lesson": "Skipping tests on a solo project is a loan, not a saving.", "detail": "The budget-year defect is the direct bill for an hour of unit tests not written."},
+    {"lesson": "Cross-platform means platform differences surface, not disappear.", "detail": "iOS cannot exit programmatically; iOS wants a spinner date picker and Android the default; web has no SQLite. The framework removes duplication, not the platforms."}
+  ],
+  "cv_bullets": {
+    "high_confidence_quantified": [
+      "Designed, built and shipped Clevali, a cross-platform expense-tracking app (React Native / Expo / TypeScript) to the Apple App Store and Google Play as sole developer - 5,540 lines of strict-mode TypeScript across 9 screens and a 5-table on-device SQLite data layer.",
+      "Delivered a complete multi-currency expense tracker - 20-currency catalogue, per-currency budgets, 8 categories, 6 reminder cadences - in a 6-day build sprint (54 of 59 commits), then carried it through native release engineering to store submission.",
+      "Built an offline-first mobile architecture with no backend: 5-table SQLite schema with idempotent bootstrap and backward-compatible migrations, plus transactional JSON import/export across all tables for device-to-device portability.",
+      "Produced 17+ Android build artefacts through an EAS Build pipeline with remote version sourcing and auto-increment, resolving iOS export-compliance and native configuration requirements to reach App Store submission."
+    ],
+    "high_confidence_non_quantified": [
+      "Implemented a privacy-by-architecture design in which all personal financial data remains on-device - no backend, no authentication, no network transmission, no analytics - and solved the resulting portability problem with a transactional JSON export/import subsystem rather than a sync service.",
+      "Engineered a hybrid local notification scheduler combining native daily triggers with computed one-shot date triggers to deliver reminder cadences the platform API does not natively support.",
+      "Solved cross-platform fragmentation with a structurally-typed mock database adapter, keeping a single codebase runnable where the native SQLite module is unavailable.",
+      "Built a gesture-driven transaction browser with year/month/day hierarchical grouping, lazily loaded historical years, swipe-to-edit/delete and live budget progress visualisation."
+    ],
+    "requires_confirmation": [
+      "Published to the App Store and Google Play, with the Android release live for over a year - currently USER-ATTESTED; settle the dates before putting them in writing.",
+      "Anything citing downloads, installs, active users or ratings - retrieve from the store consoles first. Do not estimate."
+    ],
+    "do_not_write": [
+      "Any percentage, time-saving, revenue or adoption figure - none exists.",
+      "'Production system serving N users' - it is a published app with unknown usage.",
+      "'Full-stack mobile application' - there is no backend, deliberately, and the deliberateness is the better story."
+    ],
+    "cv_placement_recommendation": {
+      "preferred": "A 'Personal & Portfolio Projects' section after professional experience - signals clearly that it is own work rather than a client engagement while keeping the shipping claim prominent.",
+      "format_example": "Clevali - Expense Tracker | React Native, Expo, TypeScript, SQLite | Jun-Jul 2025. Solo-built cross-platform mobile app, published to the Apple App Store and Google Play. Offline-first architecture with a 5-table on-device SQLite database and no backend - all financial data stays on the user's device. Implemented multi-currency budgeting, a hybrid local-notification scheduler, and transactional JSON import/export for device-to-device data portability.",
+      "alternatives": ["Folded into Technical Skills as 'React Native (published iOS/Android app)' if space is critical - weaker", "Portfolio site and LinkedIn Projects section, in addition to the CV section, not instead of it"],
+      "avoid": "Listing it under professional experience alongside paid roles - reviewers notice, and the padding inference costs more than the bullet gains.",
+      "interview_line": "It holds a complete picture of someone's spending, so I decided the data should never leave their phone. The cost is that I have no analytics - I genuinely cannot tell you how people used it, and I accepted that when I chose the architecture."
+    }
+  },
+  "interview_stories": [
+    {"id": "A", "title": "The decision that cost me my metrics", "theme": "trade-offs, judgement", "situation": "Building a personal expense tracker to publish publicly", "task": "Decide where user financial data lives", "action": "Chose on-device SQLite with no backend, account or analytics; solved device migration with transactional JSON export/import rather than a sync service", "result": "Shipped to both stores with zero user data ever transmitted - and no ability to measure usage", "evidence": "no network or analytics dependency anywhere in source; lib/dbJsonImport.ts"},
+    {"id": "B", "title": "Working around a platform API", "theme": "problem-solving", "situation": "Six reminder cadences required; the OS scheduler supports fixed calendar repeats", "action": "Hybrid scheduler with computed one-shot date triggers re-armed from persisted state, blanket cancel before reschedule", "result": "All six cadences work; known failure mode documented rather than hidden", "evidence": "lib/notifications.ts"},
+    {"id": "C", "title": "Shipping is its own discipline", "theme": "delivery, ownership", "situation": "Feature-complete 10 June; submitted late July", "action": "EAS build profiles, dependency pinning, version-code management, adaptive icons, release branch isolation, dev-control removal, iOS export compliance", "result": "Both stores; the final commit in the repository is a one-line encryption declaration six weeks after the last feature", "evidence": "commit dates; eas.json; 94d80ea"},
+    {"id": "D", "title": "Evolving a schema already in users' hands", "theme": "data, backward compatibility", "action": "Additive ALTER TABLE with sensible default, idempotent on re-run, plus backfill UPDATE", "result": "No data loss, no forced reinstall", "honest_follow_up": "It used exception control flow as a migration strategy and had no version table. It held for two additive columns and would not have held for a rename. I would start with an ordered migration runner next time.", "evidence": "lib/db.ts; commits 51975dd, 39711de"},
+    {"id": "E", "title": "A bug I would catch today", "theme": "self-awareness, testing", "problem": "The expenses screen loads only the current year's budget and compares every displayed month against it, so historical months are scored against the wrong figure", "lesson": "One unit test over budget resolution would have caught it; the project has none, a speed decision this defect is the direct bill for", "evidence": "app/expenses.tsx"},
+    {"id": "F", "title": "Why I learn by shipping", "theme": "motivation, growth", "situation": "Not the first React Native app, but the first taken to public release", "action": "Set the goal as 'it must reach the stores', not 'it must work'", "result": "The last 10% - signing, compliance, assets, review - contained most of what was not previously known", "evidence": "USER-ATTESTED motivation; release-phase commits corroborate"}
+  ],
+  "portfolio_material": {
+    "overview": "A privacy-first personal expense tracker for iOS and Android, built solo with React Native and Expo. Every expense stays in a SQLite database on the user's own device.",
+    "challenge": "Expense trackers ask for the most sensitive data most people have. Most solve this with an account and a server, making the developer custodian of that picture. The challenge was to build something genuinely useful - multi-currency, budgeted, with reminders and device migration - without ever taking custody of a single user's data.",
+    "role": "Sole developer: product definition, data modelling, architecture, UI, native configuration, build pipeline, store release.",
+    "solution": "Offline-first architecture with a five-table SQLite schema, multi-currency domain model, uniform annual budgets with per-month progress visualisation, a hybrid local-notification scheduler, and a transactional JSON export/import subsystem answering device migration without a sync service.",
+    "interesting_problems": ["Scheduling every-N-days reminders on an API that only does fixed calendar repeats", "Running one codebase where the database does not exist", "Evolving a shipped schema without a migration framework", "Form identity in a tab navigator", "The privacy decision and its measurement cost"],
+    "results": ["Published to both stores (USER-ATTESTED)", "17+ Android build artefacts", "Complete feature set in a six-day sprint", "Zero user data ever transmitted"],
+    "what_i_would_improve": ["Unit tests over the pure date/currency/budget logic", "A schema version table and ordered migrations", "Per-year budget resolution in the month list (a real defect)", "Extracting the swipeable row into a proper component", "__DEV__ guards around developer surfaces rather than commented-out buttons"],
+    "what_to_show": ["Month list with budget progress", "Day-grouped detail view", "Swipe actions", "Currency setup flow", "The architecture diagram with the crossed-out no-backend/no-analytics block kept in, because the absence is the point"]
+  },
+  "content_ideas": {
+    "articles": [
+      {"title": "I built an expense tracker with no backend - and I have no idea how many people use it", "core_problem": "Privacy-by-architecture and its measurement cost", "why_interesting": "Almost every local-first write-up sells the upside; this one prices the downside honestly", "must_anonymise": "nothing - no user data exists"},
+      {"title": "Scheduling 'every N days' notifications when the OS only offers 'daily'", "core_problem": "A genuine platform-API gap", "why_interesting": "Highly searchable, concretely useful, and the last_triggered re-arming pattern generalises"},
+      {"title": "Migrating a SQLite schema in a shipped mobile app without a migration framework", "core_problem": "Evolving a database that lives on strangers' phones", "why_interesting": "Most RN tutorials stop at CREATE TABLE"},
+      {"title": "One codebase, three platforms, and a database that doesn't exist on one of them", "core_problem": "The mock-adapter pattern for platform gaps"},
+      {"title": "The last 10% of shipping a mobile app is 90% of what you don't know yet", "core_problem": "The gap between feature-complete and submitted", "why_interesting": "The most useful article for a developer about to attempt their first store submission"}
+    ],
+    "social_posts": [
+      {"idea": "The architecture screenshot post - the diagram with the crossed-out no-backend/no-analytics/no-auth block", "underlying_evidence": "The dependency list proves it"},
+      {"idea": "'I shipped an app to both stores and I can't tell you how many people use it' - the honest trade-off post", "underlying_evidence": "The architecture decision and its documented cost"},
+      {"idea": "'6 days to build, 6 weeks to ship' with the commit-date graph", "underlying_evidence": "Git history"},
+      {"idea": "The ITSAppUsesNonExemptEncryption post - the one-line declaration that stops App Store submissions stalling", "underlying_evidence": "Commit 94d80ea"},
+      {"idea": "'A bug in my own shipped code' - the budget-year defect, why zero tests let it through", "underlying_evidence": "app/expenses.tsx"},
+      {"idea": "'Not my first React Native app - my first one that shipped'", "underlying_evidence": "USER-ATTESTED, and true"}
+    ],
+    "do_not_post": "Anything implying scale, traction or user numbers. There are none, and inventing them would undermine every other post."
+  },
+  "public_safe_claims": [
+    "All architecture, engineering implementation, decisions and trade-offs, problems solved and lessons sections",
+    "All repository metrics - commits, lines, tables, dates - all verifiable, none sensitive",
+    "The fact of publication to both stores, phrased as attested until store console data is retrieved",
+    "The source code itself - the repository is already public, contains no secrets, no .env file and no user data",
+    "The sample data in exported-data.json is synthetic developer data, not personal information"
+  ],
+  "private_only_information": [
+    "The Global Talent visa motivation, unless the author chooses to make it public",
+    "The known-weaknesses list - good interview material when volunteered, poor portfolio material when published unprompted",
+    "Store console figures once retrieved, until the author decides which to publish",
+    "The author's assessment of the app's low download volume",
+    "Expo account identifier, EAS project ID and developer-account details"
+  ],
+  "security_note": "No credentials, API keys, tokens, connection strings or personal data appear anywhere in this repository or this dossier. The project has no .env file because it has no services to authenticate against. VERIFIED.",
+  "evidence_gaps": [
+    {"item": "Play Store install count, active installs, ratings, reviews, listing dates", "why_useful": "The one genuine production metric available; would convert the publication claim from attested to verified", "where_to_find": "Google Play Console > Statistics and Release overview, for com.techfric.expensetracker", "action": "Sign in and export the statistics report: total installs, peak active installs, first publish date, last available date, ratings"},
+    {"item": "App Store Connect units, impressions, publish dates", "why_useful": "Same for iOS; also settles whether the listing is still live", "where_to_find": "App Store Connect > App Analytics / Sales and Trends", "action": "Check whether the lapsed Developer Program membership still permits viewing; if the data is gone, record that explicitly rather than guessing"},
+    {"item": "Exact store publication dates on both platforms", "why_useful": "Several CV bullets depend on a defensible date range; the repository only proves the build window", "where_to_find": "Store consoles; store confirmation emails", "action": "Search email for 'Google Play' and 'App Store Connect' around July-August 2025"},
+    {"item": "EAS build and submission history", "why_useful": "Would convert versionCode 17 from an inference about build count into a verified record with dates", "where_to_find": "eas build:list / eas submit:list for project 2877daaf-6bf9-41c9-a796-ed7a0e36a4f6, Expo account noblexeyii", "action": "Run the CLI commands while signed in and save the output"},
+    {"item": "Screenshots and store listing assets", "why_useful": "Needed for the portfolio case study; the only visual record if the listings are gone", "where_to_find": "Store consoles; the author's device; local asset files", "action": "Retrieve before the listings lapse entirely"},
+    {"item": "Any user feedback", "why_useful": "Even three reviews would be the only external signal this project has", "where_to_find": "Play Console reviews; App Store ratings", "action": "Check before the listing is removed"},
+    {"item": "Global Talent application context and outcome", "why_useful": "If the app was cited as supporting evidence, the outcome is itself career evidence", "where_to_find": "The author's own records", "action": "Note privately whether it was submitted and what the outcome was"}
+  ],
+  "audit_limitations": [
+    "No production data was available or queryable, because none exists by design. This audit evaluates the artefact and its history, not its usage.",
+    "Store publication, listing duration and the visa motivation are USER-ATTESTED and were not independently verified.",
+    "The audit was performed by static inspection; the application was not built or run. Behavioural claims derive from reading the source, and the listed defects were identified by inspection rather than execution.",
+    "node_modules and package-lock.json were excluded from code metrics.",
+    "The v1-golive branch was audited; main lacks the final two release commits.",
+    "The working tree had uncommitted modifications to app.json and two asset files at audit time; these were not analysed as history."
+  ],
+  "evidence_levels_used": {
+    "VERIFIED": "Directly evidenced in code, configuration or Git history",
+    "DERIVED": "Calculated from verified evidence",
+    "USER-ATTESTED": "First-hand account from the author; not independently verifiable from the repository",
+    "STRONGLY_SUPPORTED": "Multiple pieces of evidence support the conclusion but it cannot be proven completely",
+    "INFERRED": "Appears likely based on architecture or context, but direct evidence is unavailable",
+    "UNKNOWN": "Cannot responsibly be established from available evidence"
+  }
+}

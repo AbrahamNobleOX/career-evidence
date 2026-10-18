@@ -1,0 +1,263 @@
+{
+  "project_name": "NIUK Community Platform",
+  "aliases": ["NIUK", "DemoApp", "niuk-project"],
+  "project_type": "Full-stack web application (MERN) — portfolio / skills-demonstration project",
+  "audit_date": "2026-10-17",
+  "audited_paths": [
+    "/Users/abrahamakintola/Documents/Coding/portfolio-projects/niuk/demoapp-project",
+    "/Users/abrahamakintola/Documents/Coding/portfolio-projects/niuk/anonapp-project"
+  ],
+  "production_status": {
+    "launched": false,
+    "has_real_users": false,
+    "has_production_database": false,
+    "publicly_deployed": true,
+    "deploy_url": "https://niuk-project.onrender.com",
+    "deploy_check": {
+      "date": "2026-10-17",
+      "http_status": 200,
+      "method": "curl -s -o /dev/null -w '%{http_code}' -L"
+    },
+    "payment_credentials": "test/sandbox only",
+    "note": "Intended for adoption by a Nigerian diaspora community active on Twitter/X. Never pitched; the community entered a leadership dispute and the owner repositioned the work as a portfolio project. No adoption, volume, revenue, reliability or business-impact metric exists or may be claimed."
+  },
+  "project_description": "A community-management platform for a diaspora community organisation: member register with four-tier role-based access control, six-path authentication with device-based step-up verification, an online election system with multiple concurrent polls and verified voters, Twitter Spaces and physical event scheduling, sub-groups, and dual payment-provider integration (Stripe + GoCardless). Built solo, containerised, and deployed publicly.",
+  "dates": {
+    "first_commit": "2024-02-19T04:19:36+00:00",
+    "last_commit": "2024-12-22T00:59:16+00:00",
+    "duration_months": 10,
+    "rebrand_to_neutral_demo": "2024-04-02",
+    "election_module_built": "2024-09-28 to 2024-10-27",
+    "containerisation_and_deploy": "2024-12-18 to 2024-12-22",
+    "evidence_level": "VERIFIED",
+    "evidence_source": "git log"
+  },
+  "authorship": {
+    "contributors": 1,
+    "author": "Akintola Abraham <abramseyakid@gmail.com>",
+    "commits_by_author": 85,
+    "evidence_level": "VERIFIED",
+    "evidence_source": "git shortlog -sne --all",
+    "qualification": "Solo project — no code review, no PR workflow, no team process."
+  },
+  "technologies": {
+    "backend": ["Node.js 20", "Express 4 (ESM)", "MongoDB", "Mongoose 8", "jsonwebtoken", "bcryptjs", "Cryptr", "crypto (SHA-256)", "Passport", "passport-twitter", "passport-google-oauth20", "google-auth-library", "googleapis", "Stripe SDK 14", "gocardless-nodejs 3", "Nodemailer", "nodemailer-express-handlebars", "@getbrevo/brevo", "Handlebars", "slugify", "moment", "moment-timezone", "ua-parser-js", "morgan", "cors", "cookie-parser", "express-session", "express-async-handler", "dotenv"],
+    "frontend": ["React 18", "Vite 5", "react-router-dom 6", "Redux Toolkit 2", "react-redux 9", "axios", "Bootstrap 5", "react-bootstrap", "Ant Design 5", "react-icons", "react-toastify", "react-confirm-alert", "react-paginate", "react-country-region-selector", "@stripe/react-stripe-js", "@stripe/stripe-js", "@gocardless/react-dropin", "@react-oauth/google", "add-to-calendar-button-react", "react-confetti", "lodash", "ESLint"],
+    "infrastructure": ["Docker (node:20-alpine)", "Docker Compose (app + mongo, named volume)", "Render", "Cloudinary (client upload preset)", "Google Cloud OAuth project"]
+  },
+  "architecture": {
+    "pattern": "Monolith — single Node process serves the REST API and the Vite-built SPA from one origin",
+    "backend_layers": ["routes", "middleware (protect/adminOnly/authorOnly/verifiedOnly, errorHandler)", "controllers", "helpers (auth, email)", "Mongoose models"],
+    "frontend_pattern": "Per-domain triad: <domain>Service.js (axios) + <domain>Slice.js (createAsyncThunk) + <domain>FilterSlice.js (client-side search), composed in a 16-reducer Redux store",
+    "auth_mechanism": "JWT in HTTP-only, secure, sameSite:none cookie; 1-day cookie expiry, 7-day JWT expiry",
+    "spa_serving": "Custom fallback middleware distinguishes asset extensions from client routes and returns dist/index.html with anti-cache headers",
+    "webhook_handling": "POST /api/payment/webhook registered with express.raw() before the global express.json() so Stripe signature verification sees unparsed bytes"
+  },
+  "data_models": [
+    {"name": "User", "notes": "roles user/author/admin (+suspended state), bcrypt pre-save hash, isVerified + isManuallyVerified, userAgent allow-list array, twitterUsername, UK address fields"},
+    {"name": "Token", "notes": "verificationToken / resetToken / loginToken with explicit createdAt + expiresAt"},
+    {"name": "Election", "notes": "title, unique slug, start/end datetime, createdBy, updatedBy[] audit array, deleteStatus soft-delete flag"},
+    {"name": "Poll", "notes": "belongs to Election; options[] embeds candidates with denormalised name/email/photo snapshots, an embedded vote[] of {voter, votedAt}, and a maintained voteCount"},
+    {"name": "Event", "notes": "theme, host, venue, unique url, amount + Stripe priceId, datetime, audit array"},
+    {"name": "Group", "notes": "name, unique url, slug, audit array"},
+    {"name": "Space", "notes": "topic, host, cohost, unique url, datetime — Twitter/X Spaces scheduling"},
+    {"name": "Payment", "notes": "unique reference (Stripe checkout session id), amount, userId, priceId, paidFor (resolved server-side from Stripe), paymentType, status, trialExpiry, expires"}
+  ],
+  "integrations": [
+    {"name": "Stripe", "capabilities": ["PaymentIntents", "hosted Checkout Sessions", "subscriptions with 7-day trial", "Billing Portal", "signature-verified webhooks with independent fulfilment"], "status": "test keys only, no real transactions"},
+    {"name": "GoCardless", "capabilities": ["customer creation", "billing requests", "billing request flows"], "status": "sandbox, hard-coded demo values — unfinished spike"},
+    {"name": "Google OAuth", "capabilities": ["signup", "login"], "status": "implemented"},
+    {"name": "Twitter/X OAuth", "capabilities": ["login via passport-twitter, captures twitterUsername"], "status": "implemented"},
+    {"name": "Brevo", "capabilities": ["transactional email API with Handlebars-rendered HTML"], "status": "current email provider"},
+    {"name": "Gmail OAuth2 + Nodemailer", "capabilities": ["SMTP transactional email"], "status": "legacy implementation retained in code after failure in deployment"},
+    {"name": "Cloudinary", "capabilities": ["client-side image upload preset"], "status": "configured"}
+  ],
+  "workflows": [
+    "Register → email verification (SHA-256-hashed token) → login",
+    "Login from unknown user-agent → encrypted 6-digit code emailed, 60-minute expiry → /sendLoginCode → /loginWithCode → session issued",
+    "Profile-completeness gate blocks all dashboard routes until UK address fields are filled",
+    "Election lifecycle: create election → create polls (inherit election window) → add candidates (exclusive across sibling polls) → admin verifies voters → members vote while now <= endDateTime, may change vote → counts concealed from role 'user' until poll closes",
+    "Payment: create Checkout Session (payment or subscription + trial) → Stripe-hosted checkout → redirect to /paymentsuccess/success/{SESSION_ID} → client saves details with server-resolved product name; webhook independently fulfils checkout.session.completed and computes trial + 1-year expiry",
+    "Spaces / Events / Groups: author-only CRUD with unique url, slug, and append-only edit audit trail"
+  ],
+  "my_contributions": [
+    {"area": "Data modelling", "detail": "8 Mongoose schemas with validation, unique constraints, soft-delete flags and createdBy/updatedBy[] audit trails", "evidence_level": "VERIFIED"},
+    {"area": "Authentication", "detail": "1,409-line auth controller implementing six sign-in paths plus device-fingerprint step-up verification", "evidence_level": "VERIFIED"},
+    {"area": "Authorisation", "detail": "Four-tier RBAC enforced server-side on every mutating route and mirrored in client route/component guards", "evidence_level": "VERIFIED"},
+    {"area": "API design", "detail": "7 routers, 59 route handlers plus a raw-body webhook endpoint", "evidence_level": "VERIFIED"},
+    {"area": "Elections domain", "detail": "Cross-poll candidate exclusivity, vote transfer with count reconciliation, verified-voter gating, concealed live results, VersionError retry", "evidence_level": "VERIFIED"},
+    {"area": "Payments", "detail": "Stripe + GoCardless integration behind one Payment model, webhook-driven fulfilment, server-side product resolution", "evidence_level": "VERIFIED"},
+    {"area": "Email", "detail": "Handlebars-templated transactional email with two provider implementations; migrated Gmail OAuth2 → Brevo without changing call sites", "evidence_level": "VERIFIED"},
+    {"area": "Frontend", "detail": "79 React source files, ~10,650 LOC — routing, protected routes, profile gate, search, pagination, modals, toasts, dashboards", "evidence_level": "VERIFIED"},
+    {"area": "State management", "detail": "Redux Toolkit store with 16 reducers across 24 service/slice/filter files", "evidence_level": "VERIFIED"},
+    {"area": "Build and deployment", "detail": "Vite build into Express dist/, Dockerfile, Docker Compose with MongoDB, public Render deploy", "evidence_level": "VERIFIED"}
+  ],
+  "production_metrics": [],
+  "production_metrics_note": "Empty by design. There is no production database, no real users and no usage telemetry. No usage metric exists for this project and none may be invented.",
+  "codebase_metrics": [
+    {"name": "commits", "value": 85, "unit": "commits", "start_date": "2024-02-19", "end_date": "2024-12-22", "evidence_source": "git log --oneline | wc -l", "calculation_method": "direct count", "evidence_level": "VERIFIED", "qualification": "demoapp-project repository; anonapp-project contains the first 55 of these in an earlier layout"},
+    {"name": "contributors", "value": 1, "unit": "people", "evidence_source": "git shortlog -sne --all", "calculation_method": "direct count", "evidence_level": "VERIFIED", "qualification": "Sole author — no code review or team process"},
+    {"name": "backend_loc", "value": 4153, "unit": "lines", "evidence_source": "wc -l controllers/*.js routes/*.js models/*.js middleware/*.js helpers/*.js index.js", "calculation_method": "line count including comments and blank lines", "evidence_level": "VERIFIED", "qualification": "Raw line count, not a complexity measure"},
+    {"name": "frontend_loc", "value": 10666, "unit": "lines", "evidence_source": "find client/src -name '*.jsx' -o -name '*.js' | xargs cat | wc -l", "calculation_method": "line count including comments and blank lines", "evidence_level": "VERIFIED", "qualification": "Excludes CSS (297 lines) and generated files"},
+    {"name": "frontend_source_files", "value": 79, "unit": "files", "evidence_source": "find client/src -name '*.jsx' -o -name '*.js' | wc -l", "calculation_method": "direct count", "evidence_level": "VERIFIED"},
+    {"name": "rest_endpoints", "value": 59, "unit": "route handlers", "evidence_source": "grep -hoE '^router\\.(get|post|patch|delete)' routes/*.js | sort | uniq -c", "calculation_method": "21 POST + 20 GET + 12 PATCH + 6 DELETE across 7 routers; one additional raw-body webhook route is declared in index.js", "evidence_level": "VERIFIED"},
+    {"name": "mongoose_models", "value": 8, "unit": "models", "evidence_source": "ls models/", "calculation_method": "direct count", "evidence_level": "VERIFIED"},
+    {"name": "redux_reducers", "value": 16, "unit": "reducers", "evidence_source": "client/src/redux/store.js", "calculation_method": "keys of configureStore reducer map", "evidence_level": "VERIFIED"},
+    {"name": "redux_state_files", "value": 24, "unit": "files", "evidence_source": "ls client/src/redux/features/*/*.js", "calculation_method": "direct count", "evidence_level": "VERIFIED"},
+    {"name": "distinct_files_touched", "value": 228, "unit": "files", "evidence_source": "git log --format= --name-only | sort -u | wc -l", "calculation_method": "union of all files appearing in any commit", "evidence_level": "VERIFIED", "qualification": "Includes files later deleted or renamed during the client/server → flat restructure"},
+    {"name": "authentication_paths", "value": 6, "unit": "sign-in methods", "evidence_source": "routes/auth.route.js, controllers/auth.controller.js", "calculation_method": "credentials, email verification, password reset, one-time login code, Google OAuth, Twitter OAuth", "evidence_level": "VERIFIED"},
+    {"name": "development_duration", "value": 10, "unit": "months", "start_date": "2024-02-19", "end_date": "2024-12-22", "evidence_source": "git log", "calculation_method": "span between first and last commit", "evidence_level": "DERIVED", "qualification": "Calendar span, not continuous effort — there is a commit gap from 16 Apr to 28 Sep 2024"}
+  ],
+  "verified_claims": [
+    {"claim": "Designed and built a full-stack MERN community-management platform end to end as sole developer — 85 commits over 10 months, ~4,150 lines of Node/Express and ~10,650 lines of React.", "evidence_level": "VERIFIED", "evidence": "git shortlog, git log dates, wc -l", "time_period": "2024-02-19 to 2024-12-22", "qualification": "Portfolio project; never launched to users."},
+    {"claim": "Implemented six authentication paths — credentials, email verification, password reset, one-time emailed login code, Google OAuth, Twitter/X OAuth — in a 1,409-line controller.", "evidence_level": "VERIFIED", "evidence": "controllers/auth.controller.js, routes/auth.route.js", "time_period": "2024-02 to 2024-03", "qualification": "None."},
+    {"claim": "Built device-fingerprint step-up authentication: unknown user-agents are blocked and must complete an encrypted six-digit code with a 60-minute expiry before a session is issued.", "evidence_level": "VERIFIED", "evidence": "login / sendLoginCode / loginWithCode; ua-parser-js; Token model", "time_period": "2024-02", "qualification": "No rate limiting on the code endpoint — do not present as hardened."},
+    {"claim": "Designed a four-tier role-based access control model enforced server-side on every mutating endpoint across 59 route handlers and mirrored in client-side guards.", "evidence_level": "VERIFIED", "evidence": "middleware/auth.middleware.js, routes/*.js, ConditionalRendering.jsx, ProtectPrivateRoute.jsx", "time_period": "2024-02 to 2024-10", "qualification": "One known mismatch: castVote sits behind authorOnly, contradicting the member-voting UI."},
+    {"claim": "Built an online election system supporting multiple concurrent polls per election, cross-poll candidate exclusivity, changeable votes with count transfer, verified-voter gating, and results concealed from members until polls close.", "evidence_level": "VERIFIED", "evidence": "poll.controller.js, election.controller.js, components/Polls.jsx", "time_period": "2024-09-28 to 2024-10-27", "qualification": "Never used for a real election."},
+    {"claim": "Handled optimistic-concurrency conflicts explicitly, catching Mongoose VersionError and retrying against freshly-loaded state with a bounded retry budget.", "evidence_level": "VERIFIED", "evidence": "poll.controller.js addCandidates", "time_period": "2024-10", "qualification": "The retry path reassigns a const-bound variable and would throw; present as a design you can critique, not as proven-correct code."},
+    {"claim": "Integrated two payment providers behind one domain model: Stripe (PaymentIntents, hosted Checkout, subscriptions with 7-day trial, Billing Portal, signature-verified webhooks) and GoCardless Direct Debit billing requests.", "evidence_level": "VERIFIED", "evidence": "payment.controller.js, routes/payment.route.js, index.js raw-body ordering", "time_period": "2024-03 to 2024-09", "qualification": "Test/sandbox credentials only; no real payment ever processed. GoCardless path uses hard-coded demo values."},
+    {"claim": "Migrated the transactional email layer from Gmail OAuth2 + Nodemailer to the Brevo API in response to a deployment-only delivery failure, without changing a single call site.", "evidence_level": "VERIFIED", "evidence": "both implementations in helpers/email.helper.js; commit 'fix: email not sending' 2024-12-21", "time_period": "2024-12", "qualification": "None."},
+    {"claim": "Architected the frontend around Redux Toolkit with 16 reducers and a consistent per-domain service/slice/filter triad across 24 state files.", "evidence_level": "VERIFIED", "evidence": "client/src/redux/store.js, client/src/redux/features/*/", "time_period": "2024-02 to 2024-10", "qualification": "None."},
+    {"claim": "Containerised the application and deployed it publicly, serving the Vite-built SPA and the REST API from a single same-origin Node process.", "evidence_level": "VERIFIED", "evidence": "Dockerfile, docker-compose.yml, index.js SPA fallback, client build script; https://niuk-project.onrender.com returned HTTP 200 on 2026-10-17", "time_period": "2024-12", "qualification": "Say 'deployed publicly', not 'in production' — there are no users."},
+    {"claim": "Modelled auditability into the schema: createdBy plus an append-only updatedBy[] array of {userId, updatedAt} on every editable entity.", "evidence_level": "VERIFIED", "evidence": "Election, Poll, Event, Group models", "time_period": "2024-09 to 2024-10", "qualification": "None."}
+  ],
+  "derived_claims": [
+    {"claim": "Roughly 15,000 lines of application code across backend and frontend.", "evidence_level": "DERIVED", "calculation_method": "4,153 backend + 10,666 frontend JS/JSX", "qualification": "Raw line counts including comments and blank lines; not a complexity measure."},
+    {"claim": "Active development occurred in two phases — Feb–Apr 2024 (auth, payments, dashboards) and Sep–Dec 2024 (groups, elections, polls, containerisation, deployment) — with a ~5-month gap.", "evidence_level": "DERIVED", "calculation_method": "commits-per-month distribution from git log", "qualification": "Gap may reflect other commitments; nothing in the repository explains it."}
+  ],
+  "inferred_claims": [
+    {"claim": "The platform was designed to replace informal Twitter/X-based community coordination with durable infrastructure for membership, elections, events and dues.", "evidence_level": "STRONGLY SUPPORTED", "evidence": "feature set (Spaces, Events, Groups, Elections, Payments, roles) maps one-to-one onto those gaps; twitterUsername field on User; Twitter OAuth; owner's own account", "qualification": "Motivation is owner-reported and architecturally corroborated, not documented in the repository."},
+    {"claim": "Email failure surfaced only after deployment rather than in local development.", "evidence_level": "INFERRED", "evidence": "the fix commit of 2024-12-21 also introduced same-origin serving and followed the first deployment commits", "qualification": "No log or issue record confirms the trigger."}
+  ],
+  "business_impact": {
+    "quantitative": [],
+    "qualitative": ["None realisable — the platform was never launched and served no community. Any impact claim would be fabrication."],
+    "note": "The professional value of this project is demonstrated engineering capability and independent end-to-end ownership, not business outcome."
+  },
+  "engineering_challenges": [
+    {"name": "Cross-poll candidate exclusivity without transactions", "why_hard": "The invariant spans embedded arrays in sibling documents, so no unique index can enforce it; requires multi-document mutation with partial-success semantics and no transaction.", "evidence": "poll.controller.js addCandidates"},
+    {"name": "Optimistic-concurrency retry on embedded-array writes", "why_hard": "Mongoose VersionError on concurrent saves required detecting that specific error, re-reading state and bounding retries while letting other errors abort.", "evidence": "poll.controller.js", "known_defect": "const reassignment in the retry branch"},
+    {"name": "Vote transfer with a denormalised counter", "why_hard": "Keeping voteCount consistent with the authoritative vote[] array across remove-then-add is a classic divergence trap.", "evidence": "poll.controller.js castVote"},
+    {"name": "Device-fingerprint step-up authentication from primitives", "why_hard": "User-agent parsing, a per-user allow-list, reversible encryption of a six-digit code, and an independently expiring token collection — built rather than imported.", "evidence": "auth.controller.js, token.model.js"},
+    {"name": "Stripe webhook body-parser ordering", "why_hard": "Signature verification needs unparsed bytes; a global express.json() silently breaks it.", "evidence": "index.js"},
+    {"name": "Same-origin SPA + API serving", "why_hard": "Required an asset-extension-aware fallback, anti-cache headers on index.html, and a build step copying dist/ into the server root — while local dev still runs cross-origin.", "evidence": "index.js, client/package.json build script"},
+    {"name": "Two payment providers with incompatible state machines", "why_hard": "Stripe is session/webhook-driven; GoCardless is mandate/billing-request-driven with its own redirect flow — two state machines feeding one Payment collection.", "evidence": "payment.controller.js"}
+  ],
+  "decisions": [
+    {"problem": "How to store candidates and votes", "decision": "Embed in Poll.options[] with a denormalised voteCount", "reasoning": "Reads are poll-shaped — one query renders a whole ballot", "tradeoffs": "Document growth; no unique index on voter; hand-enforced multi-document invariants; VersionError exposure", "result": "Workable at community scale, fragile under concurrency"},
+    {"problem": "Where to keep the session token", "decision": "HTTP-only, secure, sameSite:none cookie", "reasoning": "XSS cannot read it", "tradeoffs": "Requires CORS credentials config and HTTPS; no refresh rotation or server-side revocation", "result": "Sound choice, incompletely finished"},
+    {"problem": "Enforcing roles", "decision": "Server-side middleware as authority, client-side components as UX mirror", "reasoning": "Server must be authoritative; client prevents dead-end UI", "tradeoffs": "Two places to change a rule", "result": "Correct pattern; one known mismatch at castVote"},
+    {"problem": "Deleting elections and polls", "decision": "Soft delete via deleteStatus", "reasoning": "Elections are audit-sensitive", "tradeoffs": "Inconsistent with hard deletes elsewhere", "result": "Half-migrated — deletePoll hard-deletes with the soft path commented out"},
+    {"problem": "Transactional email failing after deploy", "decision": "Replace Gmail OAuth2/Nodemailer with the Brevo API behind the same function signature", "reasoning": "API delivery avoids host SMTP restrictions", "tradeoffs": "Vendor lock-in; dead legacy code retained", "result": "Resolved; zero call-site changes"},
+    {"problem": "How to deploy", "decision": "Monolith serving API and SPA from one Node process, containerised", "reasoning": "Single deploy unit; same-origin cookies", "tradeoffs": "No independent scaling of static assets; build-time coupling", "result": "Right call at this scale"},
+    {"problem": "Collecting both one-off and recurring money", "decision": "Stripe for cards, GoCardless for UK Direct Debit", "reasoning": "Different payment instruments for tickets vs dues", "tradeoffs": "Double integration surface", "result": "Incomplete — GoCardless abandoned at spike stage"}
+  ],
+  "lessons": [
+    "Provider-shaped abstractions pay for themselves: the email swap touched one file because the signature was defined by the application, not the SDK — while the payment layer leaked Stripe concepts into the domain model and made the second provider a parallel path instead of a second implementation.",
+    "Embedded arrays trade query simplicity for invariant pain; a Vote collection with a compound unique index on (pollId, voterId) would have made the central rule a database guarantee.",
+    "Deployment surfaces a different class of bug than development — email, post-auth routing and SPA/API origin all broke only once deployed.",
+    "Enforce rules on the server and mirror them on the client; the one place the two disagree is exactly where a bug lives.",
+    "Every defect found in this audit is one an integration test would have caught; skipping tests was the costliest shortcut.",
+    "Choosing not to ship into an unstable adopter environment was judgement, not failure, and is defensible as such."
+  ],
+  "known_defects": [
+    {"file": "controllers/poll.controller.js", "issue": "VersionError retry reassigns a const-bound variable; the retry branch would throw TypeError", "severity": "medium"},
+    {"file": "routes/poll.route.js", "issue": "castVote is behind authorOnly, contradicting the member-voting UI", "severity": "high"},
+    {"file": "controllers/payment.controller.js", "issue": "Hard-coded GoCardless sandbox token and Stripe webhook signing secret; hard-coded personal name, email and postal address in the GoCardless handler", "severity": "high — rotate and remove before showing the repository to anyone"},
+    {"file": "index.js", "issue": "Hard-coded express-session secret; express.static('public') references a non-existent directory", "severity": "medium"},
+    {"file": "repository-wide", "issue": "No automated tests, no CI, no rate limiting, no structured logging or monitoring, no token rotation or revocation", "severity": "high for credibility as production-grade work"}
+  ],
+  "cv_bullets": {
+    "high_confidence_quantified": [
+      "Designed and built a full-stack community-management platform (React 18 · Redux Toolkit · Node/Express · MongoDB) as sole developer across 85 commits and 10 months, comprising ~15,000 lines of application code, 59 REST endpoints, 8 data models and 16 Redux reducers.",
+      "Implemented a six-path authentication system — credentials, email verification, password reset, one-time login code, Google OAuth and Twitter/X OAuth — with bcrypt hashing, SHA-256 token hashing, encrypted time-limited login codes and HTTP-only JWT cookies.",
+      "Built an online election module supporting multiple concurrent polls, cross-poll candidate exclusivity, vote transfer with count reconciliation and verified-voter gating, enforced through a four-tier RBAC model across 59 endpoints.",
+      "Integrated Stripe (hosted Checkout, subscriptions with trial periods, Billing Portal, signature-verified webhooks) and GoCardless Direct Debit behind a single payment model, with server-side product resolution preventing client-supplied pricing.",
+      "Containerised and deployed the platform using Docker (node:20-alpine) and Docker Compose, serving a Vite-built SPA and the REST API from one same-origin Node process."
+    ],
+    "high_confidence_unquantified": [
+      "Architected a MERN application end to end: schema design, REST API, authentication and authorisation, third-party integrations, state management, containerisation and deployment.",
+      "Migrated the transactional email layer between providers (Gmail OAuth2/Nodemailer → Brevo API) in response to a deployment-environment delivery failure, with zero changes to calling code.",
+      "Implemented optimistic-concurrency handling for concurrent writes to embedded document arrays, with bounded retry against re-read state.",
+      "Designed audit trails into the data model, capturing creator and an append-only edit history on every mutable entity."
+    ],
+    "requires_confirmation_or_work_first": [
+      "Any claim about users, traffic, votes cast, payments processed, reliability or performance — none exist.",
+      "Any 'in production' framing — use 'deployed publicly'.",
+      "Test coverage, CI, monitoring — do not claim until added; adding them turns three documented weaknesses into honest new bullets."
+    ]
+  },
+  "interview_stories": [
+    {"theme": "Complex problem solving", "title": "Domain invariants under concurrency", "situation": "Candidates had to belong to exactly one poll per election, stored in embedded arrays across sibling documents", "task": "Enforce exclusivity without a unique index or transactions", "action": "Scan sibling polls, splice out, save, then push to target; batch-safe; distinguish 'moved' from 'added'; catch VersionError and retry against re-read state", "result": "Working exclusivity rule with clear organiser feedback", "evidence": "poll.controller.js", "self_critique": "A Vote collection with a compound unique index was the better design, and the retry has a const-reassignment bug"},
+    {"theme": "Production debugging / ownership", "title": "The bug that only existed after deploy", "situation": "Gmail OAuth2 email worked locally and silently stopped on the deployed host", "action": "Re-implemented against Brevo's API behind an identical function signature, pre-rendering Handlebars manually with ESM-safe path resolution", "result": "Email delivered via API, bypassing host SMTP restrictions; no call site changed", "evidence": "helpers/email.helper.js; commit 2024-12-21"},
+    {"theme": "Security", "title": "An auth stack built from primitives", "action": "bcrypt pre-save hook → SHA-256-hashed verification tokens → Cryptr-encrypted login codes with independent expiry → device allow-list triggering step-up auth → HTTP-only secure sameSite:none JWT cookie → server-side RBAC with a suspension check inside the guard", "evidence": "auth.controller.js, auth.middleware.js, auth.helper.js", "self_critique": "Missing rate limiting, token rotation and revocation"},
+    {"theme": "Integration", "title": "Two payment providers, two state machines", "action": "Raw-body webhook ordering for signature verification; server-side fulfilment independent of the browser redirect; product names resolved from Stripe rather than trusted from the client", "evidence": "payment.controller.js, index.js", "self_critique": "GoCardless never progressed past a hard-coded spike"},
+    {"theme": "Judgement / ambiguity", "title": "Deciding not to ship", "situation": "The intended adopter community entered a leadership dispute as the build became demonstrable", "action": "Stopped, de-branded the application and repositioned it as a portfolio artefact", "result": "Sunk cost separated from forward value", "evidence": "commit 1c6ff9c 'removed niuk tags', 2024-04-02, 15 files"},
+    {"theme": "Learning / resilience", "title": "Seven hours stuck on role switching", "evidence": "commit 'After 7hours I couldn't figure out my desired switch role function', 2024-03-24, followed by sidebar state-management commits", "action": "Lifted role state into Redux instead of deriving it locally"}
+  ],
+  "portfolio_material": {
+    "headline": "NIUK — a community-management and online-elections platform, built end to end",
+    "lead_feature": "The election flow (election → polls → candidates → verified voters → voting with concealed counts) — most distinctive and hardest to build; lead with it rather than with auth",
+    "structure": ["Context", "Problem", "My role (sole developer)", "Architecture diagram", "Deep-dive: election domain invariants", "Deep-dive: device-based step-up auth", "Deep-dive: webhook-driven payment fulfilment", "What I'd do differently", "Honest status: built, deployed, not launched"],
+    "improvements_next": [
+      "Move votes to their own collection with a compound unique index on (pollId, voterId)",
+      "Add integration tests for the election and auth flows; wire up CI",
+      "Remove hard-coded secrets and personal address; finish or delete the GoCardless path",
+      "Fix castVote's route guard and the const retry bug",
+      "Add rate limiting on all code/token endpoints",
+      "Add structured logging and a health endpoint"
+    ]
+  },
+  "content_ideas": [
+    {"platform": "blog", "title": "One vote per voter: why I should have used a unique index instead of an embedded array", "story": "Modelling votes in MongoDB, told against my own code"},
+    {"platform": "blog", "title": "VersionError: optimistic concurrency in Mongoose, and the retry loop I got wrong", "story": "The failure mode, the pattern, my bug, and the $pull/$push and transaction alternatives"},
+    {"platform": "blog", "title": "Stripe webhooks and Express body parsers: the ordering that silently breaks signature verification", "story": "Short, high-utility, evergreen"},
+    {"platform": "blog", "title": "Swapping an email provider in one file", "story": "Gmail OAuth2 → Brevo; signature stability vs the payment layer that leaked vendor concepts"},
+    {"platform": "blog", "title": "Step-up authentication from primitives", "story": "Device fingerprints, encrypted one-time codes, expiring tokens — with the rate-limiting caveat stated"},
+    {"platform": "blog", "title": "Serving a Vite SPA and an Express API from one origin", "story": "sameSite, secure, CORS credentials, asset-extension fallback, anti-cache headers"},
+    {"platform": "linkedin", "title": "I built a voting system and put the most important rule in the wrong place", "story": "Embedded array vs unique index; credible because self-critical"},
+    {"platform": "linkedin", "title": "I spent seven hours stuck on a role-switching function", "story": "Quote the commit message verbatim"},
+    {"platform": "linkedin", "title": "Three bugs that only existed after I deployed", "story": "Email, post-auth routing, SPA/API origin — one December week"},
+    {"platform": "linkedin", "title": "I built a platform for a community, then decided not to pitch it", "story": "The judgement call; pre-empts 'did anyone use it?' by answering first"},
+    {"platform": "linkedin", "title": "Portfolio project ≠ toy project — here's the architecture", "story": "Diagram plus counts, stated plainly as having no users"}
+  ],
+  "public_safe_claims": [
+    "Architecture diagram, technology stack, feature list, code-size and endpoint counts",
+    "All verified_claims with their qualifications attached",
+    "The CV bullets in high_confidence_quantified and high_confidence_unquantified",
+    "The engineering stories, with the 'deciding not to ship' story told about circumstances rather than people",
+    "The plain statement that the platform was deployed publicly but never launched and has no users"
+  ],
+  "private_only_information": [
+    "Contents of .env and client/.env (Mongo URI, JWT and Cryptr secrets, Google/Twitter/Stripe/Brevo credentials, Cloudinary preset)",
+    "Hard-coded GoCardless sandbox token, Stripe webhook signing secret and express-session secret present in source — rotate and remove regardless of publication",
+    "The developer's personal postal address and email hard-coded in payment.controller.js",
+    "Render dashboard deploy links and Google Cloud project URLs in the READMEs",
+    "The consolidated weakness list as a list — individual items are fine in interview, a published vulnerability inventory of a deployed app is not",
+    "The specific community's identity and its leadership dispute — say 'a diaspora community organisation'"
+  ],
+  "evidence_gaps": [
+    {"item": "Any usage data", "why_useful": "Would enable scale and adoption claims", "where_it_might_exist": "Nowhere — no production database, no real users", "closable": false, "note": "Permanently unavailable by the nature of the project"},
+    {"item": "Screenshots or demo video of the running app", "why_useful": "Portfolio needs visuals", "where_it_might_exist": "Run locally via docker-compose up and capture the election flow", "closable": true, "priority": "highest"},
+    {"item": "Confirmation the Render deploy still functions beyond HTTP 200", "why_useful": "'Deployed publicly' is stronger with a working link", "where_it_might_exist": "https://niuk-project.onrender.com", "closable": true},
+    {"item": "Seeded demo data", "why_useful": "A reviewer clicking an empty dashboard sees nothing", "where_it_might_exist": "Write a seed script with fictional users, an election and polls", "closable": true},
+    {"item": "Exact first-deploy date", "why_useful": "Dates the 'deployed' claim precisely", "where_it_might_exist": "Render dashboard deploy history (link in README.md)", "closable": true},
+    {"item": "Contemporaneous design rationale", "why_useful": "The trade-off table is reconstructed from code, not recorded decisions", "where_it_might_exist": "Owner's memory only", "closable": "partly", "note": "Write a dated ADR-style note now"},
+    {"item": "Tests and CI", "why_useful": "Converts the largest documented weakness into a strength", "where_it_might_exist": "Does not exist", "closable": true}
+  ],
+  "key_commits": [
+    {"hash": "1c6ff9c", "date": "2024-04-02", "message": "removed niuk tags", "significance": "De-branding; dates the pivot from community product to portfolio artefact; 15 files changed"},
+    {"date": "2024-03-24", "message": "After 7hours I couldn't figure out my desired switch role function", "significance": "Timestamped record of a hard state-propagation problem"},
+    {"date": "2024-10-04", "message": "added election and voting for users", "significance": "Election module"},
+    {"date": "2024-12-18", "message": "fix: bad routing after authentication", "significance": "Deployment-surfaced bug"},
+    {"date": "2024-12-21", "message": "fix: email not sending and added node serve react", "significance": "Email provider migration and same-origin serving"},
+    {"date": "2024-12-21", "message": "feat: added docker", "significance": "Containerisation"}
+  ],
+  "audit_methodology": {
+    "production_database_queried": false,
+    "writes_performed": false,
+    "credentials_exposed": false,
+    "pii_exposed": false,
+    "note": "No production database exists. A connection attempt to the configured local MongoDB was refused. All statistics are reproducible from the repository and version control by anyone holding a copy."
+  }
+}

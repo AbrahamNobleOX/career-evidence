@@ -1,0 +1,1084 @@
+{
+  "schema_version": "1.0",
+  "audit_date": "2026-10-17",
+  "project_name": "Textiles Skills Center",
+  "project_type": "Full-stack e-learning commerce platform (course catalogue, one-off purchase, recurring subscription)",
+  "project_description": "A two-repository full-stack platform for selling textile-craft courses online. An ASP.NET Core Web API backend (EF Core, ASP.NET Identity, JWT, Stripe, Cloudinary) serves a Next.js 14 / TypeScript frontend (Redux Toolkit, MUI, Tailwind). Supports anonymous browsing with cookie-scoped baskets merged at login, one-off Stripe Payment Intent checkout, recurring membership subscriptions via Stripe Checkout and Billing Portal, webhook-driven state reconciliation, and an admin course-management surface with Cloudinary media lifecycle management.",
+  "repositories": [
+    {
+      "name": "txs-bk",
+      "remote": "https://github.com/AbrahamNobleOX/textiles-backend.git",
+      "role": "ASP.NET Core Web API"
+    },
+    {
+      "name": "txs-fd",
+      "remote": "https://github.com/AbrahamNobleOX/textiles-frontend.git",
+      "role": "Next.js 14 frontend"
+    }
+  ],
+  "dates": {
+    "first_commit": "2024-08-10",
+    "last_commit": "2024-12-29",
+    "activity_span_days": 141,
+    "activity_span_months_approx": 4.7,
+    "production_launch_date": null,
+    "production_launch_date_evidence_level": "N/A — never launched",
+    "project_outcome": "Never completed, demonstrated or launched"
+  },
+  "technologies": {
+    "backend_language": [
+      "C#"
+    ],
+    "backend_frameworks": [
+      "ASP.NET Core Web API (net9.0 target, ASP.NET packages 8.0.x)",
+      "Entity Framework Core 8",
+      "ASP.NET Core Identity",
+      "AutoMapper",
+      "Swashbuckle/Swagger"
+    ],
+    "frontend": [
+      "Next.js 14.2.5 (App Router)",
+      "React 18",
+      "TypeScript 5",
+      "Redux Toolkit 2",
+      "react-redux",
+      "Axios",
+      "MUI 6",
+      "MUI X DataGrid",
+      "Radix UI / shadcn-style components",
+      "Tailwind CSS 3",
+      "react-hook-form",
+      "yup",
+      "zod",
+      "@stripe/react-stripe-js 3",
+      "react-dropzone",
+      "react-toastify"
+    ],
+    "databases": [
+      "SQLite (development)",
+      "PostgreSQL via Npgsql (production configuration)"
+    ],
+    "auth": [
+      "ASP.NET Identity with int keys",
+      "JWT Bearer, HMAC-SHA512, 7-day lifetime",
+      "Role claims"
+    ],
+    "infrastructure": [
+      "Docker multi-stage build (SDK 8.0 -> ASP.NET runtime 8.0)",
+      "GitHub Actions",
+      "Docker Hub (noblexeyi/textiles:latest)"
+    ],
+    "third_party_services": [
+      "Stripe (Payment Intents, Checkout Sessions, Billing Portal, webhooks)",
+      "Cloudinary (image upload/delete)"
+    ]
+  },
+  "architecture": {
+    "style": "Two-tier: SPA frontend + REST API monolith with a thin service layer",
+    "backend_controllers": [
+      "AccountController",
+      "CoursesController",
+      "BasketController",
+      "OrdersController",
+      "PaymentsController",
+      "SubscriptionsController",
+      "ErrorController (test endpoints)",
+      "FallbackController (SPA host)"
+    ],
+    "backend_services": [
+      "TokenService",
+      "BasketService",
+      "PaymentService",
+      "ImageService"
+    ],
+    "middleware": [
+      "ExceptionMiddleware (global exception -> 500 ProblemDetails)"
+    ],
+    "entities": [
+      "Course",
+      "Basket",
+      "BasketItem",
+      "Order",
+      "OrderItem",
+      "CourseItemOrdered",
+      "ShippingAddress",
+      "Subscription",
+      "User",
+      "UserAddress",
+      "Role"
+    ],
+    "patterns": [
+      "Composable IQueryable extension methods for sort/search/filter (SQL-translated)",
+      "PagedList<T> with pagination metadata in a custom 'Pagination' response header",
+      "Purchase-time price and product snapshotting on order items",
+      "Cookie-GUID anonymous buyer identity merged into the account at login",
+      "Signature-verified Stripe webhooks with provider re-read before state mutation",
+      "Server-side [Authorize(Roles=...)] with client-side ProtectedRoute as UX-only guard",
+      "Optional single-container deployment: API serves built SPA from wwwroot via MapFallbackToController"
+    ],
+    "ci_cd": {
+      "workflow": ".github/workflows/docker-push.yml",
+      "action": "docker/build-push-action@v3 -> Docker Hub",
+      "trigger": "workflow_dispatch (manual); push-on-main trigger is commented out"
+    }
+  },
+  "integrations": [
+    {
+      "name": "Stripe",
+      "modes": [
+        "Payment Intents (one-off)",
+        "Checkout Sessions (subscription mode)",
+        "Billing Portal"
+      ],
+      "webhooks": [
+        "/api/payments/webhook (charge.succeeded -> OrderStatus.PaymentReceived)",
+        "/api/payments/hpwebhook (checkout session paid -> SubscriptionActive + Stripe field writeback)",
+        "/api/payments/subcanwebhook (cancellation and reactivation)"
+      ],
+      "library": "Stripe.net 47.1.0"
+    },
+    {
+      "name": "Cloudinary",
+      "purpose": "Course image upload, replace-with-destroy-previous, delete by PublicId",
+      "library": "CloudinaryDotNet 1.26.2"
+    }
+  ],
+  "workflows": [
+    {
+      "name": "Browse and filter catalogue",
+      "endpoints": [
+        "GET /api/courses",
+        "GET /api/courses/{id}",
+        "GET /api/courses/filters"
+      ],
+      "notes": "Sort -> Search -> Filter -> PagedList; pagination metadata in response header"
+    },
+    {
+      "name": "Anonymous basket to authenticated basket",
+      "endpoints": [
+        "POST /api/basket",
+        "GET /api/basket",
+        "DELETE /api/basket",
+        "POST /api/account/login"
+      ],
+      "notes": "GUID buyerId in 30-day essential cookie; at login the anonymous basket wins and the stored basket is discarded"
+    },
+    {
+      "name": "One-off checkout",
+      "endpoints": [
+        "POST /api/payments",
+        "POST /api/orders",
+        "POST /api/payments/webhook"
+      ],
+      "notes": "Payment Intent sized to subtotal + delivery fee rule; order created from basket with item snapshots; status confirmed asynchronously by webhook"
+    },
+    {
+      "name": "Subscription membership",
+      "endpoints": [
+        "POST /api/payments/hostedpage",
+        "POST /api/subscriptions",
+        "GET /api/subscriptions/getactivesubscription",
+        "POST /api/payments/hpwebhook",
+        "POST /api/payments/subcanwebhook",
+        "GET /api/payments/portalsession/{sessionId}"
+      ],
+      "notes": "Stripe-owned state mirrored locally; reactivation distinguished from cancellation by CanceledAt + status"
+    },
+    {
+      "name": "Admin course management",
+      "endpoints": [
+        "POST /api/courses",
+        "PUT /api/courses",
+        "DELETE /api/courses/{id}"
+      ],
+      "notes": "[Authorize(Roles=\"Admin\")], multipart/form-data, Cloudinary asset lifecycle"
+    }
+  ],
+  "my_contributions": {
+    "authorship_summary": {
+      "backend_commits_by_user": 61,
+      "backend_commits_total": 61,
+      "frontend_commits_by_user": 22,
+      "frontend_commits_total": 23,
+      "overall_percentage": 98.8,
+      "evidence_source": "git shortlog -sne --all on both repositories",
+      "evidence_level": "VERIFIED"
+    },
+    "other_contributors": [
+      {
+        "name": "Ted Ward",
+        "commits": 1,
+        "scope": "Initial login/signup pages, welcome page, and several shadcn/ui primitives (~19 files, merged via PR #1 on 2024-08-31)",
+        "note": "Must not be claimed as personal work; subsequent auth rework by the user substantially replaced the wiring"
+      }
+    ],
+    "verified_areas": [
+      "API foundation, Swagger with JWT security scheme, global exception middleware",
+      "Catalogue query layer: sorting, searching, category filtering, pagination",
+      "Cookie-based anonymous basket and login-time basket reconciliation",
+      "ASP.NET Identity integration, JWT issuance with role claims, role seeding",
+      "Order aggregate, order creation from basket, purchase-time snapshots, address persistence",
+      "Stripe Payment Intents and webhook reconciliation",
+      "Stripe hosted Checkout, Billing Portal, subscription entity and lifecycle webhooks",
+      "Cloudinary image service and admin course CRUD",
+      "Dockerfile, GitHub Actions Docker Hub workflow",
+      "SQLite to PostgreSQL migration, DATABASE_URL parsing, environment-driven CORS and Stripe URLs",
+      "Frontend Redux Toolkit store and slices, Axios agent with interceptors, catalogue, basket, checkout, dashboard, order views, admin role gating"
+    ],
+    "cannot_be_established": [
+      "Whether a paying client or external stakeholders existed",
+      "Whether anyone other than the author used the deployed system",
+      "Whether UI/UX design was supplied externally"
+    ]
+  },
+  "production_metrics": {
+    "production_evidence_available": false,
+    "reason": "The project never reached production. The client disengaged before demo, review or launch. The author self-hosted a PostgreSQL instance as a STAGING/DEV environment only. No .env or production connection string exists in the working copy. No logs, monitoring, APM or analytics are configured.",
+    "do_not_claim": [
+      "users served",
+      "unique customers",
+      "transactions processed",
+      "revenue",
+      "uptime",
+      "latency",
+      "adoption",
+      "growth",
+      "conversion"
+    ],
+    "development_seed_data_only": {
+      "source": "API/store.db committed on origin/main; inspected read-only with sqlite3 COUNT(*)",
+      "nature": "DbInitializer seed data with lorem-ipsum descriptions, placeholder titles and two test accounts",
+      "counts": {
+        "Courses": 20,
+        "AspNetUsers": 2,
+        "Baskets": 0,
+        "Orders": 0,
+        "OrderItem": 0,
+        "Subscriptions": 0
+      },
+      "warning": "These are development seed figures and must never be presented as production metrics."
+    },
+    "never_launched": true,
+    "hosted_environment": "Self-hosted PostgreSQL staging environment (USER_ATTESTED). Describe as 'staging', never 'production'."
+  },
+  "repository_metrics": [
+    {
+      "name": "total_commits",
+      "value": 84,
+      "unit": "commits",
+      "start_date": "2024-08-10",
+      "end_date": "2024-12-29",
+      "evidence_source": "git rev-list --all --count on both repositories (61 + 23)",
+      "calculation_method": "sum of all-ref commit counts",
+      "evidence_level": "VERIFIED",
+      "qualification": "Counts all refs, including remote-tracking branches."
+    },
+    {
+      "name": "commits_authored_by_user",
+      "value": 83,
+      "unit": "commits",
+      "start_date": "2024-08-10",
+      "end_date": "2024-12-29",
+      "evidence_source": "git shortlog -sne --all",
+      "calculation_method": "61 backend + 21 frontend + 1 frontend merge commit",
+      "evidence_level": "VERIFIED",
+      "qualification": "One frontend commit is authored by another contributor."
+    },
+    {
+      "name": "development_activity_span",
+      "value": 141,
+      "unit": "days",
+      "start_date": "2024-08-10",
+      "end_date": "2024-12-29",
+      "evidence_source": "git log first and last commit dates",
+      "calculation_method": "date difference between earliest and latest commit across both repositories",
+      "evidence_level": "DERIVED",
+      "qualification": "Measures the activity window, not hours worked or full-time effort."
+    },
+    {
+      "name": "functional_http_endpoints",
+      "value": 25,
+      "unit": "endpoints",
+      "start_date": null,
+      "end_date": "2024-12-29",
+      "evidence_source": "git grep -E '\\[Http(Get|Post|Put|Delete)' origin/main -- 'API/Controllers/*.cs'",
+      "calculation_method": "32 HTTP method attributes minus 7 deliberate ErrorController test endpoints",
+      "evidence_level": "VERIFIED",
+      "qualification": "Measured on origin/main (deployed branch), not the local checkout."
+    },
+    {
+      "name": "api_controllers",
+      "value": 6,
+      "unit": "functional controllers",
+      "evidence_source": "origin/main API/Controllers tree",
+      "calculation_method": "count of domain controllers excluding ErrorController and FallbackController",
+      "evidence_level": "VERIFIED",
+      "qualification": null
+    },
+    {
+      "name": "domain_entities",
+      "value": 11,
+      "unit": "entities",
+      "evidence_source": "API/Entities on origin/main",
+      "calculation_method": "direct count",
+      "evidence_level": "VERIFIED",
+      "qualification": "Excludes ASP.NET Identity framework tables."
+    },
+    {
+      "name": "stripe_webhook_endpoints",
+      "value": 3,
+      "unit": "endpoints",
+      "evidence_source": "PaymentsController on origin/main",
+      "calculation_method": "direct count",
+      "evidence_level": "VERIFIED",
+      "qualification": null
+    },
+    {
+      "name": "third_party_integrations",
+      "value": 2,
+      "unit": "services",
+      "evidence_source": "API.csproj package references and service classes",
+      "calculation_method": "Stripe + Cloudinary",
+      "evidence_level": "VERIFIED",
+      "qualification": null
+    },
+    {
+      "name": "backend_csharp_lines",
+      "value": 4065,
+      "unit": "lines",
+      "evidence_source": "wc -l on *.cs excluding bin/obj",
+      "calculation_method": "total line count",
+      "evidence_level": "VERIFIED",
+      "qualification": "Approximately 2,140 lines are EF Core generated migrations and model snapshots; hand-written C# is approximately 1,925 lines."
+    },
+    {
+      "name": "frontend_typescript_lines",
+      "value": 9051,
+      "unit": "lines",
+      "evidence_source": "wc -l on src/**/*.{ts,tsx}",
+      "calculation_method": "total line count",
+      "evidence_level": "VERIFIED",
+      "qualification": "Includes vendored shadcn/ui components and MUI theme customisation files."
+    },
+    {
+      "name": "automated_tests",
+      "value": 0,
+      "unit": "tests",
+      "evidence_source": "recursive search for test projects and test files in both repositories",
+      "calculation_method": "direct search",
+      "evidence_level": "VERIFIED",
+      "qualification": "No test project exists in either repository."
+    },
+    {
+      "name": "ef_core_migrations_authored",
+      "value": 5,
+      "unit": "migrations",
+      "evidence_source": "API/Data/Migrations across main and origin/main",
+      "calculation_method": "count of distinct migration classes across the history",
+      "evidence_level": "VERIFIED",
+      "qualification": "The migration history was reset during the PostgreSQL move, so this undercounts total migration work."
+    },
+    {
+      "name": "deployment_focused_commits",
+      "value": 20,
+      "unit": "commits",
+      "start_date": "2024-12-14",
+      "end_date": "2024-12-29",
+      "evidence_source": "git log --all on txs-bk",
+      "calculation_method": "count of commits whose messages concern deployment preparation, CORS, timestamp fixes and migration resets",
+      "evidence_level": "DERIVED",
+      "qualification": "Approximate; classification is by commit message text."
+    }
+  ],
+  "verified_claims": [
+    {
+      "id": "C1",
+      "claim": "Designed and built a full-stack course-commerce platform (ASP.NET Core Web API + Next.js 14/TypeScript) as sole author of the backend and near-sole author of the frontend, during a UK volunteer engagement.",
+      "evidence_level": "VERIFIED",
+      "evidence": "61/61 backend commits and 22/23 frontend commits authored by Akintola Abraham (git shortlog -sne --all)",
+      "period": "2024-08 to 2024-12",
+      "qualification": "One frontend commit (initial login/signup/welcome pages) was another contributor's. THE PROJECT WAS NEVER COMPLETED OR LAUNCHED."
+    },
+    {
+      "id": "C2",
+      "claim": "Implemented a dual Stripe integration covering one-off card payments (Payment Intents) and recurring subscriptions (Checkout Sessions + Billing Portal), reconciled through three signature-verified webhook endpoints.",
+      "evidence_level": "VERIFIED",
+      "evidence": "PaymentsController and SubscriptionsController on origin/main; Stripe.net 47.1.0",
+      "period": "2024-11 to 2024-12",
+      "qualification": "Exercised in Stripe test mode; no live-mode transactions."
+    },
+    {
+      "id": "C3",
+      "claim": "Built a commerce domain model with purchase-time price snapshotting so historical orders remain immutable when catalogue items change.",
+      "evidence_level": "VERIFIED",
+      "evidence": "CourseItemOrdered, OrderItem, OrdersController.CreateOrder",
+      "period": "2024-11",
+      "qualification": null
+    },
+    {
+      "id": "C4",
+      "claim": "Implemented end-to-end role-based access control: ASP.NET Identity roles issued as JWT claims, enforced server-side with [Authorize(Roles=\"Admin\")] and mirrored by client-side route guards.",
+      "evidence_level": "VERIFIED",
+      "evidence": "TokenService, StoreContext role seeding, CoursesController attributes, ProtectedRoute.tsx, accountSlice.ts",
+      "period": "2024-08 to 2024-11",
+      "qualification": null
+    },
+    {
+      "id": "C5",
+      "claim": "Designed an anonymous-to-authenticated basket continuity mechanism using a cookie-carried GUID buyer identity reconciled server-side at login.",
+      "evidence_level": "VERIFIED",
+      "evidence": "BasketController.GetBuyerId/CreateBasket, AccountController.Login",
+      "period": "2024-08",
+      "qualification": null
+    },
+    {
+      "id": "C6",
+      "claim": "Built a database-side catalogue query pipeline supporting sorting, search, multi-category filtering and pagination, returning pagination metadata in a custom response header consumed by a typed Axios interceptor.",
+      "evidence_level": "VERIFIED",
+      "evidence": "CourseExtensions, PagedList<T>, HttpExtensions.AddPaginationHeader, agent.ts",
+      "period": "2024-08",
+      "qualification": "Search uses ToLower().Contains(), which does not use an index."
+    },
+    {
+      "id": "C7",
+      "claim": "Migrated the persistence layer from SQLite to PostgreSQL for deployment, including runtime parsing of a DATABASE_URL connection URL and regeneration of the EF Core migration history against the new provider.",
+      "evidence_level": "VERIFIED",
+      "evidence": "Program.cs on origin/main; PostgreSQL migrations dated 2024-12-29; commit messages 'fix: datetime to timestamp issues' (x5) and 'fix: normal migration'",
+      "period": "2024-12",
+      "qualification": null
+    },
+    {
+      "id": "C8",
+      "claim": "Containerised the API with a multi-stage Docker build and automated image publication to Docker Hub via GitHub Actions; deployed to a self-hosted PostgreSQL-backed staging environment.",
+      "evidence_level": "VERIFIED + USER_ATTESTED",
+      "evidence": "API/Dockerfile, .github/workflows/docker-push.yml",
+      "period": "2024-10 to 2024-12",
+      "qualification": "The workflow runs on manual dispatch. STAGING ONLY — never promoted to production."
+    },
+    {
+      "id": "C9",
+      "claim": "Integrated Cloudinary for course media with lifecycle management - upload on create, replace-and-destroy-previous on update, destroy on delete - preventing orphaned assets.",
+      "evidence_level": "VERIFIED",
+      "evidence": "ImageService, CoursesController",
+      "period": "2024-11",
+      "qualification": null
+    }
+  ],
+  "derived_claims": [
+    {
+      "id": "C10",
+      "claim": "Delivered the platform across approximately 4.7 months and 84 commits spanning two repositories, covering API design, data modelling, authentication, payments, frontend state management, containerisation and deployment configuration.",
+      "evidence_level": "DERIVED",
+      "evidence": "First commit 2024-08-10, last 2024-12-29; 61 + 23 commits",
+      "qualification": "The commit span measures the activity window, not full-time effort; hours worked are unknown."
+    }
+  ],
+  "strongly_supported_claims": [
+    {
+      "id": "C11",
+      "claim": "Took the system through production deployment preparation against a live managed PostgreSQL host, resolving cross-origin, environment-configuration and provider-semantic failures iteratively.",
+      "evidence_level": "STRONGLY SUPPORTED",
+      "evidence": "Approximately 20 deployment-focused commits between 2024-12-14 and 2024-12-29, including 'fix: CORS Error', five timestamp fixes and seven migration resets - a pattern characteristic of deploying against a real host rather than local-only development",
+      "qualification": "There is no evidence that the deployed system served end users. Make no claim about live operation."
+    }
+  ],
+  "inferred_claims": [
+    {
+      "id": "I3",
+      "claim": "The client would have been better served by WordPress plus a membership plugin.",
+      "evidence_level": "INFERRED (author's reconstruction)",
+      "evidence": "The organisation's existing third-party course-delivery platform and their apparent need for listing plus membership payment only",
+      "qualification": "Defensible in a 1:1 interview; not for publication."
+    }
+  ],
+  "unknown_claims": [
+    {
+      "id": "C12",
+      "claim": "Production usage, revenue, user counts, uptime, adoption.",
+      "evidence_level": "UNKNOWN / NON-EXISTENT",
+      "evidence": "The system never launched.",
+      "qualification": "NEVER CLAIM."
+    }
+  ],
+  "business_impact": {
+    "impact_delivered": "NONE — the platform was never demonstrated, reviewed, launched or used. No value reached the client.",
+    "quantified_impact_available": false,
+    "value_to_author": [
+      "Deliberate skill acquisition: .NET and C# chosen specifically to learn in depth, evidenced by a complete working application rather than tutorial work",
+      "A genuine commercial-grade payments integration (dual-mode Stripe, three webhook reconciliation paths)",
+      "A requirements-validation lesson learned expensively and understood clearly"
+    ],
+    "capability_built": [
+      "End-to-end sales channel for courses supporting one-off purchase and recurring membership",
+      "Self-service subscription management via Stripe Billing Portal",
+      "Administrative content-management surface with media lifecycle handling"
+    ],
+    "domain_fit_observation": "Orders carry a required ShippingAddress and a delivery-fee rule (subtotal > 10000 ? 0 : 500) — physical-goods concepts that fit a generic e-commerce scaffold rather than either reading of the client's actual need."
+  },
+  "engineering_challenges": [
+    {
+      "title": "Two payment models in one codebase",
+      "why_hard": "One-off purchases and subscriptions have different lifecycles, different Stripe objects (Charge, Session, Subscription) and different reconciliation points, requiring three distinct webhook handlers each resolving a different local record by a different key. Getting it wrong means lost payments or unpaid access."
+    },
+    {
+      "title": "Subscription state owned by Stripe, mirrored locally",
+      "why_hard": "Pending -> Active -> Canceled plus reactivation must be derived from out-of-band, possibly out-of-order, retried events. The handler distinguishes cancel from reactivate by inspecting CanceledAt and status together rather than trusting the event type."
+    },
+    {
+      "title": "Identity continuity across the anonymous/authenticated boundary",
+      "why_hard": "Shopper intent lives in a cookie before login and a database row after it; the login path must decide what happens when both exist."
+    },
+    {
+      "title": "SQLite-to-PostgreSQL portability",
+      "why_hard": "EF Core abstracts the provider but not its semantics. DateTime.Now values are rejected by timestamp with time zone, and migration histories are provider-coupled."
+    },
+    {
+      "title": "Operating a webhook that cannot be invoked locally",
+      "why_hard": "Stripe signature verification requires a real signing secret and real traffic, so the handler can only be exercised against a live environment."
+    }
+  ],
+  "decisions": [
+    {
+      "problem": "Choosing an architecture for the client's brief",
+      "decision": "React + .NET, agreed with the introducing technical lead and sketched on a client-supplied Miro board; .NET additionally chosen as a deliberate learning investment",
+      "reasoning": "Collaborative architecture discussion plus a self-directed goal of learning C#/ASP.NET Core in depth",
+      "trade_offs": "A bespoke two-tier build was heavier than the client's actual need, which a discovery conversation would likely have surfaced",
+      "result": "Strong learning outcome, wrong tool for the client's real problem — the project's central trade-off, to be owned openly",
+      "evidence_level": "USER_ATTESTED"
+    },
+    {
+      "problem": "Next.js client and API are separate origins; need authentication",
+      "decision": "JWT bearer tokens over cookie/session auth",
+      "reasoning": "Stateless tokens avoid server-side session storage and work cleanly cross-origin",
+      "trade_offs": "Tokens stored in localStorage (XSS-exposed); no refresh-token flow; 7-day lifetime cannot be revoked server-side",
+      "result": "Works; expiry handled reactively by catching rejected fetchCurrentUser and redirecting to login"
+    },
+    {
+      "problem": "Forcing registration before browsing loses conversions",
+      "decision": "Anonymous basket in a 30-day essential cookie, merged at login with anonymous-wins policy",
+      "reasoning": "Just-expressed intent is the live one",
+      "trade_offs": "Basket is per-browser not per-person; merge discards the stored basket rather than unioning",
+      "result": "Simple, predictable, explicitly commented in code"
+    },
+    {
+      "problem": "Different payment flows have different branding and compliance needs",
+      "decision": "Stripe hosted Checkout and Billing Portal for subscriptions; custom in-app card element for one-off payments",
+      "reasoning": "Hosted pages minimise PCI scope and provide cancellation and payment-method UI for free",
+      "trade_offs": "Hosted flow leaves the application's visual flow; custom element puts more responsibility in-house",
+      "result": "Right tool chosen per flow"
+    },
+    {
+      "problem": "Catalogue edits must not alter historical orders",
+      "decision": "Snapshot title, image and price onto order items at purchase time",
+      "reasoning": "Historical orders must be immutable",
+      "trade_offs": "Duplicated data; no foreign key integrity back to the live course",
+      "result": "Correct for commerce"
+    },
+    {
+      "problem": "Local development setup friction",
+      "decision": "SQLite in development, PostgreSQL in production",
+      "reasoning": "Zero-setup local development",
+      "trade_offs": "Provider-semantic drift only discovered at deploy time; migration histories do not transfer",
+      "result": "Development convenience repaid with interest during deployment"
+    },
+    {
+      "problem": "Verification approach",
+      "decision": "No automated tests; manual verification with deliberate ErrorController endpoints",
+      "reasoning": "Not evidenced",
+      "trade_offs": "No regression safety net",
+      "result": "Deployment-era commit churn is partly the visible cost"
+    }
+  ],
+  "problems_solved": [
+    {
+      "id": "P1",
+      "title": "Lost basket on login",
+      "situation": "Shoppers add courses before authenticating",
+      "problem": "Login replaces the browser identity, orphaning the cookie basket",
+      "investigation": "Identified shortly after Identity was introduced (commit be3bc7b, 2024-08-30)",
+      "solution": "Unified buyer identity behind User.Identity?.Name ?? Cookies[\"buyerId\"] and reconciled both baskets inside the login handler",
+      "result": "Anonymous carts survive authentication",
+      "evidence": "AccountController.Login, BasketController.GetBuyerId/CreateBasket, commit be3bc7b"
+    },
+    {
+      "id": "P2",
+      "title": "Unconfirmed payments",
+      "situation": "An order is created before Stripe confirms the charge",
+      "problem": "Treating creation as payment would grant access to unpaid orders",
+      "investigation": "Designed alongside the Payment Intent flow",
+      "solution": "Persist PaymentIntentId on basket then order; reconcile asynchronously in a signature-verified webhook flipping OrderStatus to PaymentReceived on charge.succeeded",
+      "result": "Order status reflects confirmed payment",
+      "evidence": "PaymentsController.StripeWebhook, OrderStatus enum, commit 782ee14"
+    },
+    {
+      "id": "P3",
+      "title": "Webhook handler crashing on unmatched events",
+      "situation": "Stripe delivers events with no corresponding local record and payloads that do not cast to the expected type",
+      "problem": "The first implementation dereferenced charge and order unguarded - a null-reference 500, which Stripe then retries",
+      "investigation": "Visible as a hardening change made after the first implementation",
+      "solution": "Explicit null checks returning BadRequest/NotFound before any dereference, in all three handlers",
+      "result": "Unmatched events fail fast with definitive statuses instead of erroring into retry loops",
+      "evidence": "Diff of PaymentsController.cs between main and origin/main"
+    },
+    {
+      "id": "P4",
+      "title": "Orphaned Cloudinary assets",
+      "situation": "Course images replaced or deleted",
+      "problem": "Old assets remained in Cloudinary, accruing storage",
+      "investigation": "Addressed when admin CRUD was built",
+      "solution": "Persist PublicId on the Course entity; call DeleteImageAsync(publicId) on update-with-new-image and on delete",
+      "result": "No orphaned media",
+      "evidence": "CoursesController.UpdateCourse/DeleteCourse, commit e68555e"
+    },
+    {
+      "id": "P5",
+      "title": "SQLite to PostgreSQL deployment",
+      "situation": "Development on SQLite, deployment onto managed PostgreSQL addressed by a DATABASE_URL",
+      "problem": "The URL is not a connection string; DateTime values rejected by timestamp with time zone; SQLite-generated migrations would not apply",
+      "investigation": "Iterative deploy-and-observe across approximately 20 commits, 2024-12-14 to 2024-12-29",
+      "solution": "Parse DATABASE_URL with System.Uri into host/port/user/password/database and compose an Npgsql connection string at startup, environment-switched; reset and regenerate the migration history against PostgreSQL",
+      "result": "A PostgreSQL migration set (PG_BackToNormal, 2024-12-29) is the final state of origin/main",
+      "evidence": "Program.cs on origin/main, migration filenames, commit messages",
+      "qualification": "Proves the work was done; does not prove the deployment subsequently served users"
+    },
+    {
+      "id": "P6",
+      "title": "Cross-origin failure in the deployed environment",
+      "situation": "CORS hard-coded to http://localhost:3000",
+      "problem": "Deployed frontend origin was rejected",
+      "investigation": "Surfaced on deployment",
+      "solution": "Moved the allowed origin to CORSSettings:AllowedOrigins configuration; likewise moved Stripe success/cancel/return URLs to StripeSettings:ReturnUrl",
+      "result": "Environment-driven configuration",
+      "evidence": "Commit e6526fb 'fix: CORS Error'; Program.cs and PaymentsController.cs diffs"
+    },
+    {
+      "id": "P7",
+      "title": "The problem that was not solved: validating the brief",
+      "situation": "The client supplied a competitor site to model and a Miro architecture board; the stack was agreed with the introducing technical lead",
+      "problem": "Nobody validated the underlying job-to-be-done. The organisation's actual need appears to have been a listing-and-membership site with course delivery remaining on a third-party platform",
+      "investigation": "Only reconstructed after the client disengaged, by re-reading what they had asked for against what they already had",
+      "solution": "None at the time; the lesson was captured afterwards",
+      "result": "Roughly three months of correct engineering against an incorrect specification; the work was never demoed",
+      "evidence": "USER_ATTESTED, corroborated by the repository stopping mid-deployment with no demo artefact and by domain-model artefacts fitting neither reading of the real need",
+      "evidence_level": "USER_ATTESTED",
+      "note": "The most instructive item in this dossier"
+    }
+  ],
+  "lessons": [
+    "A reference site is not a specification — 'build something like this' describes an output, not a problem.",
+    "Demo in week two, not month three. An ugly clickable slice early exposes misalignment while it is cheap.",
+    "A technical intermediary is not a substitute for the product owner.",
+    "Silence is signal: treat a slipping response cadence as a project risk to escalate, not a scheduling inconvenience.",
+    "For volunteer and unpaid work, agree checkpoints in writing — a shared date creates the moment where misalignment surfaces.",
+    "Develop on the database engine you deploy on.",
+    "Use DateTime.UtcNow by default in anything that may meet PostgreSQL.",
+    "Externalise every environment-coupled value before the first deploy, not after it.",
+    "Webhooks are untrusted, unordered and duplicate-prone: null-guard payload and record lookup, re-read the provider's API, make handlers idempotent on the provider's identifier.",
+    "Client-side route guards are UX, not security.",
+    "Zero tests is affordable until deployment, then it is not."
+  ],
+  "cv_bullets": {
+    "high_confidence_quantified": [
+      "Built a full-stack course-commerce platform (ASP.NET Core Web API + Next.js 14/TypeScript) as sole backend author — 61 of 61 backend and 22 of 23 frontend commits — delivering 25 REST endpoints across 6 controllers and 11 domain entities for a UK non-profit volunteer engagement.",
+      "Integrated Stripe in two payment modes (Payment Intents for one-off purchases, Checkout Sessions and Billing Portal for recurring memberships) reconciled by 3 signature-verified webhook handlers covering payment success, subscription activation, cancellation and reactivation.",
+      "Delivered a ~9,000-line TypeScript frontend (Next.js App Router, Redux Toolkit, MUI/Tailwind) backed by a ~1,900-line hand-written C# API, with a centralised Axios client handling auth injection, pagination headers and typed error-to-toast mapping.",
+      "Migrated the data layer from SQLite to PostgreSQL for deployment, implementing runtime DATABASE_URL parsing and regenerating the EF Core migration history - resolving provider-level DateTime/timestamp incompatibilities across 5 targeted fixes."
+    ],
+    "high_confidence_non_quantified": [
+      "Self-taught C# and ASP.NET Core by delivering a complete, containerised, deployable application — Identity, EF Core, JWT, AutoMapper, middleware, DI and a database provider migration — rather than through tutorial work.",
+      "Designed an anonymous-to-authenticated shopping-basket continuity mechanism, merging cookie-scoped carts into user accounts server-side at login.",
+      "Implemented end-to-end role-based authorisation: ASP.NET Identity roles issued as JWT claims, enforced by [Authorize(Roles=...)] on the API and mirrored by client-side route guards.",
+      "Modelled orders with purchase-time price and product snapshots so historical transactions remain immutable when catalogue content changes.",
+      "Built a database-side catalogue query pipeline (sort, search, multi-category filter, pagination) using composable IQueryable extensions, surfacing pagination metadata via a custom response header.",
+      "Containerised the API with a multi-stage Docker build and automated image publication to Docker Hub through GitHub Actions.",
+      "Integrated Cloudinary for course media with full asset lifecycle management, eliminating orphaned images on course update and deletion.",
+      "Hardened third-party webhook handlers against malformed payloads, unmatched records and duplicate delivery, verifying payment state by re-reading the provider's API rather than trusting event bodies."
+    ],
+    "framing_guidance": "List as a VOLUNTEER / PRO-BONO engagement with a non-production qualifier visible in the entry. Do not lead the CV with it if paid production work exists — it is a supporting entry evidencing .NET/payments capability and UK engagement history, not impact.",
+    "honest_outcome_framings": [
+      "Engagement concluded before launch when the client's requirements proved to be for a simpler listing-and-membership site than the bespoke platform briefed.",
+      "Built to demo stage; project discontinued by the client before review.",
+      "Volunteer engagement; platform reached a deployed staging environment and was not taken to production."
+    ],
+    "do_not_use": [
+      "Any claim of launch, users, revenue, transactions, uptime or business impact",
+      "'Production' as a descriptor for the hosted environment — use 'staging'",
+      "Any framing that attributes the outcome solely to the client"
+    ]
+  },
+  "interview_stories": [
+    {
+      "id": "S1",
+      "theme": "Tell me about a project that failed — STRONGEST STORY IN THIS PROJECT",
+      "situation": "A volunteer engagement to build a course-selling platform for a UK training organisation, briefed with a competitor site to model and a Miro architecture board",
+      "task": "Deliver a bespoke platform for selling and delivering courses",
+      "action": "Agreed a React + .NET architecture with the introducing technical lead and built it — catalogue, basket, auth, orders, dual-mode Stripe payments, subscriptions, admin CMS — deploying to a self-hosted staging environment",
+      "result": "Before the demo the client went quiet and never returned. Their real need was a listing-and-membership site with delivery staying on their existing third-party platform",
+      "what_i_own": "Validated the solution with a technical intermediary and never validated the problem with the product owner; proposed a demo only once the build was substantially done, three months in. An ugly clickable demo in week two would have cost two days and saved three months.",
+      "what_i_changed": "Open engagements with job-to-be-done questions — where does this live today, who delivers it, what happens the day after someone buys, what would you do if we built nothing — and schedule the first demo before the first sprint.",
+      "evidence": "Commit history ending mid-deployment with no demo artefact; the author's own account",
+      "coaching_note": "Rehearse the 'what I own' paragraph — that is the part interviewers are listening for."
+    },
+    {
+      "id": "S1",
+      "theme": "Production debugging / database portability",
+      "situation": "The API ran on SQLite locally and failed on deployment to managed PostgreSQL",
+      "task": "Get the API running on PostgreSQL without losing the development workflow",
+      "action": "Identified three causes (DATABASE_URL vs connection string, DateTime.Now vs timestamp with time zone, provider-coupled migrations); parsed the URL with System.Uri and composed an Npgsql connection string at startup; reset and regenerated migrations against PostgreSQL",
+      "result": "A PostgreSQL migration set is the final state of the repository",
+      "evidence": "Program.cs on origin/main; commits 'fix: datetime to timestamp issues' x5 and 'fix: normal migration', 2024-12-29"
+    },
+    {
+      "id": "S2",
+      "theme": "Integration with an unreliable asynchronous third party",
+      "situation": "Payment and subscription truth lives in Stripe; the application mirrors it",
+      "task": "Keep local state correct given signed, retried, possibly unmatched events",
+      "action": "Built three handlers verifying the signature, null-checking the deserialised object and the matched record, and re-fetching the Checkout Session and Subscription from Stripe before mutating state; added a duplicate-SessionId guard; distinguished cancellation from reactivation by CanceledAt plus status",
+      "result": "Handlers fail fast with definitive statuses on unmatched events instead of 500-ing into retry loops",
+      "evidence": "PaymentsController diff between main and origin/main"
+    },
+    {
+      "id": "S3",
+      "theme": "Deliberate trade-off",
+      "situation": "A user has one basket in a cookie and another saved on their account",
+      "task": "Decide what happens at login",
+      "action": "Chose anonymous-wins: delete the stored basket, re-key the cookie basket to the username, clear the cookie",
+      "result": "Predictable, documented behaviour",
+      "evidence": "AccountController.Login",
+      "discussion_value": "The alternative (union the two) is equally defensible; arguing both sides is the point"
+    },
+    {
+      "id": "S4",
+      "theme": "Security design",
+      "situation": "Admin-only course management surfaces",
+      "task": "Prevent unauthorised access",
+      "action": "Enforced authorisation server-side with [Authorize(Roles=\"Admin\")], issued roles as JWT claims, used client ProtectedRoute purely to avoid rendering unusable screens",
+      "result": "Correct split between UX guard and security gate",
+      "evidence": "CoursesController, TokenService, ProtectedRoute.tsx",
+      "discussion_value": "Leads into honest weaknesses: tokens in localStorage, no refresh flow, 7-day non-revocable lifetime"
+    },
+    {
+      "id": "S5",
+      "theme": "Ownership and end-to-end delivery",
+      "situation": "Solo build of both halves of a commerce platform over approximately 4.7 months",
+      "action": "Sequenced catalogue -> basket -> auth -> orders -> payments -> subscriptions -> deployment",
+      "result": "Complete platform delivered",
+      "evidence": "83 of 84 commits; commit history maps onto that sequence"
+    },
+    {
+      "id": "S6",
+      "theme": "Learning something new under delivery pressure",
+      "situation": "Subscriptions were added last and required Stripe concepts not used by the one-off flow",
+      "action": "Chose hosted Stripe surfaces to inherit payment-method management and cancellation UI rather than build them",
+      "result": "Full subscription lifecycle including reactivation, in roughly one working week of commits",
+      "evidence": "Commits 2024-12-28 to 2024-12-29"
+    },
+    {
+      "id": "S7",
+      "theme": "Working with ambiguity and a remote stakeholder",
+      "situation": "Requirements arrived as a competitor URL and a Miro board, mediated by a technical intermediary rather than the product owner",
+      "action": "Built against that material without direct product-owner discovery",
+      "result": "Misalignment surfaced only after disengagement",
+      "discussion_value": "What you'd now insist on before writing code — written acceptance criteria, direct product-owner access, a dated first demo — and how you'd escalate a slipping response cadence rather than absorb it",
+      "evidence_level": "USER_ATTESTED"
+    }
+  ],
+  "portfolio_material": {
+    "overview": "A two-repository full-stack platform for selling textile-craft courses online, supporting one-off course purchases and recurring memberships.",
+    "challenge": "Build, alone, a complete commerce system: catalogue with real query capability, a basket that survives the login boundary, two fundamentally different payment lifecycles, administrative content management with media, and a deployment path from a laptop SQLite file to a managed PostgreSQL instance in a container.",
+    "role": "Sole architect and developer of the ASP.NET Core API; near-sole developer of the Next.js frontend.",
+    "most_interesting_problem": "Mirroring subscription state that Stripe owns - deriving Pending -> Active -> Canceled -> Active from unordered, retried webhook events of three different object types resolved against three different local keys, and distinguishing cancellation from reactivation by inspecting CanceledAt and status together rather than trusting the event name.",
+    "measurable_evidence": "Repository and code metrics only. No production metrics exist - present this as a built-and-deployed system, not an operated one.",
+    "what_i_would_improve": [
+      "Develop against PostgreSQL from day one",
+      "DateTime.UtcNow throughout",
+      "Refresh-token flow with short-lived access tokens held outside localStorage",
+      "A webhook event log table with idempotency keys and replay",
+      "Integration tests around payment and basket-merge paths",
+      "Remove inherited shipping-address and delivery-fee concepts from a digital-goods domain",
+      "Structured logging and health checks before deployment rather than after"
+    ],
+    "context": "Introduced by a former colleague from a previous volunteering engagement. The client supplied a competitor site to model and a Miro architecture board; React + .NET was agreed with the introducing technical lead. The author additionally chose .NET as a deliberate learning investment.",
+    "outcome": "The client disengaged before the demo. The platform was never reviewed or launched. Probable cause: a requirements mismatch — a listing-and-membership site, not a bespoke delivery platform, was what the organisation actually needed.",
+    "what_i_would_do_differently_process": [
+      "Lead with discovery, not architecture — where do your courses live today, and what happens the day after someone buys?",
+      "Demo an ugly clickable slice in week two",
+      "Get the product owner, not only the technical intermediary, into the architecture conversation",
+      "Treat a slipping response cadence as a risk to escalate"
+    ],
+    "presentation_note": "Strongest when the retrospective is the headline rather than a footnote. A polished build that shipped is unremarkable; a polished build that shouldn't have been built that way, explained by the person who built it, is memorable."
+  },
+  "content_ideas": {
+    "articles": [
+      {
+        "title": "I spent three months building a .NET platform. They wanted WordPress.",
+        "core_problem": "Requirements validation — the difference between the solution someone describes and the job they need done",
+        "what_to_explain": [
+          "Why a reference site is not a specification",
+          "The four discovery questions that would have caught it",
+          "Why demoing in week two beats demoing in month three",
+          "How a technical intermediary can insulate you from the product owner"
+        ],
+        "anonymise": [
+          "The organisation",
+          "The individuals",
+          "The competitor site"
+        ],
+        "do_not_publish": [
+          "Anything identifying the client or the introducer",
+          "Any criticism of named people"
+        ],
+        "note": "Write it about your own decisions, not theirs — that is what makes it publishable and what makes it land."
+      },
+      {
+        "title": "Mirroring Stripe subscription state without lying to your users",
+        "core_problem": "The provider owns the truth; your database is a cache of it, updated by unordered, retried webhooks",
+        "what_to_explain": [
+          "Re-fetching the session/subscription instead of trusting the event body",
+          "Detecting reactivation via CanceledAt + status rather than event type",
+          "Idempotency keyed on the provider's identifier",
+          "Failing fast on unmatched records"
+        ],
+        "anonymise": [
+          "API keys",
+          "price IDs",
+          "product names",
+          "Docker Hub namespace"
+        ],
+        "do_not_publish": [
+          "Webhook secret handling specifics",
+          "Live endpoint paths"
+        ]
+      },
+      {
+        "title": "SQLite in dev, Postgres in prod: a bill that comes due on deploy day",
+        "core_problem": "EF Core abstracts the provider, not its semantics",
+        "what_to_explain": [
+          "DATABASE_URL vs connection string and parsing safely with System.Uri",
+          "DateTime.Now vs DateTimeKind.Utc against timestamp with time zone",
+          "Why migration histories are provider-coupled"
+        ],
+        "anonymise": [
+          "Host names",
+          "credentials"
+        ],
+        "do_not_publish": [
+          "Any connection detail"
+        ]
+      },
+      {
+        "title": "Carts that survive login",
+        "core_problem": "Identity changes mid-session; intent must not",
+        "what_to_explain": [
+          "Cookie-GUID buyer identity",
+          "The User.Identity?.Name ?? cookie resolution",
+          "The merge decision and its alternatives"
+        ],
+        "anonymise": [],
+        "do_not_publish": []
+      },
+      {
+        "title": "Pagination in the header, not the body",
+        "core_problem": "Keeping response bodies clean while carrying pagination metadata",
+        "what_to_explain": [
+          "Composable IQueryable extensions keeping filtering in SQL",
+          "PagedList<T> with CountAsync + Skip/Take",
+          "A custom Pagination response header and typed Axios interceptor",
+          "Honest caveat: ToLower().Contains() does not use an index"
+        ],
+        "anonymise": [],
+        "do_not_publish": []
+      },
+      {
+        "title": "What a commerce scaffold assumes about your product",
+        "core_problem": "Digital courses inherited shipping addresses and delivery fees from a physical-goods template",
+        "what_to_explain": [
+          "Template-driven domain drift and how to notice it"
+        ],
+        "anonymise": [
+          "Client and product names"
+        ],
+        "do_not_publish": []
+      }
+    ],
+    "social_posts": [
+      {
+        "idea": "The most useful thing I built last year never shipped",
+        "underlying_evidence": "Three months, a complete .NET platform, no demo — and the four discovery questions that would have prevented it",
+        "note": "Headline post; most likely to resonate"
+      },
+      {
+        "idea": "Demo in week two",
+        "underlying_evidence": "Cost difference between an ugly clickable slice early and a polished build late"
+      },
+      {
+        "idea": "A reference site is not a specification",
+        "underlying_evidence": "The gap between 'build something like this' and a job-to-be-done"
+      },
+      {
+        "idea": "The bug that only exists in production",
+        "underlying_evidence": "Five consecutive commits titled 'fix: datetime to timestamp issues'"
+      },
+      {
+        "idea": "Your webhook handler will be called with data that doesn't match anything you have",
+        "underlying_evidence": "Null guards added after the first implementation, visible in the main -> origin/main diff"
+      },
+      {
+        "idea": "Cancelled or reactivated? Same webhook",
+        "underlying_evidence": "StripeSubCanWebhook deriving state from CanceledAt + status"
+      },
+      {
+        "idea": "Client-side route guards are not security",
+        "underlying_evidence": "ProtectedRoute (UX) vs [Authorize(Roles=\"Admin\")] (the gate)"
+      },
+      {
+        "idea": "I picked the language I didn't know on purpose",
+        "underlying_evidence": ".NET chosen as a learning investment; a working containerised app as the result"
+      },
+      {
+        "idea": "I shipped it without tests. Here's the invoice.",
+        "underlying_evidence": "The cluster of 'prepare for deployment' commits"
+      }
+    ],
+    "do_not_post": [
+      "Any claim of users, revenue or scale",
+      "Anything identifying the client, the introducer or the competitor site",
+      "Any framing that blames the client"
+    ]
+  },
+  "public_safe_claims": [
+    "Architecture patterns and component diagram with product names generalised",
+    "Technology stack",
+    "All non-quantified achievement bullets",
+    "Code-level metrics (endpoint counts, entity counts, line counts, commit counts)",
+    "All engineering lessons and article angles",
+    "Generic descriptions of the Stripe, Cloudinary, JWT and basket-merge patterns",
+    "The requirements-validation lesson in the abstract, narrated about your own decisions rather than the client's"
+  ],
+  "private_only_information": [
+    "The client organisation's identity, the introducer's identity, and the competitor site used as a model",
+    "The TiiQu/Qutii connection as the route in",
+    "Repository URLs and Docker Hub namespace (noblexeyi/textiles)",
+    "The other contributor's identity and the precise scope of their commit",
+    "The reconstruction of why the client disengaged — defensible in a 1:1 interview, not for publication",
+    "Seed-data contents and test account identifiers committed to the repository",
+    "The hard-coded Stripe price ID in PaymentsController.GenerateURL"
+  ],
+  "evidence_gaps": [
+    {
+      "gap": "Precise engagement dates",
+      "why_useful": "Repository activity spans ~4.7 months; recollection is ~3 months. CV dates must be defensible.",
+      "where_evidence_might_exist": [
+        "Email thread with the point of contact",
+        "Miro board creation date",
+        "The introducer's messages"
+      ],
+      "question_to_ask": "When did the first and last client contact occur?"
+    },
+    {
+      "gap": "The demo email and final correspondence",
+      "why_useful": "Documents professionalism and that closure was pursued",
+      "where_evidence_might_exist": [
+        "Sent mail archive"
+      ],
+      "question_to_ask": "Locate and archive the thread — do not delete it."
+    },
+    {
+      "gap": "The Miro architecture board",
+      "why_useful": "The only surviving artefact of agreed architecture; evidences collaborative design rather than solo guesswork",
+      "where_evidence_might_exist": [
+        "Miro account",
+        "The introducer's account"
+      ],
+      "question_to_ask": "Do I still have access to the board?"
+    },
+    {
+      "gap": "Whether a volunteering agreement exists",
+      "why_useful": "A written agreement strengthens the UK volunteering-history record",
+      "where_evidence_might_exist": [
+        "Email",
+        "The volunteering platform used",
+        "The organisation"
+      ],
+      "question_to_ask": "Was anything signed or confirmed in writing?"
+    },
+    {
+      "gap": "Stripe account state",
+      "why_useful": "Confirms test-mode-only, which is what you'll say in interviews",
+      "where_evidence_might_exist": [
+        "Stripe Dashboard"
+      ],
+      "question_to_ask": "Any live-mode activity? Expect none; confirming is still worth it."
+    },
+    {
+      "gap": "Frontend code matching the deployed backend",
+      "why_useful": "origin/main references /dashboard/membership, which does not exist in this frontend checkout",
+      "where_evidence_might_exist": [
+        "Another clone or branch of textiles-frontend",
+        "The GitHub repository's current state"
+      ],
+      "question_to_ask": "Is there a newer frontend branch with the membership UI?"
+    },
+    {
+      "gap": "Screenshots or a recording of the working app",
+      "why_useful": "The highest-value missing artefact for portfolio use — code cannot show a reviewer what it looked like",
+      "where_evidence_might_exist": [
+        "Old screenshots",
+        "Or run it locally today against SQLite and record a walkthrough"
+      ],
+      "question_to_ask": "RECOMMENDED: spin it up locally and capture a 2-minute screen recording."
+    }
+  ],
+  "audit_limitations": [
+    "No production environment ever existed; all operational claims are and will remain unprovable.",
+    "The frontend checkout predates the backend's subscription endpoints, so the subscription UI could not be reviewed.",
+    "The attested engagement duration (~3 months) conflicts mildly with repository activity span (~4.7 months).",
+    "The root cause of the client's disengagement is the author's reasonable reconstruction, not a position the organisation stated.",
+    "Line counts conflate hand-written and vendored/generated code; stated splits are approximate.",
+    "No issue tracker, written brief or client correspondence was available to this audit.",
+    "txs-bk local main is 35 commits behind origin/main; all feature statements describe origin/main."
+  ],
+  "revised": "2026-10-17 — updated with first-hand engagement context from the author",
+  "evidence_levels_used": [
+    "VERIFIED",
+    "DERIVED",
+    "USER_ATTESTED",
+    "STRONGLY_SUPPORTED",
+    "INFERRED",
+    "UNKNOWN"
+  ],
+  "engagement_context": {
+    "evidence_level": "USER_ATTESTED",
+    "engagement_type": "Volunteer / unpaid — the author's second UK volunteering role",
+    "how_it_came_about": "Introduced by a former colleague from the TiiQu / Qutii volunteering engagement, who had moved on and later recommended the author to this organisation",
+    "client": "Textile Skills Center — a textile-training organisation",
+    "brief": "Build a web app to sell courses, modelled on a competitor site the client supplied; architecture sketched on a client-supplied Miro board",
+    "stack_decision": "React + .NET agreed with the introducing technical lead; .NET chosen deliberately by the author as a learning investment in C#/ASP.NET Core",
+    "duration_attested_months": 3,
+    "duration_repository_activity_days": 141,
+    "duration_discrepancy_note": "Author recalls ~3 months of engagement; repository activity spans ~4.7 months. Likely self-directed learning/scaffolding before the engagement began and/or work continuing after contact lapsed. Settle before stating CV dates.",
+    "outcome": "INCOMPLETE — client product owners disengaged before the demo; point of contact went on a two-week holiday and never made contact again. No demo, no review, no launch.",
+    "root_cause": "Requirements mismatch. The brief described a bespoke platform to sell AND deliver courses. The organisation's actual need appears to have been a listing-and-membership site (WordPress-scale) with course delivery remaining on their existing third-party platform.",
+    "root_cause_status": "Author's reasonable reconstruction, not a position the organisation stated",
+    "hosting": "Author self-hosted a PostgreSQL instance — STAGING/DEV environment only, never promoted to production",
+    "corroborating_code_evidence": [
+      "Repository stops mid-deployment-work on 2024-12-29 with no demo artefact",
+      "DATABASE_URL parsing and PostgreSQL migration work consistent with a real self-hosted instance",
+      "Orders carry a required ShippingAddress and delivery-fee rule — generic e-commerce concepts fitting neither reading of the real need"
+    ]
+  },
+  "user_attested_claims": [
+    {
+      "id": "C10",
+      "claim": "Chose ASP.NET Core and C# deliberately as a learning investment and delivered a complete, deployable application in an unfamiliar stack — including Identity, EF Core, JWT, middleware, DI, containerisation and a database provider migration.",
+      "evidence_level": "USER_ATTESTED (intent) + VERIFIED (resulting application)",
+      "why_strong": "Self-directed capability acquisition demonstrated by a working artefact rather than a certificate."
+    },
+    {
+      "id": "C11",
+      "claim": "Identified, after the engagement lapsed, that three months of engineering had been built against an unvalidated brief — and can articulate which discovery questions would have surfaced the mismatch and why demoing in week two rather than month three was the decisive missed step.",
+      "evidence_level": "USER_ATTESTED, corroborated by the repository stopping mid-deployment with no demo artefact",
+      "why_strong": "Self-aware post-mortem of a real failure with the engineer's own responsibility owned rather than deflected onto the client."
+    }
+  ]
+}
